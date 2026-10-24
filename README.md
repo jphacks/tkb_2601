@@ -4,9 +4,9 @@
 
 ### 🤖 不調なロボットにも、できる仕事を。
 
-[![Unity](https://img.shields.io/badge/Unity-6000.3.12f1-000000?style=for-the-badge&logo=unity&logoColor=white)](https://unity.com/)
-[![C%23](https://img.shields.io/badge/C%23-.NET-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)](https://learn.microsoft.com/dotnet/csharp/)
-[![Offline](https://img.shields.io/badge/Internet-Not_Required-315D7D?style=for-the-badge&logo=cloudflare&logoColor=white)](#開発技術)
+[![Unity](https://img.shields.io/badge/Unity-6000.3.12f1-000000?style=for-the-badge&logo=unity&logoColor=white)](ProjectSettings/ProjectVersion.txt)
+[![C#](https://img.shields.io/badge/C%23-Unity_Runtime-512BD4?style=for-the-badge)](Assets/Scripts/)
+[![Offline](https://img.shields.io/badge/Runtime-Internet_Not_Required-315D7D?style=for-the-badge)](#開発技術)
 [![MIT](https://img.shields.io/badge/Code_License-MIT-2E8B57?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE)
 
 [![Integration checks](https://github.com/jphacks/tkb_2601/actions/workflows/guardian-integration.yml/badge.svg?branch=main)](https://github.com/jphacks/tkb_2601/actions/workflows/guardian-integration.yml)
@@ -90,8 +90,6 @@ flowchart LR
 センサー統合版では、Warning / Limited を能力制限として扱い、許可された仕事を止めません。センサー値が途切れた Hold のときだけ対象機を止め、データ復帰後の人の操作で中継由来の Hold を解除します。人が Unity で押した STOP は、センサー側から勝手に解除しません。
 
 ## デモで確認できること
-
-![配膳ロボットの状態変化と仕事の任せ直しを示すデモ](docs/images/pitch-demo.png)
 
 Unity のレストランでは通常 3 台、予備機を含めると 5 台のロボットが、スープ、料理、空いた皿の回収を分担します。
 
