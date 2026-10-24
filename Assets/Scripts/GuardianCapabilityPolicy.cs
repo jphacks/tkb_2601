@@ -22,16 +22,27 @@ namespace Guardian.UnitySim
         public bool CollectEmptyOnDelivery=true;
         [Min(.2f)] public float MotorAcceleration=6;
         [Min(.1f)] public float MaximumSpeed=1.9f;
+        public bool PedestrianDemoEnabled=false;
+        [Min(.1f)] public float PedestrianSpeed=.8f;
+        [Min(0)] public float PedestrianFirstCrossing=6;
+        [Min(1)] public float PedestrianCrossingInterval=24;
+        [Min(0)] public float PedestrianSafetyMargin=.25f;
+        [Min(0)] public float PedestrianClearSeconds=.6f;
         public void Validate()
         {
             if (!IsFinite(MinimumTaskInterval) || !IsFinite(MaximumTaskInterval) || !IsFinite(MaximumDepartureDelay)
                 || !IsFinite(MinimumFaultInterval) || !IsFinite(MaximumFaultInterval)
                 || !IsFinite(WarningThreshold) || !IsFinite(LimitedThreshold) || !IsFinite(MealSeconds)
                 || !IsFinite(MotorAcceleration) || !IsFinite(MaximumSpeed)
+                || !IsFinite(PedestrianSpeed) || !IsFinite(PedestrianFirstCrossing)
+                || !IsFinite(PedestrianCrossingInterval) || !IsFinite(PedestrianSafetyMargin)
+                || !IsFinite(PedestrianClearSeconds)
                 || MinimumTaskInterval<=0 || MaximumTaskInterval<MinimumTaskInterval || MaximumDepartureDelay<0
                 || MaximumOpenTasks<1 || MinimumFaultInterval<=0 || MaximumFaultInterval<MinimumFaultInterval
                 || WarningThreshold<=0 || LimitedThreshold>1 || LimitedThreshold<=WarningThreshold
-                || MealSeconds<.2f || MotorAcceleration<=0 || MaximumSpeed<=0)
+                || MealSeconds<.2f || MotorAcceleration<=0 || MaximumSpeed<=0
+                || PedestrianSpeed<=0 || PedestrianFirstCrossing<0 || PedestrianCrossingInterval<1
+                || PedestrianSafetyMargin<0 || PedestrianClearSeconds<0)
                 throw new ArgumentException("Invalid Guardian simulation settings");
         }
 

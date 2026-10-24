@@ -180,6 +180,8 @@ namespace Guardian.UnitySim
         public Vector3 Destination=>destination;
         public float LastParkDistance { get; private set; }
         public float LastParkSpeed { get; private set; }
+        public Vector3 SafetyIntent { get; private set; }
+        public bool PedestrianSafetyHold { get; private set; }
         public string MotionState=>"position="+Body.position+" target="+(node<route.Count?route[node]:home)+
             " velocity="+Body.linearVelocity+" yaw="+Body.rotation.eulerAngles.y+" angular="+Body.angularVelocity+
             " COM="+Body.centerOfMass+" inertia="+Body.inertiaTensor+" inertiaFrame="+Body.inertiaTensorRotation+
@@ -222,7 +224,8 @@ namespace Guardian.UnitySim
             Body.isKinematic=!active; Body.detectCollisions=active;
             if (active) Body.collisionDetectionMode=CollisionDetectionMode.ContinuousDynamic;
             foreach (Collider c in disabledVisualColliders) if (c!=null) c.enabled=!active;
-            route.Clear(); deferred=false; requested=false; returningHome=false; node=0; WaitReason=active?"parked":"legacy transform reference mode";
+            route.Clear(); deferred=false; requested=false; returningHome=false; node=0; SafetyIntent=Vector3.zero; PedestrianSafetyHold=false;
+            WaitReason=active?"parked":"legacy transform reference mode";
         }
         public void ResetTo(Vector3 position)
         {
@@ -237,8 +240,10 @@ namespace Guardian.UnitySim
             if (!Body.isKinematic) { Body.linearVelocity=Vector3.zero; Body.angularVelocity=Vector3.zero; }
             Physics.SyncTransforms();
             Body.constraints=constraints; Body.interpolation=interpolation;
-            stalled=0; MaximumStall=0; deferred=false; progressAnchor=position; progressAt=0; ProgressWait=MaximumProgressWait=0; lastDistance=float.PositiveInfinity; WaitReason="parked";
+            stalled=0; MaximumStall=0; deferred=false; progressAnchor=position; progressAt=0; ProgressWait=MaximumProgressWait=0;
+            lastDistance=float.PositiveInfinity; SafetyIntent=Vector3.zero; PedestrianSafetyHold=false; WaitReason="parked";
         }
+        internal void SetPedestrianSafetyHold(bool active) { PedestrianSafetyHold=active; }
         public void DriveTo(Vector3 target)
         {
             if (Admitted && route.Count>0) { deferred=true; deferredExit=node<=centralExit?centralExit:route.Count-1; deferredHome=false; deferredTarget=target; WaitReason="reroute deferred: clearing protected central exit"; return; }
@@ -281,7 +286,7 @@ namespace Guardian.UnitySim
         }
         public void Tick(float dt)
         {
-            if (!Active) return;
+            if (!Active) { SafetyIntent=Vector3.zero; return; }
             // A stopped chassis remains a dynamic collision obstacle, but its
             // parking brake must resist another body's contact impulse too.
             // This changes constraints only; it never teleports a stopped actor.
@@ -293,6 +298,7 @@ namespace Guardian.UnitySim
             ProgressWait=Busy?Mathf.Max(0,clock-progressAt):0; MaximumProgressWait=Mathf.Max(MaximumProgressWait,ProgressWait);
             Vector3 desired=Vector3.zero; float desiredYaw=Body.rotation.eulerAngles.y;
             if (Robot.EmergencyStopped) WaitReason=OwnsRoute?"EMERGENCY STOP; route retained until recovery":"EMERGENCY STOP at waiting bay";
+            else if (PedestrianSafetyHold) WaitReason="pedestrian safety hold";
             else if(Robot.CurrentTask!=null && Robot.CurrentTask.AwaitingServicePickup && route.Count==0)
             {
                 Vector3 delta=Robot.CurrentTask.Pickup-Body.position; delta.y=0;
@@ -381,6 +387,7 @@ namespace Guardian.UnitySim
             float stoppingDistance=Body.linearVelocity.sqrMagnitude/(2*settings.MotorAcceleration)+.12f;
             if (desired.sqrMagnitude>.001f && Blocked(desired.normalized,stoppingDistance))
             { desired=Vector3.zero; WaitReason="obstacle / braking"; }
+            SafetyIntent=desired;
             Vector3 velocity=Body.linearVelocity; velocity.y=0;
             Body.AddForce(Vector3.ClampMagnitude((desired-velocity)/dt,settings.MotorAcceleration),ForceMode.Acceleration);
             float omega=Mathf.Clamp(Mathf.DeltaAngle(Body.rotation.eulerAngles.y,desiredYaw)*Mathf.Deg2Rad*5,-3,3);

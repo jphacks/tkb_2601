@@ -23,8 +23,8 @@ jobs:
           assert root.is_dir()
 
           scripts = sorted(root.glob("*.cs"))
-          assert len(scripts) == 22, (
-              f"Expected 22 C# files, got {len(scripts)}"
+          assert len(scripts) == 23, (
+              f"Expected 23 C# files, got {len(scripts)}"
           )
 
           guids = []
@@ -52,6 +52,7 @@ jobs:
               "GuardianRobot.cs",
               "GuardianCapabilityPolicy.cs",
               "GuardianSettingsLoader.cs",
+              "GuardianPedestrianSafety.cs",
               "GuardianDishInventory.cs",
               "GuardianTrafficController.cs",
               "GuardianFleetOperator.cs",
@@ -83,6 +84,8 @@ jobs:
               "MinimumFaultInterval", "MaximumFaultInterval",
               "WarningThreshold", "LimitedThreshold", "MealSeconds",
               "CollectEmptyOnDelivery", "MotorAcceleration", "MaximumSpeed",
+              "PedestrianDemoEnabled", "PedestrianSpeed", "PedestrianFirstCrossing",
+              "PedestrianCrossingInterval", "PedestrianSafetyMargin", "PedestrianClearSeconds",
           }
           assert set(settings) == required
           numeric = [value for value in settings.values() if isinstance(value, (int, float)) and not isinstance(value, bool)]
@@ -95,6 +98,11 @@ jobs:
           assert settings["MealSeconds"] >= 0.2
           assert settings["MotorAcceleration"] > 0
           assert settings["MaximumSpeed"] > 0
+          assert settings["PedestrianSpeed"] > 0
+          assert settings["PedestrianFirstCrossing"] >= 0
+          assert settings["PedestrianCrossingInterval"] >= 1
+          assert settings["PedestrianSafetyMargin"] >= 0
+          assert settings["PedestrianClearSeconds"] >= 0
 
           ignored = subprocess.run(
               ["git", "check-ignore", "-q", ".guardian/guardian-settings.private.json"]

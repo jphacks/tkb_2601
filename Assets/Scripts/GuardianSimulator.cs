@@ -37,6 +37,7 @@ namespace Guardian.UnitySim
         private Vector2 _physicsScroll;
         private GuardianTrafficController _traffic;
         private GuardianPhysicsWorld _physicsWorld;
+        private GuardianPedestrianSystem _pedestrianSystem;
         private GuardianDishInventory _inventory;
         private System.Random _workloadRandom,_faultRandom;
         private float _nextTask,_nextFault;
@@ -75,6 +76,7 @@ namespace Guardian.UnitySim
             if (GetComponent<GuardianCapture>() == null) gameObject.AddComponent<GuardianCapture>();
             if (Environment.GetCommandLineArgs().Contains("-guardianVerify")) _mode=GuardianSimulationMode.LegacyStory;
             Settings=GuardianSettingsLoader.LoadOverrideOrKeep(Settings);
+            if (Environment.GetCommandLineArgs().Contains("-guardianPedestrianDemo")) Settings.PedestrianDemoEnabled=true;
             ResetScenario();
             if (Environment.GetCommandLineArgs().Contains("-guardianPhysicsTest") && GetComponent<GuardianPhysicsVerification>()==null)
                 gameObject.AddComponent<GuardianPhysicsVerification>();
@@ -220,7 +222,11 @@ namespace Guardian.UnitySim
             if (_camera == null) _camera = Camera.main;
             if (_traffic==null) _traffic=GetComponent<GuardianTrafficController>()??gameObject.AddComponent<GuardianTrafficController>();
             if (_physicsWorld==null) _physicsWorld=GetComponent<GuardianPhysicsWorld>()??gameObject.AddComponent<GuardianPhysicsWorld>();
+            if (_pedestrianSystem==null) _pedestrianSystem=GetComponent<GuardianPedestrianSystem>();
+            if (_pedestrianSystem==null && Settings.PedestrianDemoEnabled) _pedestrianSystem=gameObject.AddComponent<GuardianPedestrianSystem>();
             _traffic.ResetTraffic(this,Settings.Seed);
+            if (_pedestrianSystem!=null && _pedestrianSystem.Configure(this,_mode==GuardianSimulationMode.Physics && Settings.PedestrianDemoEnabled))
+                _physicsWorld.Invalidate();
             _physicsWorld.Ensure(this,_mode==GuardianSimulationMode.Physics);
             if (_inventory!=null) _inventory.ClearInventory();
             Transform world=transform.Find("Generated 3D World");
@@ -497,6 +503,7 @@ namespace Guardian.UnitySim
                 _nextFault+=Range(_faultRandom,Settings.MinimumFaultInterval,Settings.MaximumFaultInterval);
             }
             Replan(); _traffic.Tick();
+            _pedestrianSystem?.Tick(dt);
             foreach (GuardianRobot robot in _robots) robot.PhysicsDriver.Tick(dt);
             Fleet.Tick();
         }
@@ -586,6 +593,10 @@ namespace Guardian.UnitySim
             GUILayout.Label("Dispatch "+_robots.Count(r=>r.DispatchEnabled)+" | standby "+_robots.Count(r=>r.FleetRole==GuardianFleetRole.Standby)+" | retiring "+_robots.Count(r=>r.FleetRole==GuardianFleetRole.Retiring));
             GUILayout.Label("1/2/3 select  N/W/L condition  E stop  R reset  F7 mode | scroll for task controls");
             GUILayout.Label("Single-track route: "+(_traffic.Owner==null?"free":_traffic.Owner.Robot.RobotId)+" | waiting "+_traffic.QueueLength);
+            if (_pedestrianSystem!=null && _pedestrianSystem.Active)
+                GUILayout.Label("Pedestrian demo: "+(_pedestrianSystem.Pedestrian.Moving?"crossing":"waiting")+
+                    " | robot holds "+_robots.Count(r=>r.PhysicsDriver.PedestrianSafetyHold)+
+                    " | SIMULATED observation only");
             foreach (GuardianRobot robot in _robots)
             {
                 GUILayout.Label(robot.RobotId+"  "+robot.FleetRole+"  "+robot.Condition.ToString().ToUpperInvariant()+"  "+GuardianCapabilityPolicy.AllowedText(robot.Condition,robot.EmergencyStopped));

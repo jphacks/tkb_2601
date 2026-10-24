@@ -53,6 +53,7 @@ jobs:
               "GuardianNekobotSetup.cs",
               "GuardianNekobotBatch.cs",
               "GuardianSettingsBatch.cs",
+              "GuardianPedestrianBatch.cs",
           ]
 
           for name in required:
