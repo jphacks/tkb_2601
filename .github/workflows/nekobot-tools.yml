@@ -1,0 +1,56 @@
+name: Nekobot Tools CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  static-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Bash and Python
+        run: |
+          bash -n scripts/apply-nekobot.sh
+          python3 - <<'PY'
+          import ast
+          from pathlib import Path
+
+          script = Path("scripts/import_nekobot.py")
+          ast.parse(script.read_text(encoding="utf-8"))
+
+          docs = Path("Assets/Nekobot/README.md").read_text()
+          shell = Path("scripts/apply-nekobot.sh").read_text()
+
+          assert "/mnt/c/Users/Taiga/" not in docs + shell
+
+          folder = Path("Assets/Nekobot")
+          forbidden = {".fbx", ".prefab", ".png", ".unitypackage"}
+
+          for path in folder.rglob("*"):
+              if path.is_file():
+                  assert path.suffix.lower() not in forbidden, path
+
+          print("Nekobot tool static checks passed")
+          PY
+
+      - name: Validate PowerShell syntax
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path "scripts/Invoke-UnityNekobot.ps1").Path,
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+
+          if ($errors.Count -gt 0) {
+            $errors | Out-String | Write-Error
+            exit 1
+          }
