@@ -23,8 +23,8 @@ jobs:
           assert root.is_dir()
 
           scripts = sorted(root.glob("*.cs"))
-          assert len(scripts) == 21, (
-              f"Expected 21 C# files, got {len(scripts)}"
+          assert len(scripts) == 22, (
+              f"Expected 22 C# files, got {len(scripts)}"
           )
 
           guids = []
@@ -51,6 +51,7 @@ jobs:
               "GuardianSimulator.cs",
               "GuardianRobot.cs",
               "GuardianCapabilityPolicy.cs",
+              "GuardianSettingsLoader.cs",
               "GuardianDishInventory.cs",
               "GuardianTrafficController.cs",
               "GuardianFleetOperator.cs",
@@ -60,4 +61,45 @@ jobs:
               assert (root / name).is_file(), name
 
           print("Guardian runtime static checks passed")
+          PY
+
+      - name: Validate public/private settings boundary
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          import math
+          import subprocess
+
+          public_path = Path("Assets/StreamingAssets/Guardian/guardian-settings.public.json")
+          document = json.loads(public_path.read_text(encoding="utf-8"))
+          assert document["SchemaVersion"] == 1
+          assert document["Profile"] == "public-demo"
+
+          settings = document["Settings"]
+          required = {
+              "Seed", "MinimumTaskInterval", "MaximumTaskInterval",
+              "MaximumDepartureDelay", "MaximumOpenTasks", "RandomFaults",
+              "MinimumFaultInterval", "MaximumFaultInterval",
+              "WarningThreshold", "LimitedThreshold", "MealSeconds",
+              "CollectEmptyOnDelivery", "MotorAcceleration", "MaximumSpeed",
+          }
+          assert set(settings) == required
+          numeric = [value for value in settings.values() if isinstance(value, (int, float)) and not isinstance(value, bool)]
+          assert all(math.isfinite(value) for value in numeric)
+          assert 0 < settings["WarningThreshold"] < settings["LimitedThreshold"] <= 1
+          assert 0 < settings["MinimumTaskInterval"] <= settings["MaximumTaskInterval"]
+          assert 0 < settings["MinimumFaultInterval"] <= settings["MaximumFaultInterval"]
+          assert settings["MaximumDepartureDelay"] >= 0
+          assert settings["MaximumOpenTasks"] >= 1
+          assert settings["MealSeconds"] >= 0.2
+          assert settings["MotorAcceleration"] > 0
+          assert settings["MaximumSpeed"] > 0
+
+          ignored = subprocess.run(
+              ["git", "check-ignore", "-q", ".guardian/guardian-settings.private.json"]
+          )
+          assert ignored.returncode == 0, "Private settings path must remain ignored"
+          assert not Path(".guardian/guardian-settings.private.json").exists()
+          print("Guardian settings boundary checks passed")
           PY

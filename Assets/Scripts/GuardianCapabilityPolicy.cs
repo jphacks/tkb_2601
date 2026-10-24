@@ -24,12 +24,19 @@ namespace Guardian.UnitySim
         [Min(.1f)] public float MaximumSpeed=1.9f;
         public void Validate()
         {
-            if (MinimumTaskInterval<=0 || MaximumTaskInterval<MinimumTaskInterval || MaximumDepartureDelay<0
+            if (!IsFinite(MinimumTaskInterval) || !IsFinite(MaximumTaskInterval) || !IsFinite(MaximumDepartureDelay)
+                || !IsFinite(MinimumFaultInterval) || !IsFinite(MaximumFaultInterval)
+                || !IsFinite(WarningThreshold) || !IsFinite(LimitedThreshold) || !IsFinite(MealSeconds)
+                || !IsFinite(MotorAcceleration) || !IsFinite(MaximumSpeed)
+                || MinimumTaskInterval<=0 || MaximumTaskInterval<MinimumTaskInterval || MaximumDepartureDelay<0
                 || MaximumOpenTasks<1 || MinimumFaultInterval<=0 || MaximumFaultInterval<MinimumFaultInterval
                 || WarningThreshold<=0 || LimitedThreshold>1 || LimitedThreshold<=WarningThreshold
-                || MealSeconds<.2f || float.IsNaN(MealSeconds) || float.IsInfinity(MealSeconds) || MotorAcceleration<=0 || MaximumSpeed<=0)
+                || MealSeconds<.2f || MotorAcceleration<=0 || MaximumSpeed<=0)
                 throw new ArgumentException("Invalid Guardian simulation settings");
         }
+
+        private static bool IsFinite(float value)
+        { return !float.IsNaN(value) && !float.IsInfinity(value); }
     }
 
     public static class GuardianCapabilityPolicy

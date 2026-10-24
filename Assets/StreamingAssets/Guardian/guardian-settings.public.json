@@ -1,0 +1,20 @@
+{
+  "SchemaVersion": 1,
+  "Profile": "public-demo",
+  "Settings": {
+    "Seed": 2026,
+    "MinimumTaskInterval": 18.0,
+    "MaximumTaskInterval": 30.0,
+    "MaximumDepartureDelay": 3.0,
+    "MaximumOpenTasks": 24,
+    "RandomFaults": true,
+    "MinimumFaultInterval": 35.0,
+    "MaximumFaultInterval": 60.0,
+    "WarningThreshold": 0.30,
+    "LimitedThreshold": 0.70,
+    "MealSeconds": 8.0,
+    "CollectEmptyOnDelivery": true,
+    "MotorAcceleration": 6.0,
+    "MaximumSpeed": 1.9
+  }
+}

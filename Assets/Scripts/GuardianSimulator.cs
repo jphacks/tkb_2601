@@ -74,6 +74,7 @@ namespace Guardian.UnitySim
             EnsureWorld();
             if (GetComponent<GuardianCapture>() == null) gameObject.AddComponent<GuardianCapture>();
             if (Environment.GetCommandLineArgs().Contains("-guardianVerify")) _mode=GuardianSimulationMode.LegacyStory;
+            Settings=GuardianSettingsLoader.LoadOverrideOrKeep(Settings);
             ResetScenario();
             if (Environment.GetCommandLineArgs().Contains("-guardianPhysicsTest") && GetComponent<GuardianPhysicsVerification>()==null)
                 gameObject.AddComponent<GuardianPhysicsVerification>();

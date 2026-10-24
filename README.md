@@ -48,6 +48,17 @@
 
 初回検証では、非公開モデルや購入素材を追加せずに起動してください。
 
+## 制御設定
+
+通常起動は従来のデモ設定を維持します。公開サンプルを明示的に試す場合は、
+Unityの起動引数へ `-guardianPublicSettings` を追加してください。
+
+実運用設定は `.guardian/guardian-settings.private.json`（Git対象外）へ置くか、
+`GUARDIAN_SETTINGS_PATH` / `-guardianSettingsPath <path>` で外部JSONを指定します。
+公開サンプルは説明用であり、実機の安全限界や推奨値ではありません。
+詳細と、既公開値がGit履歴から自動では消えない点は
+[公開範囲と検証](docs/PUBLIC_SCOPE.md) を参照してください。
+
 ## 検証状況
 
 GitHub Actionsでは設定ファイル、C#ソース、
