@@ -43,6 +43,13 @@ namespace Guardian.UnitySim
             "MotorAcceleration", "MaximumSpeed"
         };
 
+        private static readonly string[] PedestrianSettingFields =
+        {
+            "PedestrianDemoEnabled", "PedestrianSpeed",
+            "PedestrianFirstCrossing", "PedestrianCrossingInterval", "PedestrianSafetyMargin",
+            "PedestrianClearSeconds"
+        };
+
         public static GuardianSimulationSettings LoadOverrideOrKeep(
             GuardianSimulationSettings current,
             string[] arguments = null,
@@ -108,6 +115,10 @@ namespace Guardian.UnitySim
             RequireField(json, "Profile");
             RequireField(json, "Settings");
             foreach (string field in RequiredSettingFields) RequireField(json, field);
+            int pedestrianFields=0;
+            foreach (string field in PedestrianSettingFields) if (HasField(json,field)) pedestrianFields++;
+            if (pedestrianFields>0 && pedestrianFields<PedestrianSettingFields.Length)
+                foreach (string field in PedestrianSettingFields) RequireField(json,field);
 
             GuardianSettingsDocument document;
             try { document = JsonUtility.FromJson<GuardianSettingsDocument>(json); }
@@ -115,8 +126,20 @@ namespace Guardian.UnitySim
 
             if (document == null)
                 throw new InvalidDataException("Guardian settings JSON is empty or malformed");
+            if (document.Settings!=null && pedestrianFields==0) ApplyPedestrianDefaults(document.Settings);
             document.Validate();
             return document;
+        }
+
+        private static void ApplyPedestrianDefaults(GuardianSimulationSettings settings)
+        {
+            GuardianSimulationSettings defaults=new GuardianSimulationSettings();
+            settings.PedestrianDemoEnabled=defaults.PedestrianDemoEnabled;
+            settings.PedestrianSpeed=defaults.PedestrianSpeed;
+            settings.PedestrianFirstCrossing=defaults.PedestrianFirstCrossing;
+            settings.PedestrianCrossingInterval=defaults.PedestrianCrossingInterval;
+            settings.PedestrianSafetyMargin=defaults.PedestrianSafetyMargin;
+            settings.PedestrianClearSeconds=defaults.PedestrianClearSeconds;
         }
 
         private static string ResolvePublicPath(string projectRoot)
@@ -128,9 +151,12 @@ namespace Guardian.UnitySim
 
         private static void RequireField(string json, string field)
         {
-            if (json.IndexOf("\"" + field + "\"", StringComparison.Ordinal) < 0)
+            if (!HasField(json,field))
                 throw new InvalidDataException("Guardian settings field is required: " + field);
         }
+
+        private static bool HasField(string json,string field)=>
+            json.IndexOf("\""+field+"\"",StringComparison.Ordinal)>=0;
 
         private static string ResolveProjectRoot()
         {

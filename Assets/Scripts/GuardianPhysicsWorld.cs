@@ -13,6 +13,11 @@ namespace Guardian.UnitySim
         private readonly List<Collider> generated=new List<Collider>();
         public IReadOnlyList<Collider> Obstacles=>generated;
         private Transform environment;
+        public void Invalidate()
+        {
+            foreach (Collider collider in generated) if (collider!=null) { collider.enabled=false; Destroy(collider); }
+            generated.Clear(); environment=null;
+        }
         public void Ensure(GuardianSimulator sim,bool active)
         {
             Transform root=sim.transform.Find("Generated 3D World/"+RestaurantVisuals.RootName);
