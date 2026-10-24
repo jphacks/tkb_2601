@@ -61,7 +61,7 @@ namespace Guardian.UnitySim.Editor
                 EditorSceneManager.MarkSceneDirty(scene);
                 if (!EditorSceneManager.SaveScene(scene, ScenePath))
                     throw new IOException("Could not save " + ScenePath);
-                EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
+                GuardianSceneSetup.EnsureBuildSettingsScene(ScenePath);
                 AssetDatabase.SaveAssets();
                 Debug.Log("[Guardian] GUARDIAN_NEKOBOT_BATCH_OK: three Nekobot visuals saved in " + ScenePath);
             }
