@@ -160,14 +160,14 @@ GitHub Actions は、C# の境界、設定、素材、起動スクリプト、�
 
 ## 開発技術
 
-| 技術 | 役割 | 採用理由 |
-|---|---|---|
-| Unity / C# | 3D 店内、物理移動、割り当て、表示、Editor 検証 | ロボット、皿、人、通路の状態を同じ時間軸で確認できる |
-| Rigidbody / BoxCast | ロボット移動、停止、障害物検出 | 表示上の移動ではなく物理位置で検証できる |
-| IMGUI / TextMesh | 操作パネル、理由、状態表示 | 外部 UI パッケージなしで Editor と Player に表示できる |
-| Blender / Python | 家具、料理、人物の 3D 素材生成 | 権利を確認できる自作素材で公開版を再現できる |
-| JSON | シミュレーター設定 | 人がレビューでき、Unity 標準機能で読み込める |
-| GitHub Actions | 素材、境界、検証入口の静的確認 | Unity Editor がない環境でも必要なファイルの欠落と意図しない混入を検出できる |
+### 活用した技術
+
+| 技術 | ロボもりでの役割 |
+|---|---|
+| ![Unity](https://img.shields.io/badge/Unity-222222?style=flat&logo=unity&logoColor=white) ![C#](https://img.shields.io/badge/C%23-512BD4?style=flat) | 3D 店内、仕事の割り当て、操作画面、Editor 検証。Rigidbody / BoxCast で移動・停止・障害物を扱い、IMGUI / TextMesh で状態と理由を表示します。 |
+| ![Blender](https://img.shields.io/badge/Blender-E87D0D?style=flat&logo=blender&logoColor=white) ![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white) | 家具・料理・人物の 3D 素材を生成し、追加モデルなしで店内デモを再現します。 |
+| ![JSON](https://img.shields.io/badge/JSON-555555?style=flat&logo=json&logoColor=white) | シミュレーター設定を、人が読んで確認できる形式で保存・読み込みします。 |
+| ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=flat&logo=githubactions&logoColor=white) | Unity Editor がない環境でも、素材・コードの境界・検証入口を静的に確認します。 |
 
 外部 API とクラウドは使用しません。通常のデモはインターネット接続なしで動作します。
 
