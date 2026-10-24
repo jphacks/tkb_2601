@@ -39,9 +39,9 @@ jobs:
           readme = required[0].read_text(encoding="utf-8")
           for section in [
               "# ロボもり（Physical AI Guardian）",
-              "## 段階的なコード構成",
-              "## 製品概要",
-              "### 特長",
+              "## 30 秒でわかるロボもり",
+              "## この公開リポジトリで確認できる範囲",
+              "## 特長",
               "### 独自技術",
           ]:
               assert section in readme, section
@@ -54,7 +54,10 @@ jobs:
               "offline-scenarios.png",
               "pitch-demo.png",
               "pitch-expansion.png",
+              "pitch-roadmap.png",
+              "pitch-system.png",
               "pitch-title.png",
+              "pitch-usecase.png",
               "system-model.png",
           ]
           for name in image_names:
@@ -72,7 +75,9 @@ jobs:
                   resolved = (document.parent / target).resolve()
                   assert resolved.exists(), f"{document}: {target}"
 
-          timeless = "\n".join(path.read_text(encoding="utf-8") for path in linked_documents)
+          # The public README intentionally avoids event dates and development-timeline
+          # claims. Supporting reference documents may retain dated evidence.
+          timeless = readme
           timeless = re.sub(r"https?://\S+", "", timeless)
           assert not re.search(r"(?:19|20)\d{2}\s*年", timeless)
           assert not re.search(r"(?:19|20)\d{2}[-/]\d{1,2}[-/]\d{1,2}", timeless)
