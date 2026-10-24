@@ -1,0 +1,51 @@
+﻿name: Restaurant Assets CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check restaurant assets
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path("Assets/Art/Restaurant")
+          assert root.is_dir()
+          assert Path("Assets/Art.meta").is_file()
+          assert Path("Assets/Art/Restaurant.meta").is_file()
+
+          models = list((root / "Models").glob("*.fbx"))
+          prefabs = list((root / "Prefabs").glob("*.prefab"))
+
+          assert len(models) == 21, "Expected 21 FBX models"
+          assert len(prefabs) == 21, "Expected 21 prefabs"
+          assert (root / "Resources/RestaurantCatalog.asset").is_file()
+
+          for file in root.rglob("*"):
+              if file.is_file() and not file.name.endswith(".meta"):
+                  assert Path(str(file) + ".meta").is_file(), file
+
+          guids = []
+          for meta in root.rglob("*.meta"):
+              content = meta.read_text(encoding="utf-8-sig")
+              match = re.search(
+                  r"^guid:\s*([0-9a-fA-F]{32})\s*$",
+                  content,
+                  re.MULTILINE
+              )
+              assert match, f"Missing GUID: {meta}"
+              guids.append(match.group(1).lower())
+
+          assert len(guids) == len(set(guids)), "Duplicate GUID"
+          print("Restaurant assets validation passed")
+          PY
