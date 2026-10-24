@@ -38,8 +38,9 @@ jobs:
 
           readme = required[0].read_text(encoding="utf-8")
           for section in [
-              "# ロボもり（Physical AI Guardian）",
-              "## 30 秒でわかるロボもり",
+              "# ロボもり",
+              "## 動画リンク",
+              "## 概要",
               "## この公開リポジトリで確認できる範囲",
               "## 特長",
               "### 独自技術",
