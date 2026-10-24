@@ -49,3 +49,6 @@ __pycache__.meta
 
 # Local user interaction restrictions
 .guardian-interaction-policy.json
+
+# Local-only Guardian control settings. Never commit operational values.
+/.guardian/*.json

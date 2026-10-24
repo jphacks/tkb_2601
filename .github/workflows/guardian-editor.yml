@@ -52,6 +52,7 @@ jobs:
               "RestaurantPeopleValidation.cs",
               "GuardianNekobotSetup.cs",
               "GuardianNekobotBatch.cs",
+              "GuardianSettingsBatch.cs",
           ]
 
           for name in required:
