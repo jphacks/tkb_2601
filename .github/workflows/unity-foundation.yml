@@ -1,0 +1,34 @@
+﻿name: Unity Foundation CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Unity configuration
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          version = Path("ProjectSettings/ProjectVersion.txt").read_text()
+          assert "m_EditorVersion: 6000.3.12f1" in version
+
+          manifest = json.loads(
+              Path("Packages/manifest.json").read_text()
+          )
+          assert isinstance(manifest["dependencies"], dict)
+
+          for name in [".gitignore", ".gitattributes"]:
+              assert Path(name).is_file(), name
+
+          print("Unity foundation check passed")
+          PY
