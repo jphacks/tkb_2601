@@ -21,7 +21,6 @@
 - [すぐに試す](#すぐに試す)
 - [検証と限界](#検証と限界)
 - [開発技術](#開発技術)
-- [公開用設定と Git 履歴](#公開用設定と-git-履歴)
 - [素材・ライセンス・構成](#素材とライセンス)
 
 ## 動画リンク
@@ -47,32 +46,23 @@
 
 ## この公開リポジトリで確認できる範囲
 
-このリポジトリは、審査とレビューに必要な Unity シミュレーター、公開デモ設定、自作素材、検証入口を収録しています。非公開の実運用値や、再配布条件を確認できないモデルは含みません。
+このリポジトリには、審査とレビューに必要な Unity シミュレーター、自作素材、検証入口を収録しています。M5StickS3 と Python 中継、実ロボットは別構成です。
 
 | 対象 | 収録状況 | 確認先 |
 |---|---|---|
 | 仕事ごとの能力判定と再割り当て | 収録 | [`GuardianCapabilityPolicy.cs`](Assets/Scripts/GuardianCapabilityPolicy.cs) / [`GuardianSimulator.cs`](Assets/Scripts/GuardianSimulator.cs) |
 | 皿の所有権と物理的な引き継ぎ | 収録 | [`GuardianDishInventory.cs`](Assets/Scripts/GuardianDishInventory.cs) |
 | 通路予約と障害物ブレーキ | 収録 | [`GuardianTrafficController.cs`](Assets/Scripts/GuardianTrafficController.cs) |
-| 公開設定とprivate設定の分離 | 収録 | [`GuardianSettingsLoader.cs`](Assets/Scripts/GuardianSettingsLoader.cs) / [公開サンプル](Assets/StreamingAssets/Guardian/guardian-settings.public.json) |
 | 歩行者安全デモ | オプトインで収録 | [`GuardianPedestrianSafety.cs`](Assets/Scripts/GuardianPedestrianSafety.cs) |
 | 日本語の定型操作デモ | オプトインで収録 | [`GuardianInteractionPanel.cs`](Assets/Scripts/GuardianInteractionPanel.cs) / [`GuardianRuleConversation.cs`](Assets/Scripts/GuardianRuleConversation.cs) |
 | M5StickS3 と Python 中継 | 非収録 | この公開リポジトリでは模擬入力を使用 |
-| 実ロボット、実運用設定、権利未確認モデル | 非収録 | [公開範囲と制約](docs/PUBLIC_SCOPE.md) |
+| 実ロボット、権利未確認モデル | 非収録 | [公開範囲と制約](docs/PUBLIC_SCOPE.md) |
 
 ## 仕組み
 
-![システム構成：測る、判断する、任せ直す。戻すのは人。](docs/images/pitch-system.png)
+[![システムモデル：M5StickS3、センサー中継、Unity、店員による確認と復帰の流れ](docs/images/system-model.png)](docs/images/system-model.png)
 
-```mermaid
-flowchart LR
-  S["外付けセンサー<br/>ロボットの外から測る"] --> J["状態判定<br/>Normal / Warning / Limited / Hold"]
-  J --> P["能力表<br/>仕事ごとの可否"]
-  P --> A["Unity<br/>取消・再割当・理由表示"]
-  A --> H["人<br/>状態を確認して復帰"]
-```
-
-この公開リポジトリでは、模擬入力を使って能力制限、仕事の取り消し、再割り当て、皿の返却、停止と復帰を確認できます。実物の M5StickS3 から状態を送るファームウェアと Python 中継は含みません。
+図はセンサー連携を含む全体構成です。この公開リポジトリでは、模擬入力を使って能力制限、仕事の取り消し、再割り当て、皿の返却、停止と復帰を確認できます。実物の M5StickS3 から状態を送るファームウェアと Python 中継は含みません。
 
 外部入力の Warning / Limited は能力制限として扱い、許可された仕事を止めません。Hold のときだけ対象機を止め、Normal に戻ったときは外部入力がかけた Hold だけを解除します。人が Unity で押した STOP は、外部入力から勝手に解除しません。
 
@@ -105,27 +95,19 @@ Unity のレストランでは通常 3 台、予備機を含めると 5 台の�
 
 実装: [`GuardianDishInventory.cs`](Assets/Scripts/GuardianDishInventory.cs) / [`GuardianSimulator.cs`](Assets/Scripts/GuardianSimulator.cs)
 
-### 3. 公開用の設定と実際に使う設定を分ける
-
-公開リポジトリには、デモを再現するための [`guardian-settings.public.json`](Assets/StreamingAssets/Guardian/guardian-settings.public.json) だけを収録します。実運用値は `.guardian/guardian-settings.private.json` またはリポジトリ外の明示パスから読み、Git とビルドへ自動では含めません。
-
-設定はスキーマ、必須項目、有限値、範囲、大小関係を利用前に検証します。明示したファイルが欠落または不正な場合は、黙って公開値へ戻らず起動を失敗させます。
-
-実装: [`GuardianSettingsLoader.cs`](Assets/Scripts/GuardianSettingsLoader.cs) / [`GuardianCapabilityPolicy.cs`](Assets/Scripts/GuardianCapabilityPolicy.cs) / [private設定の置き方](.guardian/README.md)
-
-### 4. 歩行者による停止とロボットの状態を分ける
+### 3. 歩行者による停止とロボットの状態を分ける
 
 歩行者との接近は現在速度、停止距離、最接近距離から予測します。危険な間は移動出力だけをゼロにし、ロボットの能力状態、担当仕事、積載した皿は変更しません。通過後は同じ仕事を再開できます。
 
 実装: [`GuardianPedestrianSafety.cs`](Assets/Scripts/GuardianPedestrianSafety.cs) / [歩行者検証](Assets/Editor/GuardianPedestrianBatch.cs)
 
-### 5. 日本語の操作は確認してから反映する
+### 4. 日本語の操作は確認してから反映する
 
 定型文をローカルで解析し、対象と操作を確認待ちにします。「実行」が来るまで状態を変えず、対象の状態が変化した、確認が古い、入力が曖昧、歩行者安全停止中に復帰を求めた、という場合は拒否します。生成 AI、外部 API、録音音声は使いません。
 
 実装: [`GuardianRuleConversation.cs`](Assets/Scripts/GuardianRuleConversation.cs) / [`GuardianInteractionPanel.cs`](Assets/Scripts/GuardianInteractionPanel.cs) / [入力検証](Assets/Editor/GuardianInteractionBatch.cs)
 
-### 6. シーンを作り直すときも既存の作業を守る
+### 5. シーンを作り直すときも既存の作業を守る
 
 Editor の生成ツールは別シーンを勝手に閉じず、再生成前に対象シーンをバックアップします。生成後は Simulator、ロボット ID、素材、通路クリアランスを検証してから保存し、Build Settings の既存項目を削除しません。
 
@@ -140,7 +122,7 @@ Editor の生成ツールは別シーンを勝手に閉じず、再生成前に�
 3. `Assets/Scenes/GuardianRestaurant.unity` を開いて Play を押します。
 4. 右側のパネルから状態、STOP、注文、予備機を操作します。詳しいキー操作は [セットアップ](docs/SETUP.md) にあります。
 
-公開サンプルを明示的に読み込む場合は、Unity の起動引数へ `-guardianPublicSettings` を追加します。歩行者デモは `-guardianPedestrianDemo`、日本語操作デモは `-guardianInteractionDemo` で有効化します。
+歩行者デモは Unity の起動引数 `-guardianPedestrianDemo`、日本語操作デモは `-guardianInteractionDemo` で有効化します。
 
 ### 統合検証
 
@@ -170,7 +152,7 @@ scripts/verify-guardian-unity.sh
 
 GitHub Actions は、C# の境界、設定、素材、起動スクリプト、検証入口の接続を静的に確認します。クラウド CI では Unity Editor を起動しないため、チェック成功を Play Mode、描画、実クリック、実センサーの成功とは表現しません。
 
-注意：公開設定は審査用デモの例で、実機の安全限界、校正値、推奨値ではありません。実際の機体、荷物、床、速度に合わせた校正と安全評価が必要です。
+実機へ適用する場合は、機体、荷物、床、速度に合わせた校正と安全評価が必要です。
 
 - シミュレーターは現場での安全性や効果を保証するものではありません。
 - 歩行者デモの観測値は Unity 内の真値で、実カメラや実センサーの性能を再現しません。
@@ -184,8 +166,8 @@ GitHub Actions は、C# の境界、設定、素材、起動スクリプト、�
 | Rigidbody / BoxCast | ロボット移動、停止、障害物検出 | 表示上の移動ではなく物理位置で検証できる |
 | IMGUI / TextMesh | 操作パネル、理由、状態表示 | 外部 UI パッケージなしで Editor と Player に表示できる |
 | Blender / Python | 家具、料理、人物の 3D 素材生成 | 権利を確認できる自作素材で公開版を再現できる |
-| JSON | 公開設定と外部設定 | 人がレビューでき、Unity 標準機能で読み込める |
-| GitHub Actions | 公開設定、素材、境界、検証入口の静的確認 | Unity Editor がない環境でも公開物の欠落と意図しない混入を検出できる |
+| JSON | シミュレーター設定 | 人がレビューでき、Unity 標準機能で読み込める |
+| GitHub Actions | 素材、境界、検証入口の静的確認 | Unity Editor がない環境でも必要なファイルの欠落と意図しない混入を検出できる |
 
 外部 API とクラウドは使用しません。通常のデモはインターネット接続なしで動作します。
 
@@ -201,21 +183,9 @@ GitHub Actions は、C# の境界、設定、素材、起動スクリプト、�
 
 [`GuardianDishInventory.cs`](Assets/Scripts/GuardianDishInventory.cs) は皿の持ち主と予約を管理します。仕事の担当だけを先に付け替えず、返却、所有権変更、予約解除、次の割り当てを順に行うことで、二重所有と瞬間移動を防ぎます。
 
-#### 公開用の値と実際に使う値を混ぜない
-
-[`GuardianSettingsLoader.cs`](Assets/Scripts/GuardianSettingsLoader.cs) は、公開サンプル、Editor のprivate設定、外部指定ファイルを明確に分けます。明示指定の失敗を既定値で隠さず、設定不足と不正な関係を利用前に拒否します。
-
 #### 止まった理由を別々に保つ
 
 歩行者による停止、手動 STOP、能力状態は別の理由として扱います。安全停止が解除されても能力状態と仕事は勝手に変わらず、能力状態が正常でも手動 STOP は残ります。この分離により、画面の色と実際の移動が食い違う原因を追跡できます。
-
-## 公開用設定と Git 履歴
-
-公開サンプルは [`Assets/StreamingAssets/Guardian/guardian-settings.public.json`](Assets/StreamingAssets/Guardian/guardian-settings.public.json)、private設定の置き場所は [`.guardian/README.md`](.guardian/README.md) にあります。
-
-すでに公開した値は、設定ファイルを `.gitignore` へ追加しても、過去の Git 履歴、fork、clone、キャッシュから消えません。秘密として扱う必要がある既公開値は、値のローテーション、必要に応じた履歴書き換え、取得者への連絡を別の手順として検討する必要があります。
-
-公開用の値から実運用値を推測・コピーせず、実運用ファイルを Issue、ログ、画面、ビルド、配布 ZIP へ含めないでください。
 
 ## 素材とライセンス
 
@@ -231,9 +201,7 @@ GitHub Actions は、C# の境界、設定、素材、起動スクリプト、�
 |---|---|
 | [`Assets/Scripts/`](Assets/Scripts/) | Unity の実行コード |
 | [`Assets/Editor/`](Assets/Editor/) | シーン生成と公開版の検証入口 |
-| [`Assets/StreamingAssets/Guardian/`](Assets/StreamingAssets/Guardian/) | 公開デモ設定 |
 | [`Assets/Art/Restaurant/`](Assets/Art/Restaurant/README.md) | 自作した店内・料理・人物素材 |
-| [`.guardian/`](.guardian/README.md) | Git 管理外のprivate設定の置き方 |
 | [`.github/workflows/`](.github/workflows/) | 静的 CI |
 | [`docs/`](docs/) | セットアップ、公開範囲、事業・審査資料 |
 | [`scripts/`](scripts/) | Unity 検証と任意素材のローカル取込 |
