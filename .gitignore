@@ -1,0 +1,51 @@
+# Unity-generated files
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+/.vs/
+/.idea/
+*.csproj
+*.sln
+*.slnx
+*.unityproj
+*.user
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+# The creator's Nekobot model and all locally generated model-based materials
+# must not be redistributed through this repository. Only README.md is tracked.
+/Assets/Nekobot/*
+!/Assets/Nekobot/README.md
+
+# Unity packages must be obtained locally from the creator.
+*.unitypackage
+
+/Assets/Nekobot.meta
+/Nekobot.zip
+
+# Generated scenes can contain local-only third-party model references.
+/Assets/Scenes/GuardianRestaurant.unity
+/Assets/Scenes/GuardianRestaurant.unity.meta
+/Assets/Scenes/GuardianRestaurant_PublicEvidence.unity
+/Assets/Scenes/GuardianRestaurant_PublicEvidence.unity.meta
+/Assets/Scenes.meta
+
+# Python asset-generator caches are not Unity inputs.
+__pycache__/
+__pycache__.meta
+*.pyc
+/Assets/Scenes/GuardianPhysics_PublicEvidence.unity
+/Assets/Scenes/GuardianPhysics_PublicEvidence.unity.meta
+
+# Local user interaction restrictions
+.guardian-interaction-policy.json
