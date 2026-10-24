@@ -139,7 +139,7 @@ scripts/                        Nekobotの取込
 docs/                           実機の組み立て、センサー、審査と賞、素材の利用許諾
 ```
 
-- 実機：[組み立てガイド](HARDWARE_ASSEMBLY.md)／[センサーの候補と精度](REAL_SENSOR_OPTIONS.md)
+- 実機：[実機連携ガイド（M5StickS3）](HARDWARE_ASSEMBLY.md)／[使用センサーと測定上の注意](REAL_SENSOR_OPTIONS.md)
 - JPHACKS：[審査基準と賞](JPHACKS_JUDGING_AWARDS.md)
 - 素材：[利用許諾の確認状況](ASSET_LICENSE_STATUS.md)
 - 発表：[Hack Day 発表スライド](https://docs.google.com/presentation/d/1WQIn4H3_ua5t65tx0b36FbvmO08A6MnyDJwDx9BLvwA/edit?usp=sharing)（Google スライドのリンク。閲覧のみ）

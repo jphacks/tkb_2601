@@ -166,10 +166,13 @@ GitHub Actions は、C# の境界、設定、素材、起動スクリプト、�
 |---|---|
 | ![Unity](https://img.shields.io/badge/Unity-222222?style=flat&logo=unity&logoColor=white) ![C#](https://img.shields.io/badge/C%23-512BD4?style=flat) | 3D 店内、仕事の割り当て、操作画面、Editor 検証。Rigidbody / BoxCast で移動・停止・障害物を扱い、IMGUI / TextMesh で状態と理由を表示します。 |
 | ![Blender](https://img.shields.io/badge/Blender-E87D0D?style=flat&logo=blender&logoColor=white) ![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white) | 家具・料理・人物の 3D 素材を生成し、追加モデルなしで店内デモを再現します。 |
+| ![M5StickS3](https://img.shields.io/badge/M5StickS3-222222?style=flat) ![Arduino](https://img.shields.io/badge/Arduino-00878F?style=flat&logo=arduino&logoColor=white) | 実機連携の計測端末。内蔵 ESP32-S3-PICO-1-N8R8 と BMI270 を M5Unified で扱い、振動を USB シリアルで Python 中継へ送ります。 |
 | ![JSON](https://img.shields.io/badge/JSON-555555?style=flat&logo=json&logoColor=white) | シミュレーター設定を、人が読んで確認できる形式で保存・読み込みします。 |
 | ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=flat&logo=githubactions&logoColor=white) | Unity Editor がない環境でも、素材・コードの境界・検証入口を静的に確認します。 |
 
 外部 API とクラウドは使用しません。通常のデモはインターネット接続なしで動作します。
+
+実機連携で使用するハードウェアは M5StickS3 のみです。連携構成と使用機能は [実機連携ガイド](docs/HARDWARE_ASSEMBLY.md) にまとめています。
 
 ### 独自技術
 
@@ -212,7 +215,7 @@ GitHub Actions は、C# の境界、設定、素材、起動スクリプト、�
 - [背景・事業・市場の補足資料](https://docs.google.com/presentation/d/1Fd_nJmBFcWzg-3xrGk1wrq9fqDtnbcEbSC7ygMG9M_Q/edit?usp=sharing)
 - [文章版の事業資料](docs/BUSINESS.md)
 - [公開範囲と検証](docs/PUBLIC_SCOPE.md)
-- [実機の組み立てガイド](docs/HARDWARE_ASSEMBLY.md)
-- [センサー候補と測定上の注意](docs/REAL_SENSOR_OPTIONS.md)
+- [実機連携ガイド（M5StickS3）](docs/HARDWARE_ASSEMBLY.md)
+- [使用センサーと測定上の注意](docs/REAL_SENSOR_OPTIONS.md)
 
 ![配膳から店・施設、工場・物流へ広げるロードマップ](docs/images/pitch-roadmap.png)
