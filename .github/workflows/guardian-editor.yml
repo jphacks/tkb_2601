@@ -54,6 +54,7 @@ jobs:
               "GuardianNekobotBatch.cs",
               "GuardianSettingsBatch.cs",
               "GuardianPedestrianBatch.cs",
+              "GuardianInteractionBatch.cs",
           ]
 
           for name in required:

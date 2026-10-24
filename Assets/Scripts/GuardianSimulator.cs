@@ -38,6 +38,7 @@ namespace Guardian.UnitySim
         private GuardianTrafficController _traffic;
         private GuardianPhysicsWorld _physicsWorld;
         private GuardianPedestrianSystem _pedestrianSystem;
+        private GuardianInteractionPanel _interactionPanel;
         private GuardianDishInventory _inventory;
         private System.Random _workloadRandom,_faultRandom;
         private float _nextTask,_nextFault;
@@ -49,6 +50,7 @@ namespace Guardian.UnitySim
         public GuardianTrafficController Traffic=>_traffic;
         public GuardianPhysicsWorld PhysicsWorld=>_physicsWorld;
         public int RejectedWorkload { get; private set; }
+        public int ScenarioRevision { get; private set; }
         public float DemoClock { get { return _demoClock; } }
         public bool StoryMode { get { return _mode==GuardianSimulationMode.LegacyStory && _storyMode; } }
         public string StoryScene {
@@ -73,12 +75,18 @@ namespace Guardian.UnitySim
         private void Start()
         {
             EnsureWorld();
+            string[] arguments=Environment.GetCommandLineArgs();
             if (GetComponent<GuardianCapture>() == null) gameObject.AddComponent<GuardianCapture>();
-            if (Environment.GetCommandLineArgs().Contains("-guardianVerify")) _mode=GuardianSimulationMode.LegacyStory;
+            if (arguments.Contains("-guardianVerify")) _mode=GuardianSimulationMode.LegacyStory;
             Settings=GuardianSettingsLoader.LoadOverrideOrKeep(Settings);
-            if (Environment.GetCommandLineArgs().Contains("-guardianPedestrianDemo")) Settings.PedestrianDemoEnabled=true;
+            if (arguments.Contains("-guardianPedestrianDemo")) Settings.PedestrianDemoEnabled=true;
             ResetScenario();
-            if (Environment.GetCommandLineArgs().Contains("-guardianPhysicsTest") && GetComponent<GuardianPhysicsVerification>()==null)
+            if (arguments.Contains("-guardianInteractionDemo"))
+            {
+                _interactionPanel=GetComponent<GuardianInteractionPanel>()??gameObject.AddComponent<GuardianInteractionPanel>();
+                _interactionPanel.Initialize(this);
+            }
+            if (arguments.Contains("-guardianPhysicsTest") && GetComponent<GuardianPhysicsVerification>()==null)
                 gameObject.AddComponent<GuardianPhysicsVerification>();
         }
 
@@ -213,6 +221,7 @@ namespace Guardian.UnitySim
         public void ResetScenario()
         {
             if (Settings==null) Settings=new GuardianSimulationSettings(); Settings.Validate();
+            ScenarioRevision++;
             _robots.Clear();
             _tasks.Clear(); _requests.Clear();
             _events.Clear();
