@@ -1,0 +1,175 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &7401782469194477255
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8074636980410752655}
+  - component: {fileID: 5678913673392764973}
+  m_Layer: 0
+  m_Name: FoodCurryRice
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8074636980410752655
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7401782469194477255}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 3667696352442442598}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5678913673392764973
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7401782469194477255}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 29c3ceb4d211cc4429c73111985d70c3, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::Guardian.UnitySim.RestaurantFixture
+  AssetId: FoodCurryRice
+  BlocksRoutes: 0
+--- !u!1001 &3849732273090757773
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 8074636980410752655}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.00000004371139
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8567149869860255497, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 977dd753f5b0926418b9cd9feae8c074, type: 2}
+    - target: {fileID: -8344930730833650976, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 977dd753f5b0926418b9cd9feae8c074, type: 2}
+    - target: {fileID: -5973406081837225888, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 977dd753f5b0926418b9cd9feae8c074, type: 2}
+    - target: {fileID: -5367046146994161311, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 977dd753f5b0926418b9cd9feae8c074, type: 2}
+    - target: {fileID: -5032004710172034133, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 25def851902b7ab41848878d0d84bd94, type: 2}
+    - target: {fileID: -4105986751605858471, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: c76889b97a174424a8292d49ce571a62, type: 2}
+    - target: {fileID: -2692021312416159072, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 977dd753f5b0926418b9cd9feae8c074, type: 2}
+    - target: {fileID: -1001023143516703692, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: c76889b97a174424a8292d49ce571a62, type: 2}
+    - target: {fileID: -381913436952037586, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 977dd753f5b0926418b9cd9feae8c074, type: 2}
+    - target: {fileID: -327033221321723045, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 977dd753f5b0926418b9cd9feae8c074, type: 2}
+    - target: {fileID: -247787589137055740, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: c76889b97a174424a8292d49ce571a62, type: 2}
+    - target: {fileID: 477994142551330535, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 977dd753f5b0926418b9cd9feae8c074, type: 2}
+    - target: {fileID: 591316574742836996, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: efc60010224af484fb252aaaf9d0edd0, type: 2}
+    - target: {fileID: 919132149155446097, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: m_Name
+      value: FoodCurryRice
+      objectReference: {fileID: 0}
+    - target: {fileID: 1074121751086551232, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 977dd753f5b0926418b9cd9feae8c074, type: 2}
+    - target: {fileID: 1799874225106805610, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 977dd753f5b0926418b9cd9feae8c074, type: 2}
+    - target: {fileID: 6477061177870650969, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 977dd753f5b0926418b9cd9feae8c074, type: 2}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+--- !u!4 &3667696352442442598 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 2acb9ef7acc7ea042a23df17baa7226a, type: 3}
+  m_PrefabInstance: {fileID: 3849732273090757773}
+  m_PrefabAsset: {fileID: 0}

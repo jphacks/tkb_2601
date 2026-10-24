@@ -1,0 +1,73 @@
+{
+  "blender": "5.1.1",
+  "units": "meters",
+  "origin": "Original adult human geometry and colors; no external inputs, rigs or textures",
+  "seated_cushion_top": 0.5475,
+  "pelvis_lower_surface": 0.545,
+  "assets": [
+    {
+      "name": "GuestSage",
+      "objects": 52,
+      "vertices": 4560,
+      "triangles": 8890,
+      "blender_bounds_min": [
+        -0.3242103159427643,
+        -0.19999998807907104,
+        0.014999999664723873
+      ],
+      "blender_bounds_max": [
+        0.3242103159427643,
+        0.5799999833106995,
+        1.5079833269119263
+      ]
+    },
+    {
+      "name": "GuestClay",
+      "objects": 52,
+      "vertices": 4560,
+      "triangles": 8890,
+      "blender_bounds_min": [
+        -0.3242103159427643,
+        -0.19999998807907104,
+        0.014999999664723873
+      ],
+      "blender_bounds_max": [
+        0.3242103159427643,
+        0.5799999833106995,
+        1.5079833269119263
+      ]
+    },
+    {
+      "name": "GuestNavy",
+      "objects": 55,
+      "vertices": 4686,
+      "triangles": 9130,
+      "blender_bounds_min": [
+        -0.3242103159427643,
+        -0.19999998807907104,
+        0.014999999664723873
+      ],
+      "blender_bounds_max": [
+        0.3242103159427643,
+        0.5799999833106995,
+        1.5399999618530273
+      ]
+    },
+    {
+      "name": "KitchenStaff",
+      "objects": 58,
+      "vertices": 5146,
+      "triangles": 10038,
+      "blender_bounds_min": [
+        -0.3242103159427643,
+        -0.19999998807907104,
+        0.014999999664723873
+      ],
+      "blender_bounds_max": [
+        0.3242103159427643,
+        0.31200000643730164,
+        1.8229999542236328
+      ]
+    }
+  ]
+}

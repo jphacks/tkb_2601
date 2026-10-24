@@ -1,0 +1,77 @@
+{
+  "blender": "5.1.1",
+  "units": "meters",
+  "provenance": "Original authored meal geometry; no external inputs",
+  "classification": {
+    "FoodSoup": "Soup/liquid",
+    "FoodCurryRice": "Food",
+    "FoodNoodles": "Food/dry stir-fried noodles",
+    "FoodHamburg": "Food"
+  },
+  "assets": [
+    {
+      "name": "FoodSoup",
+      "objects": 8,
+      "vertices": 924,
+      "triangles": 1632,
+      "blender_bounds_min": [
+        -0.14000000059604645,
+        -0.14000000059604645,
+        0.012000000104308128
+      ],
+      "blender_bounds_max": [
+        0.14000000059604645,
+        0.14000000059604645,
+        0.16200000047683716
+      ]
+    },
+    {
+      "name": "FoodCurryRice",
+      "objects": 16,
+      "vertices": 1272,
+      "triangles": 2388,
+      "blender_bounds_min": [
+        -0.20499999821186066,
+        -0.20499999821186066,
+        0.009999999776482582
+      ],
+      "blender_bounds_max": [
+        0.20499999821186066,
+        0.20499999821186066,
+        0.12000000476837158
+      ]
+    },
+    {
+      "name": "FoodNoodles",
+      "objects": 102,
+      "vertices": 12978,
+      "triangles": 25456,
+      "blender_bounds_min": [
+        -0.20499999821186066,
+        -0.20499999821186066,
+        0.009999999776482582
+      ],
+      "blender_bounds_max": [
+        0.20499999821186066,
+        0.20499999821186066,
+        0.10400000214576721
+      ]
+    },
+    {
+      "name": "FoodHamburg",
+      "objects": 8,
+      "vertices": 774,
+      "triangles": 1424,
+      "blender_bounds_min": [
+        -0.20499999821186066,
+        -0.20499999821186066,
+        0.009999999776482582
+      ],
+      "blender_bounds_max": [
+        0.20499999821186066,
+        0.20499999821186066,
+        0.1340000033378601
+      ]
+    }
+  ]
+}
