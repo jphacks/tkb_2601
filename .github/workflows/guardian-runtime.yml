@@ -1,0 +1,63 @@
+﻿name: Guardian Runtime CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate C# scripts and Unity metadata
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path("Assets/Scripts")
+          assert root.is_dir()
+
+          scripts = sorted(root.glob("*.cs"))
+          assert len(scripts) == 21, (
+              f"Expected 21 C# files, got {len(scripts)}"
+          )
+
+          guids = []
+
+          for script in scripts:
+              meta = Path(str(script) + ".meta")
+              assert meta.is_file(), f"Missing: {meta}"
+
+              source = script.read_text(encoding="utf-8-sig")
+              assert "namespace Guardian.UnitySim" in source, script
+
+              content = meta.read_text(encoding="utf-8-sig")
+              match = re.search(
+                  r"^guid:\s*([0-9a-fA-F]{32})\s*$",
+                  content,
+                  re.MULTILINE
+              )
+              assert match, f"Invalid GUID: {meta}"
+              guids.append(match.group(1).lower())
+
+          assert len(guids) == len(set(guids)), "Duplicate GUID"
+
+          required = [
+              "GuardianSimulator.cs",
+              "GuardianRobot.cs",
+              "GuardianCapabilityPolicy.cs",
+              "GuardianDishInventory.cs",
+              "GuardianTrafficController.cs",
+              "GuardianFleetOperator.cs",
+          ]
+
+          for name in required:
+              assert (root / name).is_file(), name
+
+          print("Guardian runtime static checks passed")
+          PY
