@@ -1,0 +1,145 @@
+# 開発環境と動かし方
+
+チーム向けの Unity シミュレーターの説明です。作品の概要はリポジトリ直下の [README](../README.md) を参照してください。
+
+模擬的な振動指標からロボットの状態を変え、任せられる仕事の変更と再割り当てを確認する、JPHACKS向けの3Dデモです。レストランでのスープ配膳・料理配膳・空皿回収を例に、「状態の変化 → 能力の制限 → 担当変更 → 理由の記録」を示します。
+
+**このREADMEはmain向けです。** mainには従来の右側操作パネルがあり、日本語3択・規則会話・歩行者巡回などの [PR #20](https://github.com/Taiga-Sekida/jphacks_2026_unity_sim/pull/20) は未マージです。
+
+## できること
+
+- 通常3台、任意で稼働3台＋予備2台のロボットを動かす。
+- 状態に応じて配膳・回収の可否を変え、できなくなった仕事を他機へ再割り当てする。
+- 積載済みの皿は元の受け渡し場所へ返してから引き継ぐ。皿のID・所有者・予約を管理する。
+- 配膳先に回収できる古い空皿があれば、その訪問中に回収へ続ける。トレイは最大4枚。
+- 模擬状態・停止・注文・予備機の出動／退役をパネルで操作し、理由と進行状況を表示する。
+
+実センサー・実ロボットとは未接続です。振動値や故障・回復は手動入力または固定シードの模擬イベントです。mainの人物は静止モデルで、店内を歩く機能は未反映です。
+
+## 必要な環境
+
+| 項目 | 必要条件 |
+|---|---|
+| Unity Editor | **6000.3.12f1を使用**。他のバージョンで移行しないでください。[指定バージョン](../ProjectSettings/ProjectVersion.txt) |
+| 描画方式 | Built-in Render Pipeline。必要モジュールは [Packages/manifest.json](../Packages/manifest.json) に記載 |
+| 開発環境 | Git、Unity Hub、利用可能なUnityライセンス。既存の実行記録はWindows中心です |
+| ロボットの外観 | 追加モデルなしで、自作の代替形状を使用できます。Nekobotは任意のローカル素材です |
+| 追加ツール | WSL・Python・Blenderは、Nekobotの取込や素材の再生成を行う場合の追加要件。通常の起動には不要です |
+
+## 最短の起動手順
+
+以下は利用者が手動で起動する手順です。今回のREADME更新ではUnityを起動していません。
+
+1. 新しいフォルダーへmainを取得します。既存の作業フォルダーに変更がある場合は、その上で更新せず、別の名前を使ってください。
+
+   ```powershell
+   git clone --branch main --single-branch https://github.com/Taiga-Sekida/jphacks_2026_unity_sim.git guardian-unity-main
+   cd guardian-unity-main
+   ```
+
+2. Unity Hubの「Add／追加」で、`Assets`・`Packages`・`ProjectSettings` があるこのフォルダーを選び、**6000.3.12f1**で開きます。
+3. インポートとコンパイルを待ち、`Assets/Scenes/GuardianRestaurant.unity` を開きます。シーンがない場合は初回起動時に生成されます。自動生成されない場合は **Guardian > Create or Rebuild 3D Simulator Scene** を使います。再構築は既存シーンの手動変更を上書きするため、必要な作業を先に保存してください。
+4. **Play**を押します。通常はPhysicsモードで始まり、右側に操作パネルが表示されます。パネル下部はスクロールできます。
+
+Unity Hubを使わず、Windowsの既定インストール先からEditorを開く場合の例です。これはEditorを開くコマンドで、Play開始やモデル取込は行いません。プロジェクトルートで実行します。
+
+```powershell
+& 'C:\Program Files\Unity\Hub\Editor\6000.3.12f1\Editor\Unity.exe' -projectPath (Get-Location).Path
+```
+
+## 操作方法
+
+キー操作はGameビューにフォーカスがあるときに使います。画面のボタン名は英語です。
+
+| Physicsモードの操作 | キー／パネル | 動作 |
+|---|---|---|
+| 機体を選ぶ | `1` / `2` / `3` | A / B / Cを選択 |
+| 能力状態を変える | `N` / `W` / `L`、またはNormal / Warning / Limited | 選択機体の模擬状態を変更 |
+| 停止／復帰 | `E`、またはSTOP / Recover | 状態の色とは別の停止を切替 |
+| シナリオをリセット | `R`、またはApply seed + reset | 時計・仕事・配置を初期化。再開や終了とは異なります |
+| パネルを表示／非表示 | `H` | 非表示にした場合も`H`で戻せます |
+| シナリオモードを切替 | `F7`、または上部のモードボタン | Physicsと従来の40秒ストーリーを切替。切替時にリセット |
+| 手動で依頼 | Soup T1 / Food T2 / Return T3 | 卓1へスープ、卓2へ料理、卓3から空皿回収を依頼 |
+| 自動イベント | Seeded random tasks / Seeded random faults / recovery | シード付きの自動注文／状態変化を切替 |
+| 予備機を使う | Fleet: three bays (reset to 3 + 2 reserves) | 5台構成へ切替。D/Eは予備機から開始 |
+
+予備機の **Deploy** は出動、**Retire** は新規割当を止めて積載品を返却し帰還、**Recover to standby** は明示的に回復させて予備位置へ戻す操作です。受理と完了は別で、停止中や条件未成立なら理由を表示します。
+
+### 状態と任せられる仕事
+
+| 状態 | スープ | 料理 | 空皿回収 |
+|---|---|---|---|
+| Normal | 可 | 可 | 可 |
+| Warning | 不可 | 可 | 可 |
+| Limited | 不可 | 不可 | 可 |
+| 停止中 | 移動しない | 移動しない | 移動しない |
+
+Limitedは走行可能な能力制限で、停止の解除を意味しません。標準閾値0.30／0.70はデモ用の正規化指標で、実機の安全基準ではありません。
+
+### 手動で担当変更を確かめる流れ
+
+1. Physicsのパネルで自動注文と自動状態変化をオフにし、`R`でリセットします。
+2. Soup T1／Food T2で依頼し、各機体のJobと状態を確認します。
+3. 配膳を担当する機体を選び、WarningまたはLimitedへ変更します。積載前は再割当待ち、積載後は返却を経て引き継ぐ流れを確認します。
+4. 右パネルの依頼理由・完了件数とUnity Consoleの `[Guardian]` ログを確認します。回収対象の皿がない場合などは、依頼の拒否理由が表示されます。
+
+これは操作例で、全状況で即座に仕事が切り替わる保証ではありません。能力、停止、空いている機体、受け渡し場所、回収可能な皿によって待機します。
+
+## クリック・文字会話・音声の違い
+
+**mainのPhysics／40秒ストーリー切替は、クリック／会話モードの切替ではありません。**
+
+| 操作方式 | mainで使えるか | 内容 |
+|---|---|---|
+| 従来のパネルクリック＋キー入力 | 使える | 上記の状態変更・注文・停止・予備機操作 |
+| 異常マーク／胸タブレットからの日本語3択 | 未反映 | PR #20の変更。mainにF12の開発パネル切替はありません |
+| 規則ベースの文字会話 | 未反映 | PR #20の変更。LLMを使わず、対象と操作を提案し、別の「実行」で確定 |
+| マイクによる認識・読み上げ | mainにない | PR #20の任意アダプターも実マイク・再生は未検証。文字入力の検査とは別です |
+
+`scripts/Start-GuardianDemo.ps1` と `scripts/Send-GuardianVoiceCommand.ps1` はmainにありません。PR #20の手順をそのままmainで実行しないでください。[PR #20の固定版の手順・限界](https://github.com/Taiga-Sekida/jphacks_2026_unity_sim/blob/cba4fe68c24b99b1654ac059dbd3d5901a4d38bb/docs/RULE_CONVERSATION.md) を別資料として参照できます。
+
+## 終了方法
+
+1. 録画中なら`F9`をもう一度押して録画を止めます。
+2. Editor上部の**Playボタンを再度押す**とシミュレーションが終了します。
+3. シーン等の保存を確認してEditorを閉じます。Play中の一時的な状態と、保存したシーンは区別してください。
+
+`R`は終了ではなくリセットです。生成したログ・録画・ビルドは `Logs/`・`Recordings/`・`Builds/` に置かれ、Git管理対象外です。
+
+## 実装と検証の範囲
+
+| 対象 | 現在の扱い |
+|---|---|
+| mainの動的Rigidbody・皿所有権・通路／受け渡し予約・予備機・同一訪問回収 | 実装あり。中央の単線通路予約を使う構成です。過去のEditor／Windows Playerでの検証記録は、このリポジトリには含めていません |
+| 従来の40秒ストーリー | 実装あり。`F7`で切替。Legacy内では`F8`で固定ストーリー／手動操作を切替 |
+| 録画機能 | `F9`でその時点のモードをリセットし、既定40秒・30fpsのPNGを保存する実装あり。過去の録画記録と、最新UIの未完成な30秒録画は別です |
+| PR #20の75項目・会話15項目の検証 | 別ブランチの非表示物理／API検査。mainの合格結果や実クリック・実音声の証拠にはしません |
+| このREADME更新 | コード・キー・ファイル・リンク・コマンドの静的確認のみ。Unity起動、Play、実クリック、ビルド、録画は再実行していません |
+| 実マイク・読み上げ・実センサー・実ロボット | 今回の実動作確認なし。実センサーと実ロボットは未接続 |
+| 最新GUI・新UIの実クリック・30秒の最新デモ映像 | 新しい合格証拠なし。未確認／未完成として扱います |
+
+過去の記録は、そのコミット・モデル・条件での結果です。全条件での衝突回避や詰まり解消、CPU／FPS改善を保証するものではありません。
+
+### 任意のNekobotモデルと録画
+
+追加モデルなしで起動できます。Nekobotを使う場合は [ローカル取込手順と出典](../Assets/Nekobot/README.md)・[利用許諾の確認状況](ASSET_LICENSE_STATUS.md) を確認してください。原FBX・prefab・テクスチャ等は配布していません。
+
+`scripts/apply-nekobot.sh` は汎用の起動コマンドではありません。WSL・Python等を使ってmainをfast-forward更新し、ローカル素材を取り込み、Unityのbatch処理を起動するスクリプトです。`--open`はその後にGUIも開きます。通常の起動や読み取り確認には不要です。
+
+## ディレクトリと詳細資料
+
+```text
+Assets/Scripts/                 ロボット・仕事・皿・交通・表示の実行コード
+Assets/Editor/                  シーン生成、素材とモデルの取込、配置の確認
+Assets/Art/Restaurant/           自作の家具・人物・料理と生成用ソース
+Assets/Nekobot/README.md         任意のローカルモデルの取込案内
+Packages/manifest.json          Unityモジュール
+ProjectSettings/ProjectVersion.txt  Editorの指定バージョン
+scripts/                        Nekobotの取込
+docs/                           実機の組み立て、センサー、審査と賞、素材の利用許諾
+```
+
+- 実機：[組み立てガイド](HARDWARE_ASSEMBLY.md)／[センサーの候補と精度](REAL_SENSOR_OPTIONS.md)
+- JPHACKS：[審査基準と賞](JPHACKS_JUDGING_AWARDS.md)
+- 素材：[利用許諾の確認状況](ASSET_LICENSE_STATUS.md)
+- 発表：[Hack Day 発表スライド](https://docs.google.com/presentation/d/1WQIn4H3_ua5t65tx0b36FbvmO08A6MnyDJwDx9BLvwA/edit?usp=sharing)（Google スライドのリンク。閲覧のみ）
