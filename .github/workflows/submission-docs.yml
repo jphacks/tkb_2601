@@ -1,0 +1,58 @@
+name: Submission Documentation CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-submission-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate judging documentation
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          required = [
+              Path("README.md"),
+              Path("docs/PUBLIC_SCOPE.md"),
+              Path("docs/JUDGING_GUIDE.md"),
+              Path("docs/SUBMISSION_CHECKLIST.md"),
+              Path("docs/DEVELOPMENT_HISTORY.md"),
+          ]
+          for path in required:
+              assert path.is_file() and path.stat().st_size > 500, path
+
+          readme = required[0].read_text(encoding="utf-8")
+          for link in [
+              "docs/JUDGING_GUIDE.md",
+              "docs/SUBMISSION_CHECKLIST.md",
+              "docs/DEVELOPMENT_HISTORY.md",
+              "docs/PUBLIC_SCOPE.md",
+          ]:
+              assert link in readme, link
+              assert Path(link).is_file(), link
+
+          guide = Path("docs/JUDGING_GUIDE.md").read_text(encoding="utf-8")
+          checklist = Path("docs/SUBMISSION_CHECKLIST.md").read_text(encoding="utf-8")
+          history = Path("docs/DEVELOPMENT_HISTORY.md").read_text(encoding="utf-8")
+          for warning in ["実機の安全", "実センサー", "GitHub Actions", "段階的なPR履歴"]:
+              assert warning in guide, warning
+          assert checklist.count("- [ ]") >= 10
+          assert "自動的に成功扱いにしません" in checklist
+          for number in range(1, 12):
+              assert f"/pull/{number})" in history, number
+
+          combined = "\n".join(path.read_text(encoding="utf-8") for path in required)
+          assert not re.search(r"[A-Za-z]:[/\\]Users[/\\]", combined)
+          assert "公開サンプル" in combined and "実運用" in combined
+          assert "権利未確認素材" in combined
+          print("Submission documentation checks passed")
+          PY
