@@ -1,0 +1,63 @@
+﻿name: Guardian Editor CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-editor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Unity Editor scripts
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path("Assets/Editor")
+          scripts = sorted(root.glob("*.cs"))
+
+          assert len(scripts) >= 6, "Editor scripts missing"
+
+          guids = []
+
+          for script in scripts:
+              source = script.read_text(encoding="utf-8-sig")
+              assert "namespace Guardian.UnitySim.Editor" in source, script
+
+              meta = Path(str(script) + ".meta")
+              assert meta.is_file(), f"Missing metadata: {meta}"
+
+              content = meta.read_text(encoding="utf-8-sig")
+              match = re.search(
+                  r"^guid:\s*([0-9a-fA-F]{32})\s*$",
+                  content,
+                  re.MULTILINE
+              )
+              assert match, f"Invalid GUID: {meta}"
+              guids.append(match.group(1).lower())
+
+          assert len(guids) == len(set(guids)), "Duplicate GUID"
+
+          required = [
+              "GuardianSceneSetup.cs",
+              "RestaurantAssetPipeline.cs",
+              "RestaurantEnvironmentEditor.cs",
+              "RestaurantPeopleValidation.cs",
+              "GuardianNekobotSetup.cs",
+              "GuardianNekobotBatch.cs",
+          ]
+
+          for name in required:
+              assert (root / name).is_file(), name
+
+          assert Path("Assets/Scripts/GuardianSimulator.cs").is_file()
+
+          print("Guardian Editor static checks passed")
+          PY
