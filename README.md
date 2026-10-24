@@ -27,7 +27,7 @@
 
 - デモ動画：公開用のリンクは準備ができ次第追加します。
 - 発表スライド（90 秒ピッチ）：[ロボもり｜90 秒ピッチ](https://docs.google.com/presentation/d/1iMbaZZ9icVo0Tvb6plEj2R-0JYNWx0dC/edit?usp=sharing)
-- 補足資料（背景・事業・市場と売上の見込み）：[ロボもり｜補足資料](https://docs.google.com/presentation/d/1Fd_nJmBFcWzg-3xrGk1wrq9fqDtnbcEbSC7ygMG9M_Q/edit?usp=sharing)。
+- 補足資料（背景・事業・市場と売上の見込み）：[ロボもり｜補足資料](https://docs.google.com/presentation/d/1Fd_nJmBFcWzg-3xrGk1wrq9fqDtnbcEbSC7ygMG9M_Q/edit?usp=sharing)
 - 文章でまとめたものは [docs/BUSINESS.md](docs/BUSINESS.md) にあります。
 
 ## 概要
