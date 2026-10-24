@@ -49,7 +49,9 @@ jobs:
               assert "6000.3.12f1" in source
               assert "GuardianIntegrationBatch.Verify" in source
               assert "GUARDIAN_BATCH_OK: integration" in source
-          assert "private" not in integration.lower()
+          assert ".guardian/" not in integration
+          assert "GUARDIAN_SETTINGS_PATH" not in integration
+          assert "guardian-settings.private.json" not in integration
           print("Guardian integration harness checks passed")
           PY
 
