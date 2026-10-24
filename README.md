@@ -100,6 +100,15 @@ Unityメタデータなどの静的検証を実施しています。
 Unity Editorでのコンパイル、PlayMode、実際の描画は
 別途確認が必要です。
 
+ライセンス済みのUnity 6000.3.12f1では、Editorを閉じてから次の統合検証を実行できます。
+
+- Windows: `./scripts/Invoke-GuardianVerification.ps1`
+- macOS / Linux: `GUARDIAN_UNITY_PATH=/path/to/Unity ./scripts/verify-guardian-unity.sh`
+
+設定境界、能力マトリクス、歩行者予測、日本語入力、公開シーン生成を1回の
+バッチ起動で検証します。GitHub Actionsは実行入口とスクリプトを検証しますが、
+Unityライセンスを使わないため、Actions成功だけでPlayMode・描画成功とは扱いません。
+
 ## 開発技術
 
 - Unity / C#
