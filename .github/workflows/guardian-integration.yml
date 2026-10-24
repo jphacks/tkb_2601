@@ -1,0 +1,72 @@
+name: Guardian Integration Harness CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-integration-harness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate integration entry points
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          editor = Path("Assets/Editor")
+          integration = (editor / "GuardianIntegrationBatch.cs").read_text(encoding="utf-8-sig")
+          runner = (editor / "GuardianBatchRunner.cs").read_text(encoding="utf-8-sig")
+          required = [
+              "GuardianSettingsBatch.RunChecks()",
+              "VerifyCapabilityPolicy()",
+              "GuardianPedestrianBatch.RunChecks()",
+              "GuardianInteractionBatch.RunChecks()",
+              "GuardianSceneBatch.RunChecks()",
+              "GUARDIAN_INTEGRATION_OK",
+          ]
+          for marker in required:
+              assert marker in integration, marker
+          assert "GUARDIAN_BATCH_OK" in runner
+          assert "GUARDIAN_BATCH_FAILED" in runner
+
+          for name in ["GuardianBatchRunner", "GuardianIntegrationBatch"]:
+              assert (editor / f"{name}.cs.meta").is_file(), name
+          for name in ["GuardianSettingsBatch", "GuardianPedestrianBatch", "GuardianInteractionBatch", "GuardianSceneBatch"]:
+              source = (editor / f"{name}.cs").read_text(encoding="utf-8-sig")
+              assert "public static void RunChecks()" in source, name
+              assert "GuardianBatchRunner.Execute" in source, name
+
+          scripts = Path("scripts")
+          shell = (scripts / "verify-guardian-unity.sh").read_text(encoding="utf-8")
+          powershell = (scripts / "Invoke-GuardianVerification.ps1").read_text(encoding="utf-8-sig")
+          for source in [shell, powershell]:
+              assert "6000.3.12f1" in source
+              assert "GuardianIntegrationBatch.Verify" in source
+              assert "GUARDIAN_BATCH_OK: integration" in source
+          assert "private" not in integration.lower()
+          print("Guardian integration harness checks passed")
+          PY
+
+      - name: Validate shell launcher syntax
+        run: bash -n scripts/verify-guardian-unity.sh
+
+      - name: Validate PowerShell launcher syntax
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path "scripts/Invoke-GuardianVerification.ps1").Path,
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | Out-String | Write-Error
+            exit 1
+          }

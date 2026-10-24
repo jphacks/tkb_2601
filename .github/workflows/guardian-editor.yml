@@ -57,6 +57,8 @@ jobs:
               "GuardianInteractionBatch.cs",
               "GuardianSceneTools.cs",
               "GuardianSceneBatch.cs",
+              "GuardianBatchRunner.cs",
+              "GuardianIntegrationBatch.cs",
           ]
 
           for name in required:

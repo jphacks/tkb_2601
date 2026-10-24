@@ -13,6 +13,11 @@ namespace Guardian.UnitySim.Editor
 
         public static void Verify()
         {
+            GuardianBatchRunner.Execute("scene", RunChecks);
+        }
+
+        public static void RunChecks()
+        {
             EditorBuildSettingsScene[] originalBuildScenes = EditorBuildSettings.scenes;
             try
             {
@@ -30,12 +35,6 @@ namespace Guardian.UnitySim.Editor
                         throw new InvalidOperationException("Generation replaced an existing Build Settings entry: " + scene.path);
 
                 Debug.Log("[Guardian] GUARDIAN_SCENE_BATCH_OK: generated and validated an isolated public demo scene");
-                EditorApplication.Exit(0);
-            }
-            catch (Exception error)
-            {
-                Debug.LogException(error);
-                EditorApplication.Exit(1);
             }
             finally
             {

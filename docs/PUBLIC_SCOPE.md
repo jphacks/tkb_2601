@@ -149,6 +149,20 @@ Unity 6000.3.12f1 のコンパイルと設定ロード検証は、ライセン�
 この検証は一時的な公開デモシーンを生成・検証し、既存Build Settings項目が
 保持されることを確認した後、一時シーンと設定変更を元に戻します。
 
+公開版の統合バッチ検証入口は次です。
+
+`Guardian.UnitySim.Editor.GuardianIntegrationBatch.Verify`
+
+設定ロード、能力マトリクスと閾値境界、歩行者予測、日本語入力、シーン生成を
+同じUnityプロセスで順に実行します。Windowsでは
+`scripts/Invoke-GuardianVerification.ps1`、macOS / Linuxでは
+`scripts/verify-guardian-unity.sh`から実行できます。Unity 6000.3.12f1の
+ライセンス済み環境が必要です。
+
+GitHub Actionsの`Guardian Integration Harness CI`は、統合入口が全チェックを
+呼び出すこと、成功・失敗マーカー、起動スクリプトの構文を検証します。
+クラウドCIではUnityを起動しないため、CI成功をPlayModeや描画の確認とは表現しません。
+
 ## 権利関係
 
 第三者のモデル・音声・画像・フォント等については、
