@@ -26,6 +26,12 @@ jobs:
               Path("docs/JUDGING_GUIDE.md"),
               Path("docs/SUBMISSION_CHECKLIST.md"),
               Path("docs/DEVELOPMENT_HISTORY.md"),
+              Path("docs/BUSINESS.md"),
+              Path("docs/SETUP.md"),
+              Path("docs/HARDWARE_ASSEMBLY.md"),
+              Path("docs/REAL_SENSOR_OPTIONS.md"),
+              Path("docs/JPHACKS_JUDGING_AWARDS.md"),
+              Path("docs/ASSET_LICENSE_STATUS.md"),
           ]
           for path in required:
               assert path.is_file() and path.stat().st_size > 500, path
@@ -39,6 +45,38 @@ jobs:
               "### 独自技術",
           ]:
               assert section in readme, section
+
+          image_names = [
+              "familiar.png",
+              "hero.png",
+              "hijack.png",
+              "mechanism.png",
+              "offline-scenarios.png",
+              "pitch-demo.png",
+              "pitch-expansion.png",
+              "pitch-title.png",
+              "system-model.png",
+          ]
+          for name in image_names:
+              image = Path("docs/images") / name
+              assert image.is_file() and image.stat().st_size > 10000, image
+
+          linked_documents = [required[0], *required[5:]]
+          link_pattern = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
+          for document in linked_documents:
+              text = document.read_text(encoding="utf-8")
+              for target in link_pattern.findall(text):
+                  target = target.split("#", 1)[0]
+                  if not target or re.match(r"^(?:https?://|mailto:)", target):
+                      continue
+                  resolved = (document.parent / target).resolve()
+                  assert resolved.exists(), f"{document}: {target}"
+
+          timeless = "\n".join(path.read_text(encoding="utf-8") for path in linked_documents)
+          timeless = re.sub(r"https?://\S+", "", timeless)
+          assert not re.search(r"(?:19|20)\d{2}\s*年", timeless)
+          assert not re.search(r"(?:19|20)\d{2}[-/]\d{1,2}[-/]\d{1,2}", timeless)
+          assert not re.search(r"(?:Checked|確認基準|調査時点)\s*:", timeless, re.IGNORECASE)
 
           guide = Path("docs/JUDGING_GUIDE.md").read_text(encoding="utf-8")
           checklist = Path("docs/SUBMISSION_CHECKLIST.md").read_text(encoding="utf-8")

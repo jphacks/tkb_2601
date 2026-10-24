@@ -92,7 +92,7 @@
 
 **もし、ロボットが人を攻撃したら？**
 
-ロボットは、力も速さも増しています。2026 年 10 月に Unitree が発表した人型ロボット H2-X は、車を凹ませるほどのパワーとスピードを持ち、警護用として、1 回の充電で約 8 時間動きます[^h2x]。
+ロボットは、力も速さも増しています。Unitree の人型ロボット H2-X は、車を凹ませるほどのパワーとスピードを持ち、警護用として、1 回の充電で約 8 時間動きます[^h2x]。
 
 もし、これが乗っ取られたら、最悪こうなります。車を凹ませる力が他人に操られれば、人に向かう凶器になります。しかも、乗っ取ったロボットに「正常です」と偽らせれば、誰も気づけません。
 
@@ -442,4 +442,4 @@ flowchart LR
 
 計測はクラウドの 4 コア環境（Python 3.13）で取得した値です。別の PC での処理性能は未測定のため、利用環境で再計測が必要です。測定用コマンド `python -m guardian_net.bench` は別管理の中核システムに属し、本リポジトリには含まれていません。
 
-[^h2x]: Unitree Robotics 公式 X「[Unitree Introducing: H2-X Kung Fu Legend Guardian](https://x.com/UnitreeRobotics/status/2112819774573179175)」（2026 年 10 月 21 日）。
+[^h2x]: Unitree Robotics 公式 X「[Unitree Introducing: H2-X Kung Fu Legend Guardian](https://x.com/UnitreeRobotics/status/2112819774573179175)」。
