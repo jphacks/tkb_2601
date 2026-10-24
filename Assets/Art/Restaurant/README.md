@@ -59,11 +59,11 @@ the prefab wrapper scale at one. World placement is in `RestaurantVisuals.cs`.
   video assets. No third-party license grant is claimed or required for these inputs.
 - Blender and Unity are authoring tools; their installed software is not copied into
   the repository. Standard shaders are referenced from the user's Unity installation.
-- The repository has no overarching license file at this revision. This change does
-  not choose or alter the project's distribution license.
+- See the repository [LICENSE](../../../LICENSE) for repository-level terms.
+  This notice does not grant permission to redistribute third-party models.
 - The supplied Gemini video was reviewed for design cues only. Neither that video
   nor extracted frames are included. Captured evidence uses project-owned robot
   placeholders. The local BOOTH model, textures, materials, ZIP and unitypackage remain
-  excluded. See `docs/ASSET_LICENSE_STATUS.md` for that separate unresolved license.
+  excluded. See [public scope](../../../docs/PUBLIC_SCOPE.md). Third-party redistribution permission remains unconfirmed.
 
 No Nekobot texture or mesh is used by this art kit.
