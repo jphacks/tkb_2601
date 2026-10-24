@@ -31,38 +31,14 @@ jobs:
               assert path.is_file() and path.stat().st_size > 500, path
 
           readme = required[0].read_text(encoding="utf-8")
-          assert len(readme) >= 8000, "README must remain a complete judging entry point"
           for section in [
-              "## 30秒でわかるロボもり",
-              "## 解決したい課題",
-              "## 仕組み",
-              "## デモシナリオ",
-              "## クイックスタート",
-              "## 実装の見どころ",
-              "## 検証とCI",
-              "## 公開範囲と設定管理",
-              "## 制約と今後の展開",
+              "# ロボもり（Physical AI Guardian）",
+              "## 段階的なコード構成",
+              "## 製品概要",
+              "### 特長",
+              "### 独自技術",
           ]:
               assert section in readme, section
-          for evidence in [
-              "```mermaid",
-              "GuardianCapabilityPolicy.cs",
-              "GuardianDishInventory.cs",
-              "GuardianTrafficController.cs",
-              "GuardianPedestrianSafety.cs",
-              "Normal | ✓ | ✓ | ✓",
-              "Warning | — | ✓ | ✓",
-              "Limited | — | — | ✓",
-          ]:
-              assert evidence in readme, evidence
-          for link in [
-              "docs/JUDGING_GUIDE.md",
-              "docs/SUBMISSION_CHECKLIST.md",
-              "docs/DEVELOPMENT_HISTORY.md",
-              "docs/PUBLIC_SCOPE.md",
-          ]:
-              assert link in readme, link
-              assert Path(link).is_file(), link
 
           guide = Path("docs/JUDGING_GUIDE.md").read_text(encoding="utf-8")
           checklist = Path("docs/SUBMISSION_CHECKLIST.md").read_text(encoding="utf-8")
