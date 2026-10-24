@@ -1,53 +1,38 @@
-# ロボもり（Physical AI Guardian）
+# ロボもり
+
+不調なロボットにも、できる仕事を。
 
 <div align="center">
 
-### 🤖 不調なロボットにも、できる仕事を。
-
-[![Unity](https://img.shields.io/badge/Unity-6000.3.12f1-000000?style=for-the-badge&logo=unity&logoColor=white)](ProjectSettings/ProjectVersion.txt)
-[![C#](https://img.shields.io/badge/C%23-Unity_Runtime-512BD4?style=for-the-badge)](Assets/Scripts/)
-[![Offline](https://img.shields.io/badge/Runtime-Internet_Not_Required-315D7D?style=for-the-badge)](#開発技術)
-[![MIT](https://img.shields.io/badge/Code_License-MIT-2E8B57?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE)
-
-[![Integration checks](https://github.com/jphacks/tkb_2601/actions/workflows/guardian-integration.yml/badge.svg?branch=main)](https://github.com/jphacks/tkb_2601/actions/workflows/guardian-integration.yml)
-[![Documentation checks](https://github.com/jphacks/tkb_2601/actions/workflows/submission-docs.yml/badge.svg?branch=main)](https://github.com/jphacks/tkb_2601/actions/workflows/submission-docs.yml)
-
 [![Used Skills](https://skillicons.dev/icons?i=unity,cs,py,blender)](https://skillicons.dev)
-
-[![Quick Start](https://img.shields.io/badge/QUICK_START-SETUP-FF8C42?style=for-the-badge&logo=rocket&logoColor=white)](docs/SETUP.md)
-[![Slides](https://img.shields.io/badge/PROJECT-SLIDES-F9AB00?style=for-the-badge&logo=googleslides&logoColor=white)](https://docs.google.com/presentation/d/1iMbaZZ9icVo0Tvb6plEj2R-0JYNWx0dC/edit?usp=sharing)
-[![Public Scope](https://img.shields.io/badge/PUBLIC-SCOPE-315D7D?style=for-the-badge&logo=readthedocs&logoColor=white)](docs/PUBLIC_SCOPE.md)
-[![Sensor Edition](https://img.shields.io/badge/SENSOR-INTEGRATION-6E44FF?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Taiga-Sekida/jphacks_2026_unity_sim)
 
 </div>
 
 ## 目次
 
-- [🌱 30 秒でわかるロボもり](#30-秒でわかるロボもり)
-- [✅ この公開リポジトリで確認できる範囲](#この公開リポジトリで確認できる範囲)
-- [🧩 製品全体の仕組み](#製品全体の仕組み)
-- [🎬 デモで確認できること](#デモで確認できること)
-- [✨ 特長](#特長)
-- [🚀 すぐに試す](#すぐに試す)
-- [🧪 検証の入口と限界](#検証の入口と限界)
-- [🛠️ 開発技術・独自技術](#開発技術)
-- [🔐 公開設定と履歴](#公開設定と履歴について)
-- [📦 素材・ライセンス・構成](#素材とライセンス)
+- [動画リンク](#動画リンク)
+- [概要](#概要)
+- [この公開リポジトリで確認できる範囲](#この公開リポジトリで確認できる範囲)
+- [仕組み](#仕組み)
+- [デモで確認できること](#デモで確認できること)
+- [特長](#特長)
+- [すぐに試す](#すぐに試す)
+- [検証と限界](#検証と限界)
+- [開発技術](#開発技術)
+- [公開用設定と Git 履歴](#公開用設定と-git-履歴)
+- [素材・ライセンス・構成](#素材とライセンス)
 
-## 30 秒でわかるロボもり
+## 動画リンク
 
-ロボもりは、ロボットの不調を「全部止める」だけで終わらせず、**危ない仕事だけを外し、できる仕事を続けてもらう**ための見守りシステムです。
+- デモ動画：公開用のリンクは準備ができ次第追加します。
+- 発表スライド（90 秒ピッチ）：[ロボもり｜90 秒ピッチ](https://docs.google.com/presentation/d/1iMbaZZ9icVo0Tvb6plEj2R-0JYNWx0dC/edit?usp=sharing)
+- 補足資料（背景・事業・市場と売上の見込み）：[ロボもり｜補足資料](https://docs.google.com/presentation/d/1Fd_nJmBFcWzg-3xrGk1wrq9fqDtnbcEbSC7ygMG9M_Q/edit?usp=sharing)。文章でまとめたものは [docs/BUSINESS.md](docs/BUSINESS.md) にあります。
+
+## 概要
+
+ロボもりは、ロボットが不調になったときに全部を止めるのではなく、危ない仕事だけを外して、できる仕事は続けてもらうための見守りの仕組みです。
 
 ロボットの状態を仕事ごとの許可へ変換し、許されなくなった仕事だけを取り消します。運べる仕事は続け、外した仕事は別のロボットへ任せ直します。状態、任せている仕事、判断理由は人が確認できます。
-
-<table>
-  <tr>
-    <td align="center" width="25%">🧠<br><strong>能力を段階化</strong><br><sub>機体ではなく仕事ごとに可否を判断</sub></td>
-    <td align="center" width="25%">🔄<br><strong>安全に任せ直す</strong><br><sub>皿の所有権を保ったまま再割り当て</sub></td>
-    <td align="center" width="25%">🛑<br><strong>停止理由を分離</strong><br><sub>能力制限・歩行者・手動停止を混同しない</sub></td>
-    <td align="center" width="25%">👤<br><strong>最後は人が確認</strong><br><sub>状態・仕事・理由を同じ画面に表示</sub></td>
-  </tr>
-</table>
 
 ![Normal、Warning、Limited で任せる仕事を段階的に変えるユースケース](docs/images/pitch-usecase.png)
 
@@ -64,16 +49,16 @@
 
 | 対象 | 収録状況 | 確認先 |
 |---|---|---|
-| 仕事ごとの能力判定と再割り当て | ✅ 収録 | [`GuardianCapabilityPolicy.cs`](Assets/Scripts/GuardianCapabilityPolicy.cs) / [`GuardianSimulator.cs`](Assets/Scripts/GuardianSimulator.cs) |
-| 皿の所有権と物理的な引き継ぎ | ✅ 収録 | [`GuardianDishInventory.cs`](Assets/Scripts/GuardianDishInventory.cs) |
-| 通路予約と障害物ブレーキ | ✅ 収録 | [`GuardianTrafficController.cs`](Assets/Scripts/GuardianTrafficController.cs) |
-| 公開設定とprivate設定の分離 | ✅ 収録 | [`GuardianSettingsLoader.cs`](Assets/Scripts/GuardianSettingsLoader.cs) / [公開サンプル](Assets/StreamingAssets/Guardian/guardian-settings.public.json) |
-| 歩行者安全デモ | 🧪 オプトインで収録 | [`GuardianPedestrianSafety.cs`](Assets/Scripts/GuardianPedestrianSafety.cs) |
-| 日本語の定型操作デモ | 🧪 オプトインで収録 | [`GuardianInteractionPanel.cs`](Assets/Scripts/GuardianInteractionPanel.cs) / [`GuardianRuleConversation.cs`](Assets/Scripts/GuardianRuleConversation.cs) |
-| M5StickS3 と Python 中継 | 🔗 統合版リポジトリで公開 | [ファームウェア](https://github.com/Taiga-Sekida/jphacks_2026_unity_sim/tree/main/firmware/sticks3_check) / [センサー中継](https://github.com/Taiga-Sekida/jphacks_2026_unity_sim/tree/main/scripts/sensor_bridge) |
-| 実ロボット、実運用設定、権利未確認モデル | 🔒 非収録 | [公開範囲と制約](docs/PUBLIC_SCOPE.md) |
+| 仕事ごとの能力判定と再割り当て | 収録 | [`GuardianCapabilityPolicy.cs`](Assets/Scripts/GuardianCapabilityPolicy.cs) / [`GuardianSimulator.cs`](Assets/Scripts/GuardianSimulator.cs) |
+| 皿の所有権と物理的な引き継ぎ | 収録 | [`GuardianDishInventory.cs`](Assets/Scripts/GuardianDishInventory.cs) |
+| 通路予約と障害物ブレーキ | 収録 | [`GuardianTrafficController.cs`](Assets/Scripts/GuardianTrafficController.cs) |
+| 公開設定とprivate設定の分離 | 収録 | [`GuardianSettingsLoader.cs`](Assets/Scripts/GuardianSettingsLoader.cs) / [公開サンプル](Assets/StreamingAssets/Guardian/guardian-settings.public.json) |
+| 歩行者安全デモ | オプトインで収録 | [`GuardianPedestrianSafety.cs`](Assets/Scripts/GuardianPedestrianSafety.cs) |
+| 日本語の定型操作デモ | オプトインで収録 | [`GuardianInteractionPanel.cs`](Assets/Scripts/GuardianInteractionPanel.cs) / [`GuardianRuleConversation.cs`](Assets/Scripts/GuardianRuleConversation.cs) |
+| M5StickS3 と Python 中継 | 統合版リポジトリで公開 | [ファームウェア](https://github.com/Taiga-Sekida/jphacks_2026_unity_sim/tree/main/firmware/sticks3_check) / [センサー中継](https://github.com/Taiga-Sekida/jphacks_2026_unity_sim/tree/main/scripts/sensor_bridge) |
+| 実ロボット、実運用設定、権利未確認モデル | 非収録 | [公開範囲と制約](docs/PUBLIC_SCOPE.md) |
 
-## 製品全体の仕組み
+## 仕組み
 
 ![システム構成：測る、判断する、任せ直す。戻すのは人。](docs/images/pitch-system.png)
 
@@ -106,28 +91,19 @@ Unity のレストランでは通常 3 台、予備機を含めると 5 台の�
 
 ## 特長
 
-### 1. 機体ではなく、仕事単位で能力を絞る
-
-> [!IMPORTANT]
-> Warning / Limited を「故障したので全停止」とせず、その状態でも安全に担当できる仕事を残します。
+### 1. ロボットではなく、仕事ごとに任せるかを決める
 
 状態と仕事の対応を 1 つの表に集約しています。状態が変わったときは許されなくなった仕事だけを取り消し、許されている仕事と移動能力は維持します。
 
 実装: [`GuardianCapabilityPolicy.cs`](Assets/Scripts/GuardianCapabilityPolicy.cs) / [`GuardianSimulator.cs`](Assets/Scripts/GuardianSimulator.cs)
 
-### 2. 皿を消さずに引き継ぐ
-
-> [!IMPORTANT]
-> 担当だけを書き換えず、返却と所有権の移動が完了してから次のロボットへ渡します。
+### 2. 運んでいる皿を見失わずに引き継ぐ
 
 仕事、皿、ロボットに別々の ID を持たせ、皿の持ち主を厨房・ロボット・テーブル・回収台のいずれか 1 か所に決めます。運搬途中で担当を外れた機体は皿を元の受け渡し場所へ返し、所有権と予約を戻してから次の機体へ引き継ぎます。
 
 実装: [`GuardianDishInventory.cs`](Assets/Scripts/GuardianDishInventory.cs) / [`GuardianSimulator.cs`](Assets/Scripts/GuardianSimulator.cs)
 
-### 3. 設定を公開サンプルと実運用値に分ける
-
-> [!IMPORTANT]
-> 公開デモは再現可能にしつつ、実運用値をリポジトリや配布物へ混入させない境界を設けます。
+### 3. 公開用の設定と実際に使う設定を分ける
 
 公開リポジトリには、デモを再現するための [`guardian-settings.public.json`](Assets/StreamingAssets/Guardian/guardian-settings.public.json) だけを収録します。実運用値は `.guardian/guardian-settings.private.json` またはリポジトリ外の明示パスから読み、Git とビルドへ自動では含めません。
 
@@ -135,25 +111,19 @@ Unity のレストランでは通常 3 台、予備機を含めると 5 台の�
 
 実装: [`GuardianSettingsLoader.cs`](Assets/Scripts/GuardianSettingsLoader.cs) / [`GuardianCapabilityPolicy.cs`](Assets/Scripts/GuardianCapabilityPolicy.cs) / [private設定の置き方](.guardian/README.md)
 
-### 4. 歩行者停止と能力制限を混ぜない
-
-> [!IMPORTANT]
-> 人を避ける一時停止では、能力、仕事、積載物を変更しません。
+### 4. 歩行者による停止とロボットの状態を分ける
 
 歩行者との接近は現在速度、停止距離、最接近距離から予測します。危険な間は移動出力だけをゼロにし、ロボットの能力状態、担当仕事、積載した皿は変更しません。通過後は同じ仕事を再開できます。
 
 実装: [`GuardianPedestrianSafety.cs`](Assets/Scripts/GuardianPedestrianSafety.cs) / [歩行者検証](Assets/Editor/GuardianPedestrianBatch.cs)
 
-### 5. 日本語操作を確認してから反映する
-
-> [!IMPORTANT]
-> 入力を即時実行せず、対象と操作を分離して確認し、競合や期限切れを拒否します。
+### 5. 日本語の操作は確認してから反映する
 
 定型文をローカルで解析し、対象と操作を確認待ちにします。「実行」が来るまで状態を変えず、対象の状態が変化した、確認が古い、入力が曖昧、歩行者安全停止中に復帰を求めた、という場合は拒否します。生成 AI、外部 API、録音音声は使いません。
 
 実装: [`GuardianRuleConversation.cs`](Assets/Scripts/GuardianRuleConversation.cs) / [`GuardianInteractionPanel.cs`](Assets/Scripts/GuardianInteractionPanel.cs) / [入力検証](Assets/Editor/GuardianInteractionBatch.cs)
 
-### 6. シーン生成も既存作業を守る
+### 6. シーンを作り直すときも既存の作業を守る
 
 Editor の生成ツールは別シーンを勝手に閉じず、再生成前に対象シーンをバックアップします。生成後は Simulator、ロボット ID、素材、通路クリアランスを検証してから保存し、Build Settings の既存項目を削除しません。
 
@@ -186,7 +156,7 @@ macOS / Linux:
 scripts/verify-guardian-unity.sh
 ```
 
-## 検証の入口と限界
+## 検証と限界
 
 | 対象 | 検証入口 | 実装 |
 |---|---|---|
@@ -198,8 +168,7 @@ scripts/verify-guardian-unity.sh
 
 GitHub Actions は、C# の境界、設定、素材、起動スクリプト、検証入口の接続を静的に確認します。クラウド CI では Unity Editor を起動しないため、チェック成功を Play Mode、描画、実クリック、実センサーの成功とは表現しません。
 
-> [!WARNING]
-> 公開設定は審査用デモの例で、実機の安全限界、校正値、推奨値ではありません。実際の機体、荷物、床、速度に合わせた校正と安全評価が必要です。
+注意：公開設定は審査用デモの例で、実機の安全限界、校正値、推奨値ではありません。実際の機体、荷物、床、速度に合わせた校正と安全評価が必要です。
 
 - シミュレーターは現場での安全性や効果を保証するものではありません。
 - 歩行者デモの観測値は Unity 内の真値で、実カメラや実センサーの性能を再現しません。
@@ -209,36 +178,36 @@ GitHub Actions は、C# の境界、設定、素材、起動スクリプト、�
 
 | 技術 | 役割 | 採用理由 |
 |---|---|---|
-| [![Unity](https://img.shields.io/badge/Unity-000000?style=flat-square&logo=unity&logoColor=white)](https://unity.com/) [![C#](https://img.shields.io/badge/C%23-512BD4?style=flat-square&logo=dotnet&logoColor=white)](https://learn.microsoft.com/dotnet/csharp/) | 3D 店内、物理移動、割り当て、表示、Editor 検証 | ロボット、皿、人、通路の状態を同じ時間軸で確認できる |
-| ![Rigidbody](https://img.shields.io/badge/Unity-Rigidbody-000000?style=flat-square&logo=unity&logoColor=white) ![BoxCast](https://img.shields.io/badge/Physics-BoxCast-315D7D?style=flat-square) | ロボット移動、停止、障害物検出 | 表示上の移動ではなく物理位置で検証できる |
-| ![IMGUI](https://img.shields.io/badge/UI-IMGUI-315D7D?style=flat-square) ![TextMesh](https://img.shields.io/badge/Text-TextMesh-315D7D?style=flat-square) | 操作パネル、理由、状態表示 | 外部 UI パッケージなしで Editor と Player に表示できる |
-| [![Blender](https://img.shields.io/badge/Blender-E87D0D?style=flat-square&logo=blender&logoColor=white)](https://www.blender.org/) [![Python](https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/) | 家具、料理、人物の 3D 素材生成 | 権利を確認できる自作素材で公開版を再現できる |
-| [![JSON](https://img.shields.io/badge/JSON-000000?style=flat-square&logo=json&logoColor=white)](https://www.json.org/) | 公開設定と外部設定 | 人がレビューでき、Unity 標準機能で読み込める |
-| [![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white)](https://github.com/jphacks/tkb_2601/actions) | 公開設定、素材、境界、検証入口の静的確認 | Unity Editor がない環境でも公開物の欠落と意図しない混入を検出できる |
+| Unity / C# | 3D 店内、物理移動、割り当て、表示、Editor 検証 | ロボット、皿、人、通路の状態を同じ時間軸で確認できる |
+| Rigidbody / BoxCast | ロボット移動、停止、障害物検出 | 表示上の移動ではなく物理位置で検証できる |
+| IMGUI / TextMesh | 操作パネル、理由、状態表示 | 外部 UI パッケージなしで Editor と Player に表示できる |
+| Blender / Python | 家具、料理、人物の 3D 素材生成 | 権利を確認できる自作素材で公開版を再現できる |
+| JSON | 公開設定と外部設定 | 人がレビューでき、Unity 標準機能で読み込める |
+| GitHub Actions | 公開設定、素材、境界、検証入口の静的確認 | Unity Editor がない環境でも公開物の欠落と意図しない混入を検出できる |
 
 外部 API とクラウドは使用しません。通常のデモはインターネット接続なしで動作します。
 
 ### 独自技術
 
-ロボもりの中心は、**状態を仕事ごとの許可へ変換し、許されない仕事だけを、物を見失わずに任せ直すこと**です。
+ロボもりの中心は、状態を仕事ごとの許可へ変換し、許されない仕事だけを、物を見失わずに任せ直すことです。
 
-#### 能力表と差分取消
+#### 仕事の表と、許されない仕事だけの取り消し
 
 [`GuardianCapabilityPolicy.cs`](Assets/Scripts/GuardianCapabilityPolicy.cs) の許可表を唯一の判定元にし、状態変更時は現在の仕事を再評価します。許可がなくなった仕事だけを取り消すため、Warning や Limited を全停止と同一視しません。
 
-#### 所有権を保つ物理引き継ぎ
+#### 皿の持ち主を保ったままの引き継ぎ
 
 [`GuardianDishInventory.cs`](Assets/Scripts/GuardianDishInventory.cs) は皿の持ち主と予約を管理します。仕事の担当だけを先に付け替えず、返却、所有権変更、予約解除、次の割り当てを順に行うことで、二重所有と瞬間移動を防ぎます。
 
-#### 公開値と実運用値を混ぜない設定境界
+#### 公開用の値と実際に使う値を混ぜない
 
 [`GuardianSettingsLoader.cs`](Assets/Scripts/GuardianSettingsLoader.cs) は、公開サンプル、Editor のprivate設定、外部指定ファイルを明確に分けます。明示指定の失敗を既定値で隠さず、設定不足と不正な関係を利用前に拒否します。
 
-#### 安全停止と業務状態を別々に保つ
+#### 止まった理由を別々に保つ
 
 歩行者による停止、手動 STOP、能力状態は別の理由として扱います。安全停止が解除されても能力状態と仕事は勝手に変わらず、能力状態が正常でも手動 STOP は残ります。この分離により、画面の色と実際の移動が食い違う原因を追跡できます。
 
-## 公開設定と履歴について
+## 公開用設定と Git 履歴
 
 公開サンプルは [`Assets/StreamingAssets/Guardian/guardian-settings.public.json`](Assets/StreamingAssets/Guardian/guardian-settings.public.json)、private設定の置き場所は [`.guardian/README.md`](.guardian/README.md) にあります。
 
