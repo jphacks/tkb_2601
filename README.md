@@ -42,11 +42,17 @@
 2. Unity HubからUnity 6000.3.12f1で開きます。
 3. Unityのインポートとコンパイル完了を待ちます。
 4. Consoleにエラーがないことを確認します。
-5. シーンがない場合は `Guardian > Create or Rebuild 3D Simulator Scene` を実行します。
-6. `Assets/Scenes/GuardianRestaurant.unity` を開きます。
-7. Playボタンでシミュレーションを開始します。
+5. `Guardian > Scene Tools...` を開き、シーンがない場合は `Generate Scene` を実行します。
+6. 同じ画面の `Validate Saved Scene` で公開素材・配置の検証を実行します。
+7. `Assets/Scenes/GuardianRestaurant.unity` を開きます。
+8. Playボタンでシミュレーションを開始します。
 
 初回検証では、非公開モデルや購入素材を追加せずに起動してください。
+
+シーンの再生成は既存ファイルを上書きする前に確認し、
+`Library/GuardianSceneBackups`へ復元用コピーを作ります。ほかの編集中シーンと
+Build Settingsの既存項目は保持されます。生成後のシーンには、従来と同じ
+公開デモ用コード既定値が使われ、private設定は自動読込しません。
 
 ## 制御設定
 

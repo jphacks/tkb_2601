@@ -55,12 +55,24 @@ jobs:
               "GuardianSettingsBatch.cs",
               "GuardianPedestrianBatch.cs",
               "GuardianInteractionBatch.cs",
+              "GuardianSceneTools.cs",
+              "GuardianSceneBatch.cs",
           ]
 
           for name in required:
               assert (root / name).is_file(), name
 
           assert Path("Assets/Scripts/GuardianSimulator.cs").is_file()
+
+          scene_setup = (root / "GuardianSceneSetup.cs").read_text(encoding="utf-8-sig")
+          assert "NewSceneMode.Additive" in scene_setup
+          assert "SaveCurrentModifiedScenesIfUserWantsTo" in scene_setup
+          assert "BackupExistingScene" in scene_setup
+          assert "RestaurantEnvironmentEditor.Validate" in scene_setup
+          assert "EditorBuildSettings.scenes.ToList()" in scene_setup
+
+          nekobot_batch = (root / "GuardianNekobotBatch.cs").read_text(encoding="utf-8-sig")
+          assert "EnsureBuildSettingsScene" in nekobot_batch
 
           print("Guardian Editor static checks passed")
           PY
