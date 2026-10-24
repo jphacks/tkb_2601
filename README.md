@@ -1,5 +1,7 @@
 # ロボもり
 
+[![ロボもり：不調なロボットにも、できる仕事を。](docs/images/hero.png)](https://docs.google.com/presentation/d/1iMbaZZ9icVo0Tvb6plEj2R-0JYNWx0dC/edit?usp=sharing)
+
 不調なロボットにも、できる仕事を。
 
 <div align="center">
@@ -55,7 +57,7 @@
 | 公開設定とprivate設定の分離 | 収録 | [`GuardianSettingsLoader.cs`](Assets/Scripts/GuardianSettingsLoader.cs) / [公開サンプル](Assets/StreamingAssets/Guardian/guardian-settings.public.json) |
 | 歩行者安全デモ | オプトインで収録 | [`GuardianPedestrianSafety.cs`](Assets/Scripts/GuardianPedestrianSafety.cs) |
 | 日本語の定型操作デモ | オプトインで収録 | [`GuardianInteractionPanel.cs`](Assets/Scripts/GuardianInteractionPanel.cs) / [`GuardianRuleConversation.cs`](Assets/Scripts/GuardianRuleConversation.cs) |
-| M5StickS3 と Python 中継 | 統合版リポジトリで公開 | [ファームウェア](https://github.com/Taiga-Sekida/jphacks_2026_unity_sim/tree/main/firmware/sticks3_check) / [センサー中継](https://github.com/Taiga-Sekida/jphacks_2026_unity_sim/tree/main/scripts/sensor_bridge) |
+| M5StickS3 と Python 中継 | 非収録 | この公開リポジトリでは模擬入力を使用 |
 | 実ロボット、実運用設定、権利未確認モデル | 非収録 | [公開範囲と制約](docs/PUBLIC_SCOPE.md) |
 
 ## 仕組み
@@ -70,9 +72,9 @@ flowchart LR
   A --> H["人<br/>状態を確認して復帰"]
 ```
 
-この公開リポジトリだけでも、模擬入力を使って能力制限、仕事の取消、再割り当て、皿の返却、停止と復帰を確認できます。実物の M5StickS3 から状態を送るファームウェアと Python 中継、Unity の受け口まで含む構成は [センサー統合版](https://github.com/Taiga-Sekida/jphacks_2026_unity_sim) で公開しています。
+この公開リポジトリでは、模擬入力を使って能力制限、仕事の取り消し、再割り当て、皿の返却、停止と復帰を確認できます。実物の M5StickS3 から状態を送るファームウェアと Python 中継は含みません。
 
-センサー統合版では、Warning / Limited を能力制限として扱い、許可された仕事を止めません。センサー値が途切れた Hold のときだけ対象機を止め、データ復帰後の人の操作で中継由来の Hold を解除します。人が Unity で押した STOP は、センサー側から勝手に解除しません。
+外部入力の Warning / Limited は能力制限として扱い、許可された仕事を止めません。Hold のときだけ対象機を止め、Normal に戻ったときは外部入力がかけた Hold だけを解除します。人が Unity で押した STOP は、外部入力から勝手に解除しません。
 
 ## デモで確認できること
 
@@ -244,6 +246,5 @@ GitHub Actions は、C# の境界、設定、素材、起動スクリプト、�
 - [公開範囲と検証](docs/PUBLIC_SCOPE.md)
 - [実機の組み立てガイド](docs/HARDWARE_ASSEMBLY.md)
 - [センサー候補と測定上の注意](docs/REAL_SENSOR_OPTIONS.md)
-- [センサー統合版の接続仕様](https://github.com/Taiga-Sekida/jphacks_2026_unity_sim/blob/main/docs/STICKS3_UNITY_LINK.md)
 
 ![配膳から店・施設、工場・物流へ広げるロードマップ](docs/images/pitch-roadmap.png)
