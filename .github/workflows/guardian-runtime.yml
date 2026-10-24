@@ -23,8 +23,8 @@ jobs:
           assert root.is_dir()
 
           scripts = sorted(root.glob("*.cs"))
-          assert len(scripts) == 23, (
-              f"Expected 23 C# files, got {len(scripts)}"
+          assert len(scripts) == 26, (
+              f"Expected 26 C# files, got {len(scripts)}"
           )
 
           guids = []
@@ -53,6 +53,9 @@ jobs:
               "GuardianCapabilityPolicy.cs",
               "GuardianSettingsLoader.cs",
               "GuardianPedestrianSafety.cs",
+              "GuardianFonts.cs",
+              "GuardianRuleConversation.cs",
+              "GuardianInteractionPanel.cs",
               "GuardianDishInventory.cs",
               "GuardianTrafficController.cs",
               "GuardianFleetOperator.cs",
@@ -110,4 +113,21 @@ jobs:
           assert ignored.returncode == 0, "Private settings path must remain ignored"
           assert not Path(".guardian/guardian-settings.private.json").exists()
           print("Guardian settings boundary checks passed")
+          PY
+
+      - name: Validate Japanese font license and integrity
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+
+          root = Path("Assets/Art/Fonts/Resources")
+          font = root / "NotoSansJP-Regular.otf"
+          license_file = root / "NotoSansJP-OFL.txt"
+          assert font.is_file() and Path(str(font) + ".meta").is_file()
+          assert license_file.is_file() and Path(str(license_file) + ".meta").is_file()
+          assert font.stat().st_size == 4533028
+          assert hashlib.sha256(font.read_bytes()).hexdigest() == "dff723ba59d57d136764a04b9b2d03205544f7cd785a711442d6d2d085ac5073"
+          assert "SIL OPEN FONT LICENSE Version 1.1" in license_file.read_text(encoding="utf-8")
+          print("Guardian Japanese font checks passed")
           PY
