@@ -58,7 +58,7 @@ body{width:1920px;height:1080px;background:#fff;font-family:'Noto Sans JP',sans-
 <div class="abs" style="left:560px;top:30px;width:1332px;height:690px;border:4px dashed #2E5B7A;border-radius:40px;z-index:0"></div>
 <div class="abs" style="left:600px;top:10px;background:#fff;padding:0 14px;font-family:'M PLUS Rounded 1c';font-size:29px;color:#2E5B7A;display:flex;align-items:center;gap:10px;z-index:2">
   <svg width="40" height="34" viewBox="0 0 40 34"><g fill="none" stroke="#2E5B7A" stroke-width="4" stroke-linecap="round"><path d="M4 12 Q20 -1 36 12"/><path d="M10 19 Q20 10 30 19"/><path d="M16 26 Q20 22 24 26"/><path d="M6 31 L34 3" stroke="#D93A3F"/></g></svg>
-  1 台の PC（ふだんはインターネット不要。外へ出るのは人が扉 2 を開けたときだけ）
+  1 台の PC で完結（インターネットに出るのは、人が扉 2 を開けたときの要約だけ）
 </div>
 
 <!-- ① measure -->
@@ -76,7 +76,7 @@ body{width:1920px;height:1080px;background:#fff;font-family:'Noto Sans JP',sans-
   <div class="code" style="left:30px;top:384px;font-size:21px">{"type":"sample","vib_rms_g":0.64}</div>
   <div class="row" style="left:30px;top:452px">
     <span class="pill" style="font-size:23px;padding:6px 16px">KEY1 基準値</span>
-    <span class="pill" style="font-size:23px;padding:6px 16px;background:var(--green);color:#fff">KEY2 人が戻す</span>
+    <span class="pill" style="font-size:23px;padding:6px 16px;background:var(--green);color:#fff">KEY2 人が再開</span>
   </div>
 </div>
 <div class="lbl" style="left:510px;top:176px;font-size:26px">USB</div>
@@ -90,8 +90,8 @@ body{width:1920px;height:1080px;background:#fff;font-family:'Noto Sans JP',sans-
     <span class="st" style="background:var(--warn)">Warning</span><span class="n">×6 ▶</span>
     <span class="st" style="background:var(--lim)">Limited</span>
   </div>
-  <div class="t" style="left:30px;top:212px;font-size:24px">300 mg 以上が<b>続いた回数</b>で上げる</div>
-  <div class="row" style="left:30px;top:258px;font-size:23px">約 3 秒途切れ ▶ <span class="st" style="background:var(--hold);font-size:20px;padding:4px 9px">Hold</span>　戻すのは <span class="st" style="background:var(--green);font-size:20px;padding:4px 9px">KEY2</span></div>
+  <div class="t" style="left:30px;top:212px;font-size:24px">0.3 g 以上の揺れが<b>続いた回数</b>で判定</div>
+  <div class="row" style="left:30px;top:258px;font-size:23px">値が約 3 秒途切れ ▶ <span class="st" style="background:var(--hold);font-size:20px;padding:4px 9px">Hold</span>　再開は <span class="st" style="background:var(--green);font-size:20px;padding:4px 9px">KEY2</span></div>
 </div>
 <div class="lbl" style="left:1150px;top:176px;font-size:26px">TCP</div>
 <div class="lbl" style="left:1140px;top:244px;font-size:19px;font-family:'Noto Sans JP';font-weight:700;color:var(--sub)">0.5 秒ごと</div>
@@ -99,17 +99,17 @@ body{width:1920px;height:1080px;background:#fff;font-family:'Noto Sans JP',sans-
 <!-- ② judge: core -->
 <div class="box" style="left:600px;top:452px;width:530px;height:238px;border-color:var(--navy);background:#fff">
   <div class="title" style="left:28px;top:16px;font-size:31px;color:var(--navy)">Robomori core <span style="font-family:'Noto Sans JP';font-weight:700;font-size:21px;color:var(--sub)">Docker・この PC だけ</span></div>
-  <div class="t" style="left:30px;top:66px;font-size:21px;line-height:1.6"><b>ルール AI</b>：rules.json の数字で判断（API なし）<br>　止まった回数・M5・KEY2 → <b>安全／注意／危険</b><br><b>画面</b>：ワンタイムパスワード・この PC だけ<br>中継の記録は<b>読むだけ</b>・監査ログ</div>
+  <div class="t" style="left:30px;top:66px;font-size:21px;line-height:1.6"><b>ルール AI</b>：rules.json の数字で判断（API なし）<br>　止まった回数・揺れ・KEY2 → <b>安全／注意／危険</b><br><b>画面</b>：ワンタイムパスワード・この PC だけ<br>中継の記録は<b>読み取りのみ</b>・監査ログ</div>
 </div>
-<div class="lbl" style="left:1160px;top:524px;font-size:17px;font-family:'Noto Sans JP';font-weight:700;color:var(--sub)">様子</div>
+<div class="lbl" style="left:1160px;top:524px;font-size:17px;font-family:'Noto Sans JP';font-weight:700;color:var(--sub)">状態</div>
 <div class="lbl" style="left:1160px;top:610px;font-size:17px;font-family:'Noto Sans JP';font-weight:700;color:var(--sub)">減速の助言</div>
 
 <!-- ③ reassign -->
 <div class="box" style="left:1250px;top:80px;width:620px;height:610px;border-color:var(--dark);background:var(--dark-bg)">
-  <div class="hdr" style="background:var(--dark)">③ 任せ直す</div>
+  <div class="hdr" style="background:var(--dark)">③ 再割り当て</div>
   <div class="title" style="left:30px;top:100px;font-size:36px">Unity シミュレーター</div>
   <div class="row" style="left:26px;top:160px">
-    <span class="pill" style="font-size:24px">受け口</span><span class="ar"></span><span class="pill" style="font-size:24px">能力表</span><span class="ar"></span><span class="pill" style="font-size:24px">割り当て直し</span>
+    <span class="pill" style="font-size:24px">受信</span><span class="ar"></span><span class="pill" style="font-size:24px">許可の表</span><span class="ar"></span><span class="pill" style="font-size:24px">再割り当て</span>
   </div>
   <table class="abs" style="left:28px;top:232px;border-collapse:separate;border-spacing:0;font-size:23px;background:#fff;border-radius:14px;box-shadow:0 3px 0 rgba(0,0,0,.06)">
     <tr style="font-weight:700;color:var(--sub)"><td style="padding:5px 14px"></td><td style="padding:5px 12px">スープ</td><td style="padding:5px 12px">料理</td><td style="padding:5px 14px 5px 12px">皿</td></tr>
@@ -117,7 +117,7 @@ body{width:1920px;height:1080px;background:#fff;font-family:'Noto Sans JP',sans-
     <tr><td style="padding:2px 14px;font-family:'M PLUS Rounded 1c';color:var(--warn)">Warning</td><td align="center" style="color:var(--hold)">×</td><td align="center">○</td><td align="center">○</td></tr>
     <tr><td style="padding:2px 14px 8px;font-family:'M PLUS Rounded 1c';color:var(--lim)">Limited</td><td align="center" style="color:var(--hold)">×</td><td align="center" style="color:var(--hold)">×</td><td align="center">○</td></tr>
   </table>
-  <div class="t" style="left:384px;top:236px;font-size:23px;line-height:1.5">許されない<br>仕事だけ<b>取り消し</b><br><b>別の機体</b>へ<br>任せ直す</div>
+  <div class="t" style="left:384px;top:236px;font-size:23px;line-height:1.5">許されない<br>仕事だけ<b>取り消し</b><br><b>別の機体</b>に<br>再割り当て</div>
   <svg class="abs" style="left:40px;top:388px" width="540" height="150" viewBox="0 0 580 188">
     <defs>
       <g id="bot"><rect x="-36" y="-44" width="72" height="66" rx="21" fill="#fff" stroke="#1B232C" stroke-width="4"/><rect x="-25" y="-33" width="50" height="28" rx="10" fill="#1B232C"/><rect x="-38" y="16" width="76" height="12" rx="6" fill="currentColor"/><circle cx="-23" cy="37" r="9.5" fill="#1B232C"/><circle cx="23" cy="37" r="9.5" fill="#1B232C"/><circle cx="-22" cy="-47" r="9.5" fill="currentColor"/><circle cx="22" cy="-47" r="9.5" fill="currentColor"/></g>
@@ -133,7 +133,7 @@ body{width:1920px;height:1080px;background:#fff;font-family:'Noto Sans JP',sans-
     <text x="290" y="182" font-family="M PLUS Rounded 1c" font-weight="800" font-size="24" text-anchor="middle" fill="#B0741E">B 注意（揺れ）</text>
     <text x="500" y="182" font-family="M PLUS Rounded 1c" font-weight="800" font-size="24" text-anchor="middle">C 正常</text>
   </svg>
-  <div class="t" style="left:30px;top:540px;font-size:21px;line-height:1.5">注意・制限でも<b>止めず</b>、できる仕事を続ける（赤は皿だけ）<br>中継が途切れたら、止めるのは<b>測っている B だけ</b></div>
+  <div class="t" style="left:30px;top:540px;font-size:21px;line-height:1.5">注意・制限では<b>止めず</b>、許された仕事を続ける<br>センサーが途切れたら<b>B だけを停止</b>。再開は人の KEY2</div>
 </div>
 
 <!-- ④ human -->
@@ -142,15 +142,15 @@ body{width:1920px;height:1080px;background:#fff;font-family:'Noto Sans JP',sans-
   <div class="title" style="left:228px;top:18px;font-size:34px">
     <svg width="38" height="42" viewBox="0 0 40 44"><circle cx="20" cy="12" r="10" fill="#22A86B"/><path d="M2 44 q0 -20 18 -20 q18 0 18 20z" fill="#22A86B"/></svg>店員
   </div>
-  <div class="t" style="left:32px;top:100px;font-size:24px;line-height:1.62"><b>見る</b>　段階・理由・ルール AI の判断<br><b>聞く</b>　「いま危ない？」「B は？」<br><b>戻す</b>　StickS3 の KEY2<br><b>止める・再開</b>　STOP／画面のボタン<br><b>外へ出す</b>　<svg width="54" height="36" viewBox="0 0 54 36" style="vertical-align:-9px"><rect x="2" y="3" width="50" height="30" rx="4" fill="#1F4E8C" stroke="#1B232C" stroke-width="3"/><rect x="9" y="10" width="14" height="14" rx="2" fill="#1B232C"/><g fill="#E8C35A"><circle cx="8" cy="29" r="1.6"/><circle cx="14" cy="29" r="1.6"/><circle cx="20" cy="29" r="1.6"/><circle cx="26" cy="29" r="1.6"/><circle cx="32" cy="29" r="1.6"/></g><circle cx="40" cy="16" r="6.5" fill="#22A86B" stroke="#fff" stroke-width="2"/></svg> PSoC 6 の <b>SW2</b> → Drive</div>
+  <div class="t" style="left:32px;top:100px;font-size:24px;line-height:1.62"><b>見る</b>　状態・理由・ルール AI の判断<br><b>聞く</b>　「いま危ない？」「B は？」<br><b>再開</b>　M5StickS3 の KEY2<br><b>止める・再開</b>　STOP／画面のボタン<br><b>共有</b>　<svg width="54" height="36" viewBox="0 0 54 36" style="vertical-align:-9px"><rect x="2" y="3" width="50" height="30" rx="4" fill="#1F4E8C" stroke="#1B232C" stroke-width="3"/><rect x="9" y="10" width="14" height="14" rx="2" fill="#1B232C"/><g fill="#E8C35A"><circle cx="8" cy="29" r="1.6"/><circle cx="14" cy="29" r="1.6"/><circle cx="20" cy="29" r="1.6"/><circle cx="26" cy="29" r="1.6"/><circle cx="32" cy="29" r="1.6"/></g><circle cx="40" cy="16" r="6.5" fill="#22A86B" stroke="#fff" stroke-width="2"/></svg> PSoC 6 の <b>SW2</b> → Drive</div>
 </div>
-<div class="lbl" style="left:280px;top:640px;font-size:25px;color:#22A86B">KEY2 で戻す</div>
+<div class="lbl" style="left:280px;top:640px;font-size:25px;color:#22A86B">KEY2 で再開</div>
 <div class="lbl" style="left:536px;top:790px;font-size:17px;line-height:1.1;color:#22A86B;text-align:center">PSoC 6<br><span style="font-size:22px">SW2</span></div>
 
 <!-- ⑤ share -->
 <div class="box" style="left:600px;top:776px;width:1290px;height:200px;border-color:#7B4FC9;background:#F4EFFC">
   <div class="hdr" style="background:#7B4FC9">⑤ 共有する</div>
-  <div class="t" style="left:300px;top:24px;font-size:22px">人が <b>PSoC 6 の SW2</b> を押したときだけ。<b>会社ごと</b>に、自社と保守会社の<b>鍵でしか開けない</b></div>
+  <div class="t" style="left:300px;top:24px;font-size:22px">人が <b>PSoC 6 の SW2</b> を押したときだけ共有。<b>会社ごと</b>に暗号化し、<b>自社と保守会社だけ</b>が読める</div>
   <div class="row" style="left:26px;top:100px;gap:6px">
     <span class="pill" style="font-size:22px;padding:8px 16px;flex-direction:column;line-height:1.25">要約を<b style="font-family:'Noto Sans JP'">暗号化</b><span style="font-size:15px;color:var(--sub);font-family:'Noto Sans JP'">ECDH P-256・AES-GCM</span></span><span class="ar"></span>
     <span class="pill" style="font-size:22px;padding:8px 16px;flex-direction:column;line-height:1.25">会社の PDS<span style="font-size:15px;color:var(--sub);font-family:'Noto Sans JP'">AT プロトコル・社内 VPN／bsky.social</span></span><span class="ar"></span>
@@ -161,7 +161,7 @@ body{width:1920px;height:1080px;background:#fff;font-family:'Noto Sans JP',sans-
 </div>
 
 <!-- slogan -->
-<div class="abs" style="left:600px;top:992px;width:880px;height:68px;background:var(--navy);border-radius:16px;color:#fff;font-family:'M PLUS Rounded 1c';font-size:34px;display:flex;align-items:center;justify-content:center;z-index:1">上げるのは自動、戻すのも外へ出すのも人。</div>
+<div class="abs" style="left:600px;top:992px;width:880px;height:68px;background:var(--navy);border-radius:16px;color:#fff;font-family:'M PLUS Rounded 1c';font-size:34px;display:flex;align-items:center;justify-content:center;z-index:1">制限を強めるのは自動。解除と共有は人が決める。</div>
 
 <!-- legend -->
 <div class="abs" style="left:1500px;top:986px;width:400px;height:90px;font-size:19px;line-height:1.45;z-index:1;white-space:nowrap">
