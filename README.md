@@ -6,6 +6,8 @@
 
 **不調なロボットにも、できる仕事を。**
 
+チーム **TurTles**
+
 [![Used Skills](https://skillicons.dev/icons?i=unity,cs,py,arduino,docker,django,js,blender)](https://skillicons.dev)
 
 </div>
