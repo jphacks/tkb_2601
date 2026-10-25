@@ -26,6 +26,12 @@ namespace Guardian.UnitySim
         {
             if (active) return;
             sim=GetComponent<GuardianSimulator>(); suite=name; completion=done;
+            report.Add("DEFAULT_MOTION="+sim.MotionSpeedMultiplier+" DEFAULT_SUPERVISION="+sim.OperatorSupervisionEnabled);
+            report.Add("PHYSICAL_FORCE_MODEL="+sim.Settings.Physical.Enabled+" ASSUMED_CHASSIS_KG="+sim.Settings.Physical.ChassisMass+" DRIVE_N="+sim.Settings.Physical.DriveForce+" BRAKE_N="+sim.Settings.Physical.BrakeForce);
+            sim.OperatorSupervisionEnabled=false; // Autonomous regressions; live decision UX is exercised explicitly.
+            string[] motionArgs=Environment.GetCommandLineArgs(); int motionIndex=Array.IndexOf(motionArgs,"-guardianMotionSpeed");
+            int motion=motionIndex>=0 && motionIndex+1<motionArgs.Length?int.Parse(motionArgs[motionIndex+1]):2;
+            if(!sim.TrySetMotionSpeed(motion)) throw new ArgumentException("Only 1x/2x physical motion is supported");
             output=Path.Combine(Directory.GetParent(Application.dataPath).FullName,"Recordings/physics-tests",suite);
             Directory.CreateDirectory(output); File.WriteAllText(Path.Combine(output,"penetration-maxima.csv"),"suite,seed,fleet,sim_seconds,fixed_step,robot,other,depth_m,axis,robot_motion,other_position,other_rotation\n"); active=true;
             Application.logMessageReceived+=OnLog; Application.runInBackground=true;
@@ -58,12 +64,31 @@ namespace Guardian.UnitySim
             report.Add("Unity="+Application.unityVersion+" graphics="+SystemInfo.graphicsDeviceName+" suite="+suite);
             Check(Application.unityVersion=="6000.3.12f1","exact Unity version");
             report.Add("INITIAL_CONFIG collectEmptyOnDelivery="+sim.Settings.CollectEmptyOnDelivery+" mealSeconds="+sim.Settings.MealSeconds);
+            report.Add("MOTION_MULTIPLIER="+sim.MotionSpeedMultiplier+" fixedDeltaTime="+Time.fixedDeltaTime+" testTimeScale="+Time.timeScale+" (automation only)");
             if(suite=="serve-clear" || suite=="serve-clear-stress" || suite=="serve-clear-waiting" || suite=="full") Check(sim.Settings.CollectEmptyOnDelivery,"normal scene enables same-visit collection by default");
             report.Add("MODEL_PROFILE="+(sim.Robots.All(r=>r.transform.Find("Robot Visual/Nekobot Model")!=null)?"local-nekobot":"owned-placeholder"));
+            if(suite=="motion-demo") { yield return MotionDemoRegression(); Finish(); yield break; }
+            if(suite=="reservation7") { yield return StressSeeds(); Finish(); yield break; }
+            if(suite=="tray-probe")
+            {
+                foreach(var r in sim.Robots)
+                {
+                    var tray=r.GetComponent<GuardianCargoTray>()??r.gameObject.AddComponent<GuardianCargoTray>(); tray.Configure();
+                    report.Add("TRAY_PROBE actor="+r.RobotId+" local="+tray.LocalModel+" front="+tray.FaceCenter.ToString("F5"));
+                    for(int n=0;n<tray.Shelves.Count;n++)report.Add("TRAY_SHELF actor="+r.RobotId+" n="+n+" bounds="+tray.Shelves[n].ToString("F5")+" anchor="+r.transform.InverseTransformPoint(tray.Anchors[n].position).ToString("F5"));
+                }
+                Finish(); yield break;
+            }
+            if(suite=="tray-service") { yield return TrayServiceRegression(); Finish(); yield break; }
+            if(suite=="human-held-collections") { yield return HumanHeldCollectionRegression(); Finish(); yield break; }
+            if(suite=="human-hold-probe") { yield return HumanSameVisitHoldProbe(); Finish(); yield break; }
+            if(suite=="human-handoff-probe") { yield return HumanHandoffProbe(); Finish(); yield break; }
+            if(suite=="human-intervention") { yield return HumanInterventionRegression(); Finish(); yield break; }
+            if(suite=="linked-state") { yield return LinkedStateRegression(); Finish(); yield break; }
             if (suite=="serve-clear") { yield return ServeClearRegression(); Finish(); yield break; }
             if (suite=="serve-clear-stress") { yield return ServeClearStress(); Finish(); yield break; }
             if (suite=="serve-clear-waiting") { yield return ServeClearWaitingRecovery(); Finish(); yield break; }
-            if (suite=="contact42") { yield return StressSeeds(); Finish(); yield break; }
+            if (suite.StartsWith("contact42")) { yield return StressSeeds(); Finish(); yield break; }
             if (suite=="deploydiag") { yield return DeployDiagnostic(); Finish(); yield break; }
             if (suite=="diagnose42" || suite=="replay42") { yield return Diagnose42(); Finish(); yield break; }
             if (suite=="legacy") { yield return LegacyRegression(); Finish(); yield break; }
@@ -73,6 +98,7 @@ namespace Guardian.UnitySim
             if (suite=="reviewgui") { yield return PanelModeRegression(); Finish(); yield break; }
             if (suite=="review") { yield return ReviewRegression(); Finish(); yield break; }
             yield return Smoke();
+            if (!failed && suite=="full") yield return LinkedStateRegression();
             if (!failed && suite=="full") { yield return ReviewRegression(); yield return RetirementLifecycle(); yield return ReturnBatchRegression(); }
             if (!failed && (suite=="fleet" || suite=="full")) yield return FleetOperations();
             if (!failed && (suite=="waves" || suite=="full")) yield return MultiWave();
@@ -80,11 +106,15 @@ namespace Guardian.UnitySim
             if (!failed && (suite=="scenarios" || suite=="full")) yield return OpposingReturnsAndObstacle();
             if (!failed && (suite=="full" || suite=="stress")) yield return StressSeeds();
             if(!failed && suite=="full") yield return ServeClearRegression();
+            if(!failed && suite=="full") yield return TrayServiceRegression();
+            if(!failed && suite=="full") yield return HumanInterventionRegression();
             Finish();
         }
-        private void Reset(int seed=2026,bool serveClear=false)
+        private void Reset(int seed=2026,bool serveClear=false,[System.Runtime.CompilerServices.CallerMemberName] string scenario=null)
         {
+            clearanceCase=scenario??suite;
             progressGuards.Clear();
+            ResetDishVisibilityChecks();
             sim.Settings.CollectEmptyOnDelivery=serveClear; sim.Settings.MealSeconds=8; sim.Settings.MaximumOpenTasks=24;
             sim.Settings.Seed=seed; sim.Settings.RandomFaults=false; sim.AutomaticTasks=false;
             sim.ReserveFleet=false; sim.Settings.MaximumDepartureDelay=.5f; sim.SetMode(GuardianSimulationMode.Physics);
@@ -142,6 +172,7 @@ namespace Guardian.UnitySim
         {
             if (!active || failed || sim.Mode!=GuardianSimulationMode.Physics) return;
             fixedSteps++; breakdown?.Tick(Time.fixedDeltaTime);
+            CaptureTrafficTrace();
             maxAssigned=Mathf.Max(maxAssigned,sim.Robots.Count(r=>r.CurrentTask!=null));
             maxMoving=Mathf.Max(maxMoving,sim.Robots.Count(r=>r.CurrentTask!=null && new Vector2(r.PhysicsDriver.Body.linearVelocity.x,r.PhysicsDriver.Body.linearVelocity.z).magnitude>.1f));
             if (sim.Robots.Any(r=>r.CurrentTask!=null))
@@ -156,10 +187,12 @@ namespace Guardian.UnitySim
             try
             {
                 sim.Inventory.ValidateOwnership();
+                VerifyDishVisibility();
                 GuardianRobot[] robots=sim.Robots.ToArray();
                 for (int i=0;i<robots.Length;i++)
                 {
                     var a=robots[i].PhysicsDriver;
+                    if(checkedBodies.Add(robots[i].GetInstanceID())) VerifyMeshEnvelope(robots[i],robots[i].transform.Find(NekobotVisualFactory.VisualRootName));
                     for (int j=i+1;j<robots.Length;j++) TestPenetration(a,robots[j].PhysicsDriver.Shape);
                     foreach (Collider obstacle in sim.PhysicsWorld.Obstacles)
                         if (obstacle!=null && obstacle.enabled && obstacle.GetComponent<GuardianPhysicsObstacle>()?.Floor!=true) TestPenetration(a,obstacle);
@@ -369,7 +402,10 @@ namespace Guardian.UnitySim
             yield return new WaitForSeconds(.2f);
             Check(sim.Robots.Single(r=>r.RobotId=="D").Condition==RobotCondition.Normal && sim.Fleet.Deploy("D").State==GuardianCommandState.Accepted,"positive lower threshold / upper=1 recovers deployable Normal spare");
             bool localModel=sim.Robots.First().transform.Find("Robot Visual/Nekobot Model")!=null;
-            Check(localModel?Mathf.Abs(sim.Robots.Single(r=>r.RobotId=="C").PhysicsDriver.Home.z-5.25f)<.0001f:sim.Robots.Single(r=>r.RobotId=="C").PhysicsDriver.Home.z<5.25f,"north-bay clearance matches the selected model profile");
+            var north=sim.Robots.Single(r=>r.RobotId=="C").PhysicsDriver;
+            var backWall=sim.PhysicsWorld.Obstacles.Single(c=>c.name=="Beige back wall");
+            Check(north.Home.z<=5.2501f && backWall.bounds.min.z-north.Home.z>=north.TurningRadius+.0199f,
+                "north-bay complete offset-aware turning circle has at least 20mm wall clearance for the selected model");
             var size=sim.Robots.First().PhysicsDriver.Shape.size;
             Check(sim.Robots.All(r=>(r.PhysicsDriver.Shape.size-size).sqrMagnitude<.00001f),"all five physical envelopes use the same existing robot visual");
             Check(sim.Robots.All(r=>(r.transform.Find("Robot Visual/Nekobot Model")!=null)==localModel),"all five actors consistently use the selected actual or owned-placeholder profile");
@@ -523,7 +559,7 @@ namespace Guardian.UnitySim
         }
         private IEnumerator StressSeeds()
         {
-            foreach (bool five in (suite=="contact42"?new[]{false}:suite=="stress42"?new[]{true}:new[]{false,true})) foreach (int seed in (suite=="stress42" || suite=="contact42"?new[]{42}:new[]{7,42,2026}))
+            foreach (bool five in (suite.StartsWith("contact42")?new[]{false}:suite=="stress42" || suite=="reservation7"?new[]{true}:new[]{false,true})) foreach (int seed in (suite=="reservation7"?new[]{7}:suite=="stress42" || suite.StartsWith("contact42")?new[]{42}:new[]{7,42,2026}))
             {
                 Reset(seed); sim.ReserveFleet=five;
                 sim.Settings.MinimumTaskInterval=12; sim.Settings.MaximumTaskInterval=24;
@@ -558,17 +594,25 @@ namespace Guardian.UnitySim
             var rb=b.attachedRigidbody;
             Vector3 p=rb==null?b.transform.position:rb.position;
             Quaternion q=rb==null?b.transform.rotation:rb.rotation;
-            if (!Physics.ComputePenetration(a.Shape,a.Body.position,a.Body.rotation,b,p,q,out Vector3 axis,out float depth)) return;
+            bool hit=Physics.ComputePenetration(a.Shape,a.Body.position,a.Body.rotation,b,p,q,out Vector3 axis,out float depth);
+            var other=rb==null?null:rb.GetComponent<GuardianRobot>();
+            if(other!=null) RecordRobotPair(a,other.PhysicsDriver,hit?depth:0);
+            if(!hit) return;
             if(depth>worstPenetration+.0000001f)
             {
                 string[] cells={suite,sim.Settings.Seed.ToString(),sim.Robots.Count.ToString(),sim.DemoClock.ToString("F4",System.Globalization.CultureInfo.InvariantCulture),fixedSteps.ToString(),a.Robot.RobotId,b.name,depth.ToString("F9",System.Globalization.CultureInfo.InvariantCulture),axis.ToString("F5"),a.MotionState,p.ToString("F5"),q.eulerAngles.ToString("F5")};
                 File.AppendAllText(Path.Combine(output,"penetration-maxima.csv"),string.Join(",",cells.Select(cell=>"\""+cell.Replace("\"","\"\"")+"\""))+"\n");
             }
             worstPenetration=Mathf.Max(worstPenetration,depth);
+            if(other!=null && suite!="contact42-baseline" && depth>0)
+                throw new InvalidOperationException("Robot pair overlap "+a.Robot.RobotId+" / "+b.name+" depth="+depth+"; required=0m");
             if (depth>.008f) throw new InvalidOperationException("Physical penetration "+a.Robot.RobotId+" / "+b.name+" depth="+depth);
         }
         private void Finish()
         {
+            SaveTrafficTrace();
+            SaveTrayEvidence();
+            SaveRobotPairs();
             active=false; Time.timeScale=1;
             report.Add("Fixed physics steps checked="+fixedSteps+" maximum physical penetration="+worstPenetration.ToString("F6")+"m");
             report.Add("Recorder enabled=false; no video or PNG sequence");

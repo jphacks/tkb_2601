@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using UnityEngine;
@@ -10,12 +11,43 @@ namespace Guardian.UnitySim
         private bool progressingService;
         private string mealSecondsText,mealSettingMessage;
 
+        /// <summary>
+        /// The guest who ordered this meal left before it was picked up: take the order back, so no robot puts it in front of
+        /// an empty chair. Only while the meal is still on the kitchen pass, and never an order a person has a say in
+        /// (held, handed over, or sent to a named robot). Off in recorded verifications (KeepServing).
+        /// </summary>
+        public bool WithdrawOrder(DeliveryTask task,string reason)
+        {
+            if(!Settings.KeepServing || task==null || task.Kind==DeliveryKind.EmptyDishes || task.Withdrawn) return false;
+            if(task.Phase!=TaskPhase.Pending && task.Phase!=TaskPhase.ToPickup) return false;   // already on a tray
+            if(task.AwaitingServicePickup || !string.IsNullOrEmpty(task.OperatorHoldReason) || !string.IsNullOrEmpty(task.RequestedRobotId)
+                || !string.IsNullOrEmpty(task.HandedOverBy) || Inventory==null || !Inventory.StillInKitchen(task)) return false;
+            var robot=task.AssignedTo;
+            if(robot!=null)
+            {
+                if(robot.CurrentTask!=task || robot.Carrying) return false;
+                robot.ReleaseTask();
+                if(_mode==GuardianSimulationMode.Physics) _traffic.ReleaseJob(task);
+            }
+            Inventory.Discard(task);
+            task.AssignedTo=null; task.Withdrawn=true; task.PendingReason=reason;
+            task.Phase=TaskPhase.Completed; task.CompletedAt=DemoClock;
+            Log(task.Id+" withdrawn: "+reason);
+            Replan();
+            return true;
+        }
+
         private bool StartSameVisitReturn(GuardianRobot robot,DeliveryTask delivery)
         {
             if(_mode!=GuardianSimulationMode.Physics || Inventory==null || !Settings.CollectEmptyOnDelivery
                 || delivery.Kind==DeliveryKind.EmptyDishes || delivery.SameVisitReturnId!=null || !robot.DispatchEnabled
-                || !GuardianCapabilityPolicy.Allows(robot.Condition,DeliveryKind.EmptyDishes,robot.EmergencyStopped)) return false;
+                || !AllowsWork(robot,DeliveryKind.EmptyDishes)) return false;
             if(!robot.PhysicsDriver.AtServicePoint(delivery.Destination)) return false;
+            // Live demo (KeepServing): with both places at the return counter taken, the robot does not stay at the table holding its
+            // service point (it blocks the aisle the robot at the counter needs); it leaves, and the dishes are sent for
+            // by the ordinary clearing job once the counter is free.
+            Vector3 returns=ReturnStation+Vector3.right*.2f;
+            if(Settings.KeepServing && !FreeReturnPoint(out returns)) return false;
             var available=Inventory.AvailableDirty(delivery.TableIndex,delivery.DishIds).Select(i=>i.Id).ToArray();
             if(available.Length==0) return false;
 
@@ -24,6 +56,9 @@ namespace Guardian.UnitySim
             var waiting=_tasks.Where(t=>t.Kind==DeliveryKind.EmptyDishes && t.TableIndex==delivery.TableIndex
                 && t.Phase==TaskPhase.Pending && t.AssignedTo==null && t.DishIds.Count==0 && !t.FixedDishBatch)
                 .OrderBy(t=>t.CreatedAt).ToArray();
+            // Do not discard a protected promise and create a new batch from
+            // the same source instead. Only the human may release its hold/pin.
+            if(waiting.Any(t=>!OperatorAllowsAssignment(t,robot))) return false;
             int batchCount=(available.Length+GuardianDishInventory.TrayCapacity-1)/GuardianDishInventory.TrayCapacity;
             if(waiting.Length>batchCount) return false; // Leave earlier promises with the ordinary dispatcher.
             DeliveryTask first=null;
@@ -31,7 +66,7 @@ namespace Guardian.UnitySim
             {
                 bool adopted=batchIndex<waiting.Length;
                 var collection=adopted?waiting[batchIndex]:new DeliveryTask("R-"+(++_generated).ToString("D4"),DeliveryKind.EmptyDishes,
-                    delivery.Destination,ReturnStation+Vector3.right*.2f){TableIndex=delivery.TableIndex,CreatedAt=DemoClock};
+                    delivery.Destination,returns){TableIndex=delivery.TableIndex,CreatedAt=DemoClock};
                 collection.ParentDeliveryId=delivery.Id;
                 collection.ExcludedDishIds.AddRange(delivery.DishIds);
                 string[] ids=available.Skip(offset).Take(GuardianDishInventory.TrayCapacity).ToArray();
@@ -55,6 +90,7 @@ namespace Guardian.UnitySim
                 Log("Linked "+collection.Id+" after "+delivery.Id+"; "+(adopted?"existing request; ":"")+string.Join("/",ids));
             }
             delivery.SameVisitReturnId=first.Id;
+            if(!OperatorAllowsAssignment(first,robot)) { first.PendingReason=OperatorWaitReason(first); return false; }
             if(ReturningSourceBlocks(first,robot))
             {
                 first.PendingReason="Collection queued; yielding table to a returning cargo owner";
@@ -79,13 +115,15 @@ namespace Guardian.UnitySim
                     .OrderBy(r=>r.CurrentTask.CreatedAt).ThenBy(r=>r.RobotId).ToArray())
                 {
                     var task=robot.CurrentTask;
+                    if(!OperatorAllowsAssignment(task,robot))
+                    { task.PendingReason=OperatorWaitReason(task); continue; }
                     if(ReturningSourceBlocks(task,robot))
                     {
                         _traffic.ReleaseJob(task); robot.ReleaseTask(); task.AssignedTo=null; task.Phase=TaskPhase.Pending;
                         task.PendingReason="Collection queued; yielding table to a returning cargo owner";
                         Log(task.Id+": "+task.PendingReason); continue;
                     }
-                    if(!robot.DispatchEnabled || !GuardianCapabilityPolicy.Allows(robot.Condition,DeliveryKind.EmptyDishes,robot.EmergencyStopped))
+                    if(!robot.DispatchEnabled || !AllowsWork(robot,DeliveryKind.EmptyDishes))
                     { RevokeIneligible(robot); continue; }
                     if(!robot.PhysicsDriver.AtServicePoint(task.Pickup))
                     {
@@ -102,6 +140,40 @@ namespace Guardian.UnitySim
             finally { progressingService=false; }
         }
 
+        // ---- patrol (live demo) ----
+        // With nothing waiting to be done, one healthy robot drives slowly round the dining room instead of standing at its
+        // bay, so it is already out on the floor when the next job comes. It goes there as its way "home", so it stays free to
+        // be sent (DirectHomeward), and it goes back to its own bay once it has a job.
+        private static readonly Vector3[] PatrolPoints = { new Vector3(1.6f, .34f, -1.7f), new Vector3(1.6f, .34f, 1.7f), new Vector3(-1.2f, .34f, 0f) };
+        private readonly Dictionary<GuardianRobot, Vector3> _bays = new Dictionary<GuardianRobot, Vector3>();
+        private GuardianRobot _patroller;
+        private float _nextPatrol;
+        private int _patrolIndex;
+        private void Patrol()
+        {
+            if (_mode != GuardianSimulationMode.Physics || !Settings.KeepServing || ReserveFleet || Diners == null || !Diners.Running || !_traffic.DirectActive) return;
+            if (DemoClock < _nextPatrol) return;
+            _nextPatrol = DemoClock + 4;
+            if (_patroller != null && !_robots.Contains(_patroller)) { _patroller = null; _bays.Clear(); }  // the fleet was reset
+            if (_patroller != null && (_patroller.CurrentTask != null || _patroller.EmergencyStopped || _patroller.Condition != RobotCondition.Normal))
+            { _patroller.PhysicsDriver.SetHome(_bays[_patroller]); _patroller = null; }
+            if (_patroller != null && !_patroller.IsIdle) return;  // still on its way
+            if (_tasks.Any(t => t.Phase == TaskPhase.Pending)) return;  // work is waiting: no patrol
+            var robot = _patroller ?? _robots.FirstOrDefault(r => r.IsIdle && r.DispatchEnabled && !r.EmergencyStopped && r.Condition == RobotCondition.Normal);
+            if (robot == null) return;
+            if (!_bays.ContainsKey(robot)) _bays[robot] = robot.PhysicsDriver.Home;
+            _patroller = robot;
+            robot.PhysicsDriver.SetHome(PatrolPoints[_patrolIndex++ % PatrolPoints.Length]);
+            robot.PhysicsDriver.ReturnHome();
+        }
+
+        /// <summary>A place at the return counter that no job holds (the first, then the second), for the live demo.</summary>
+        private bool FreeReturnPoint(out Vector3 point)
+        {
+            foreach(Vector3 place in new[]{ReturnStation,ReturnStationSecond})
+            { point=place+Vector3.right*.2f; if(_traffic.ServicePointFree(point)) return true; }
+            point=ReturnStation+Vector3.right*.2f; return false;
+        }
         private bool ReturningSourceBlocks(DeliveryTask task,GuardianRobot except=null)
         {
             return _robots.Any(r=>r!=except && r.CurrentTask!=null && r.CurrentTask!=task && r.CurrentTask.Phase==TaskPhase.ReturningCargo

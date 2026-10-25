@@ -35,7 +35,9 @@ namespace Guardian.UnitySim.Editor
             new Surface("LipMuted",.40f,.23f,.19f,0,.15f),
             new Surface("FoodRice",.88f,.83f,.68f,0,.22f), new Surface("CurrySauce",.43f,.23f,.07f,0,.38f),
             new Surface("NoodleDough",.73f,.55f,.24f,0,.28f), new Surface("MeatBrown",.30f,.13f,.065f,0,.25f),
-            new Surface("VegetableGreen",.22f,.40f,.14f,0,.20f), new Surface("TomatoRed",.66f,.16f,.09f,0,.30f)
+            new Surface("VegetableGreen",.22f,.40f,.14f,0,.20f), new Surface("TomatoRed",.66f,.16f,.09f,0,.30f),
+            new Surface("GlazeIndigo",.16f,.25f,.47f,0,.62f), new Surface("GlazeCeladon",.56f,.70f,.62f,0,.60f),
+            new Surface("GlazeEarth",.42f,.27f,.17f,0,.38f), new Surface("CastIron",.10f,.10f,.11f,.55f,.30f)
         };
 
         public static void EnsureAssets()
@@ -126,6 +128,7 @@ namespace Guardian.UnitySim.Editor
             var catalog = AssetDatabase.LoadAssetAtPath<RestaurantCatalog>(catalogPath);
             if (catalog == null) { catalog = ScriptableObject.CreateInstance<RestaurantCatalog>(); AssetDatabase.CreateAsset(catalog, catalogPath); }
             catalog.Entries = entries.ToArray(); EditorUtility.SetDirty(catalog);
+            catalog.WalkingGuest=AssetDatabase.LoadAssetAtPath<GameObject>(Root+"/Characters/Prefabs/GuestAdult01.prefab");
             AssetDatabase.SaveAssets();
             Debug.Log("[Guardian] GUARDIAN_RESTAURANT_ASSETS_OK: " + entries.Count + " reusable prefabs");
         }

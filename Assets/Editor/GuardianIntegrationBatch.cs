@@ -17,8 +17,9 @@ namespace Guardian.UnitySim.Editor
             VerifyCapabilityPolicy();
             GuardianPedestrianBatch.RunChecks();
             GuardianInteractionBatch.RunChecks();
+            GuardianNetworkBatch.RunChecks();
             GuardianSceneBatch.RunChecks();
-            Debug.Log("[Guardian] GUARDIAN_INTEGRATION_OK: settings, capability, pedestrian, interaction, scene");
+            Debug.Log("[Guardian] GUARDIAN_INTEGRATION_OK: settings, capability, pedestrian, interaction, sensor link, scene");
         }
 
         private static void VerifyCapabilityPolicy()

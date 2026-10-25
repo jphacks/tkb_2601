@@ -10,19 +10,19 @@ namespace Guardian.UnitySim
     {
         private readonly List<string> history=new List<string>();
         private GuardianSimulator sim;
-        private GuardianRuleConversation conversation;
+        private GuardianLegacyRuleConversation conversation;
         private GUISkin skin;
         private Font font;
         private string input="状況",selected="A";
         private Vector2 scroll;
 
-        public GuardianRuleConversation Conversation=>conversation;
+        public GuardianLegacyRuleConversation Conversation=>conversation;
         public IReadOnlyList<string> History=>history;
 
         public void Initialize(GuardianSimulator simulator)
         {
             sim=simulator??throw new ArgumentNullException(nameof(simulator));
-            conversation=new GuardianRuleConversation(sim);
+            conversation=new GuardianLegacyRuleConversation(sim);
             Record("案内","ルールベースの文字操作です。音声認識・外部API・ネットワーク通信は使用しません。");
         }
 

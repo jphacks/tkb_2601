@@ -55,13 +55,13 @@ py -3 -m venv .venv
 | StickS3 の振動（1 秒ごとの RMS） | ロボット |
 |---|---|
 | 300 mg 以上が 2 回続く | 注意（スープを運ばない） |
-| 300 mg 以上が 6 回続く | 制限（空いたお皿の回収だけ） |
+| 300 mg 以上が 6 回続く | 能力は制限、送る最終状態は Hold（停止して人を待つ） |
 | データが 3 秒届かない（送信間隔 1 秒のとき） | 保持（停止） |
 | KEY2 | 正常に戻し、保持を解く |
 
 揺れが収まっても自動では戻らない。戻すのは KEY2（人）だけ。
 
-注意・制限は能力の制限であり、Unityの判断画面による停止は行わない。停止するのはHold、手動のSTOP、または中継全体の無通信だけ。
+注意ではスープを外して許された仕事を続ける。制限では能力区分を Limited としたまま Hold を送り、KEY2 で人が戻すまで停止する。しきい値未満の測定が2回続くと連続回数を数え直すが、段階そのものは自動では下がらない。
 
 ### 主なオプション
 
@@ -110,7 +110,7 @@ Unity を起動せずに通信を確かめるときは、中継を起動した�
 
 StickS3 本体には何もしない。中継が StickS3 と同じ形の行を自分で作り、正常 → 注意 → 制限 → KEY2 で正常 を流す。
 
-この公開版への Unity 受信側 `GuardianNetworkBridge` の追加は別途行う。以下の自動確認は、Unity と実機を使わず、中継が TCP で送る状態を確認する。Unity での目視確認には受信側を備えた構成が必要。
+Unity 受信側 `GuardianNetworkBridge` はこの公開版に含まれる。以下の自動確認は、Unity と実機を使わず、中継が TCP で送る状態を確認する。模擬入力を起動して Unity で Play すると、受信した B の状態を確認できる。通信断の保持は、データが戻ったあと Unity 左上の `Resume (checked by a person)` で解除する。人が押した STOP は別に残る。
 
 macOS / Linux:
 
@@ -124,7 +124,7 @@ Windows（PowerShell）:
 ```powershell
 # Unity なしで自動で確かめる（約 10 秒。OK / NG を表示）
 .venv\Scripts\python scripts\sensor_bridge\check_stages.py
-# 模擬入力を繰り返す（Unity の目視確認は受信側を備えた構成で行う。Ctrl+C で止める）
+# 模擬入力を繰り返す（Unity で Play して B を確認する。Ctrl+C で止める）
 .venv\Scripts\python scripts\sensor_bridge\sensor_bridge.py --simulate --loop
 # 一括起動の中で両方を行う
 powershell -ExecutionPolicy Bypass -File core\host\demo.ps1 -StageTest

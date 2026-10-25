@@ -67,7 +67,7 @@
 |---|---|---|
 | Normal（正常） | スープ・料理・空いた皿の回収 | 通常どおり |
 | Warning（注意） | 料理・空いた皿の回収 | スープだけ別の機体へ |
-| Limited（制限） | 空いた皿の回収 | 料理も別の機体へ |
+| Limited（制限） | センサー入力では停止して人を待つ | 料理も別の機体へ。KEY2 で人が戻す |
 | 停止中 | なし | 人が確認するまで移動しない |
 
 ## 開発の動機（作者より）
@@ -158,7 +158,7 @@
 
 ## この公開リポジトリで確認できる範囲
 
-このリポジトリには、審査とレビューに必要な Unity シミュレーター、自作素材、検証入口に加え、M5StickS3 の測定値を Unity へ渡す Python 中継と、PC 1 台で動く Robomori core（ダッシュボード・ルール AI・会社だけの共有）を収録しています。M5StickS3 と PSoC 6 のファームウェア、実ロボットは別構成です。
+このリポジトリには、審査とレビューに必要な Unity シミュレーター、自作素材、検証入口に加え、M5StickS3 の測定値を Unity へ渡す Python 中継と Unity の受信側、M5StickS3 と PSoC 6 のファームウェア、PC 1 台で動く Robomori core（ダッシュボード・ルール AI・会社だけの共有）を収録しています。実ロボットは別構成です。
 
 | 対象 | 収録状況 | 確認先 |
 |---|---|---|
@@ -167,7 +167,8 @@
 | 通路予約と障害物ブレーキ | 収録 | [`GuardianTrafficController.cs`](Assets/Scripts/GuardianTrafficController.cs) |
 | 歩行者安全デモ | オプトインで収録 | [`GuardianPedestrianSafety.cs`](Assets/Scripts/GuardianPedestrianSafety.cs) |
 | 日本語の定型操作デモ | オプトインで収録 | [`GuardianInteractionPanel.cs`](Assets/Scripts/GuardianInteractionPanel.cs) / [`GuardianRuleConversation.cs`](Assets/Scripts/GuardianRuleConversation.cs) |
-| M5StickS3 と Python 中継 | 中継のみ収録（ファームウェアは非収録） | [`scripts/sensor_bridge/`](scripts/sensor_bridge/README.md) |
+| M5StickS3・Python 中継・Unity の受信側 | 収録 | [接続手順と通信仕様](docs/STICKS3_UNITY_LINK.md) / [`firmware/sticks3_check/`](firmware/sticks3_check/README.md) |
+| PSoC 6 のボタン・ランプ | ファームウェアを収録 | [`firmware/psoc6_share_panel/`](firmware/psoc6_share_panel/README.md) |
 | ルール AI とダッシュボード | 収録 | [`core/guardian/rules.json`](core/guardian/rules.json) / [`core/README.md`](core/README.md) |
 | 監視 AI と扉 1・扉 2 | 収録 | [`scripts/guardian_hub/`](scripts/guardian_hub/README.md) |
 | 会社だけの共有（暗号化・AT プロトコル・仮想 VPN） | 収録（秘密の値は `.env` のみ） | [`scripts/guardian_share/seal.py`](scripts/guardian_share/seal.py) / [`core/viewer/`](core/viewer/index.html) |
@@ -235,7 +236,7 @@ Editor の生成ツールは別シーンを勝手に閉じず、再生成前に�
 
 | 処理 | 部品 | すること | 場所 |
 |---|---|---|---|
-| ① 測る | M5StickS3 | IMU（BMI270）で揺れを測り、重力を除いた揺れの大きさ（RMS）を 1 秒ごとに USB へ送る。KEY2 は人が通常運転に戻すためのボタン | [実機連携ガイド](docs/HARDWARE_ASSEMBLY.md)（ファームウェアは非収録） |
+| ① 測る | M5StickS3 | IMU（BMI270）で揺れを測り、重力を除いた揺れの大きさ（RMS）を 1 秒ごとに USB へ送る。KEY2 は人が通常運転に戻すためのボタン | [実機連携ガイド](docs/HARDWARE_ASSEMBLY.md) / [ファームウェア](firmware/sticks3_check/README.md) |
 | ② 判断する | センサー中継（Python） | 揺れが続いた回数から Normal / Warning / Limited、値の途切れから Hold を決め、理由を付けて Unity に送る | [`scripts/sensor_bridge/`](scripts/sensor_bridge/README.md) |
 | ② 見守る | Robomori core（Docker） | ルール AI、監視 AI、ダッシュボード、接続してよい時間帯（時間割）、監査ログ。この PC からだけ見られる | [`core/`](core/README.md)、[`scripts/guardian_hub/`](scripts/guardian_hub/README.md) |
 | ③ 再割り当てする | Unity シミュレーター（C#） | 店内のロボット・客・皿を動かし、仕事の可否を決め、外した仕事を別のロボットに割り当て直す | [`Assets/Scripts/`](Assets/Scripts/) |
@@ -376,7 +377,7 @@ scripts/verify-guardian-unity.sh
 ### Python と Robomori core のテスト
 
 ```bash
-python -m unittest discover -s scripts/sensor_bridge    # センサー中継（18 件）
+python -m unittest discover -s scripts/sensor_bridge    # センサー中継（22 件）
 python -m unittest discover -s scripts/guardian_hub     # 監視 AI、扉 1・扉 2（48 件）
 python -m unittest discover -s scripts/guardian_share   # Bluesky の部品と暗号化（33 件）
 python -m unittest discover -s core/host                # PSoC 6 の鍵と Drive へ写す処理（18 件）
@@ -384,7 +385,11 @@ python -m unittest discover -s core/egress              # 扉 2 の出口の中�
 cd core && docker compose run --rm --no-deps --entrypoint python web manage.py test guardian   # Robomori core（62 件）
 ```
 
-`scripts/guardian_share` のうち 3 件は PSoC 6 のファームウェア（`firmware/psoc6_share_panel/main.py`）を読むテストで、ファームウェアを収録していないこのリポジトリでは失敗します。残りの 30 件と、ほかのテストはすべて通ります。
+`scripts/guardian_share` の 33 件には、収録した PSoC 6 ファームウェアを CPython 上の仮の `machine` とシリアル入力で確認する 3 件を含みます。実機のピン・LED・割り込みの動作を確認したことは意味しません。Unity の受信・停止・復帰の検証は [接続手順](docs/STICKS3_UNITY_LINK.md#検証) を参照してください。
+
+## 一括反映したコード
+
+最新の元 main にある並行走行、積載・停止の物理モデル、来客と退店、席別の皿管理、操作・会話画面、監視 hub との接続、自作の人物・料理素材をまとめています。センサーが Limited を判定すると、能力上の区分は Limited のまま Hold で停止し、人の KEY2 を待ちます。手動 STOP は別に残ります。詳細と検証の範囲は [一括反映の記録](docs/BULK_CODE_IMPORT.md) を参照してください。
 
 ## 検証と限界
 

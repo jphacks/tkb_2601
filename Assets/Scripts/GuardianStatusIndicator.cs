@@ -5,7 +5,9 @@ namespace Guardian.UnitySim
     /// <summary>One state source for eligibility, traffic lights and the readable robot label.</summary>
     public sealed class GuardianStatusIndicator : MonoBehaviour
     {
+        public bool EvidenceUnknown;
         private GuardianRobot robot;
+        private GuardianSimulator sim;
         private Renderer[] lamps;
         private TextMesh label,shadow;
         private Material material;
@@ -15,6 +17,7 @@ namespace Guardian.UnitySim
         {
             block=new MaterialPropertyBlock();
             robot=GetComponent<GuardianRobot>();
+            sim=GetComponentInParent<GuardianSimulator>();
             float top=GuardianPhysicsWorld.LocalBounds(transform.Find(NekobotVisualFactory.VisualRootName)).max.y;
             var root=new GameObject("Guardian status display").transform; root.SetParent(transform,false);
             root.localPosition=new Vector3(0,top+.13f,0);
@@ -40,13 +43,17 @@ namespace Guardian.UnitySim
             if (lamps==null) return;
             for (int i=0;i<3;i++)
             {
-                Color c=Colors[i]*((int)robot.Condition==i?1f:.08f);
+                Color c=EvidenceUnknown?Color.gray*.25f:Colors[i]*((int)robot.Condition==i?1f:.08f);
                 block.SetColor("_Color",c); block.SetColor("_EmissionColor",c*.65f); lamps[i].SetPropertyBlock(block);
             }
             label.text=robot.RobotId+" "+robot.FleetRole+" "+robot.Condition.ToString().ToUpperInvariant()+"\n"+
-                GuardianCapabilityPolicy.AllowedText(robot.Condition,robot.EmergencyStopped);
+                (EvidenceUnknown?"INPUT UNKNOWN / MOTION HELD":GuardianCapabilityPolicy.AllowedText(robot.Condition,robot.EmergencyStopped));
             shadow.text=label.text;
-            label.color=robot.EmergencyStopped?Color.white:Colors[(int)robot.Condition];
+            // Detailed debug text is kept out of the normal click demo. The
+            // separate symbol/Japanese tablet is its contextual alert surface.
+            bool details=sim!=null && (sim.DeveloperMode || sim.CustomPresentationActive);
+            label.GetComponent<MeshRenderer>().enabled=details;shadow.GetComponent<MeshRenderer>().enabled=details;
+            label.color=EvidenceUnknown?Color.gray:robot.EmergencyStopped?Color.white:Colors[(int)robot.Condition];
             if (Camera.main!=null) label.transform.rotation=Camera.main.transform.rotation;
         }
         private void OnDestroy() { if (material!=null) Destroy(material); }

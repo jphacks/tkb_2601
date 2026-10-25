@@ -1,0 +1,10 @@
+# key	text   (VOICEVOX:ずんだもん。scripts/make-voice.ps1 で作り直せます)
+welcome	いらっしゃいませ！
+served	お待たせしました！
+thanks	ありがとうございました！
+warning	振動が大きいので、スープはお休みします。
+limited	揺れが大きいので、今はお皿の片付けだけします。
+stop	安全のため、止まります。
+recovered	元気になりました。全部の仕事に戻ります。
+handover	お仕事、引き継ぎます！
+call	お待たせしました！お席へご案内します。

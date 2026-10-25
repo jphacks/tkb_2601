@@ -3,9 +3,9 @@ import unittest
 import json
 import queue
 import threading
+import sensor_bridge as bridge
 from unittest import mock
 
-import sensor_bridge as bridge
 from sensor_bridge import Judge, JudgeConfig
 
 
@@ -37,7 +37,8 @@ class JudgeTest(unittest.TestCase):
         judge = started_judge()
         self.assertIsNone(judge.on_sample(500.0, 1000, 1.0))
         self.assertIsNone(judge.on_sample(2.0, 1000, 2.0))
-        self.assertIsNone(judge.on_sample(500.0, 1000, 3.0))
+        self.assertIsNone(judge.on_sample(2.0, 1000, 3.0))
+        self.assertIsNone(judge.on_sample(500.0, 1000, 4.0))
         self.assertEqual(judge.level, "Normal")
 
     def test_two_readings_raise_to_warning(self):
@@ -62,13 +63,27 @@ class JudgeTest(unittest.TestCase):
         levels = [judge.on_sample(700.0, 1000, float(t)) and judge.level for t in range(1, 7)]
         self.assertEqual(levels, [None, "Warning", None, None, None, "Limited"])
         self.assertIn("6 回続いたため制限", judge.reason)
+        state = judge.robot_state("B", 6.0)
+        self.assertEqual((state["final"], state["capability"]), ("Hold", "Limited"))   # 制限では止めて人を待つ
+        judge.on_key2(6.5)
+        self.assertEqual(judge.robot_state("B", 6.5)["final"], "Normal")
 
-    def test_a_quiet_second_restarts_the_count(self):
+    def test_one_quiet_second_between_shakes_keeps_the_count(self):
+        judge = started_judge()
+        for t in range(1, 4):
+            judge.on_sample(700.0, 1000, float(t))
+        judge.on_sample(50.0, 1000, 4.0)
+        for t in range(5, 8):
+            judge.on_sample(700.0, 1000, float(t))
+        self.assertEqual(judge.level, "Limited")
+
+    def test_two_quiet_seconds_restart_the_count(self):
         judge = started_judge()
         for t in range(1, 6):
             judge.on_sample(700.0, 1000, float(t))
         self.assertEqual(judge.level, "Warning")
         judge.on_sample(50.0, 1000, 6.0)
+        judge.on_sample(50.0, 1000, 6.5)
         for t in range(7, 12):
             judge.on_sample(700.0, 1000, float(t))
         self.assertEqual(judge.level, "Warning")
@@ -188,6 +203,8 @@ class UnityPortTest(unittest.TestCase):
             holder.close()
 
 
+
+
 class StageCheckTest(unittest.TestCase):
     def test_simulated_relay_goes_through_three_stages(self):
         import check_stages
@@ -225,6 +242,7 @@ class SimulationTest(unittest.TestCase):
                 self.assertEqual(sample["type"], "sample")
                 self.assertLess(sample["vib_rms_g"] * 1000, JudgeConfig().threshold_mg)
         self.run_simulation(False, check)
+
 
 
 if __name__ == "__main__":

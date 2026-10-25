@@ -31,18 +31,34 @@ namespace Guardian.UnitySim
         [SerializeField] private GuardianSimulationMode _mode=GuardianSimulationMode.Physics;
         public GuardianSimulationSettings Settings=new GuardianSimulationSettings();
         public bool AutomaticTasks=true;
+        public bool CustomPresentationActive;
+        public bool DeveloperMode;
+        public GuardianDemoInterface DemoInterface { get; private set; }
+        public GuardianRestaurantWalkers Walkers { get; private set; }
+        public GuardianDinerFlow Diners { get; private set; }
+        public GuardianEvidenceInput DemoEvidence { get; private set; }
+        public GuardianInteractionMode InteractionMode {get;private set;}
+        public GuardianConversationExperience Conversation {get;private set;}
+        /// <summary>Click a robot and ask it something; it answers aloud (null in batch runs and custom presentations).</summary>
+        public GuardianRobotTalk RobotTalk {get;private set;}
+        /// <summary>Repairs robots left stopped or faulty (null in batch runs, verifications and custom presentations).</summary>
+        public GuardianRepairCrew RepairCrew {get;private set;}
+        public GuardianHubLink HubLink {get;private set;}
+        public GuardianCapabilityBoard CapabilityBoard {get;private set;}
+        public GuardianPitchMode PitchMode {get;private set;}
+        public bool MeasureFixedPerformance;public long LastFixedElapsedTicks {get;private set;}public long LastFixedAllocatedBytes {get;private set;}public long PerformanceSampleId {get;private set;}
         public event Action<float> PhysicsStepBeginning;
         public bool ReserveFleet;
         public GuardianFleetOperator Fleet { get; private set; }
         private Vector2 _physicsScroll;
         private GuardianTrafficController _traffic;
         private GuardianPhysicsWorld _physicsWorld;
-        private GuardianPedestrianSystem _pedestrianSystem;
-        private GuardianInteractionPanel _interactionPanel;
         private GuardianDishInventory _inventory;
         private System.Random _workloadRandom,_faultRandom;
         private float _nextTask,_nextFault;
         private int _generated,_selected;
+        // Regression suites keep their recorded starting fleet (A Normal, B Warning, C Limited).
+        private bool _regressionBaseline;
         public GuardianSimulationMode Mode=>_mode;
         public GuardianDishInventory Inventory=>_mode==GuardianSimulationMode.Physics?_inventory:null;
         public IReadOnlyList<GuardianRobot> Robots=>_robots;
@@ -50,7 +66,6 @@ namespace Guardian.UnitySim
         public GuardianTrafficController Traffic=>_traffic;
         public GuardianPhysicsWorld PhysicsWorld=>_physicsWorld;
         public int RejectedWorkload { get; private set; }
-        public int ScenarioRevision { get; private set; }
         public float DemoClock { get { return _demoClock; } }
         public bool StoryMode { get { return _mode==GuardianSimulationMode.LegacyStory && _storyMode; } }
         public string StoryScene {
@@ -66,28 +81,81 @@ namespace Guardian.UnitySim
 
         private static readonly Vector3 Kitchen = new Vector3(-6.2f, 0.34f, 3.6f);
         private static readonly Vector3 ReturnStation = new Vector3(-6.2f, 0.34f, -3.6f);
+        // A second place at the return counter, a robot's length further north, so two robots can bring dishes back at once.
+        private static readonly Vector3 ReturnStationSecond = new Vector3(-6.2f, 0.34f, -2.4f);
         private static readonly Vector3[] Tables = {
             new Vector3(3.6f, 0.34f, -3.4f),
             new Vector3(3.6f, 0.34f, 0.0f),
             new Vector3(3.6f, 0.34f, 3.4f)
         };
+        /// <summary>Physics-mode pickup/dropoff points (the kitchen and return counter docks sit 0.2m off the counters).</summary>
+        internal static IEnumerable<Vector3> ServicePoints
+        {
+            get { yield return Kitchen+Vector3.right*.2f; yield return ReturnStation+Vector3.right*.2f; yield return ReturnStationSecond+Vector3.right*.2f; foreach (Vector3 table in Tables) yield return table; }
+        }
 
         private void Start()
         {
             EnsureWorld();
-            string[] arguments=Environment.GetCommandLineArgs();
+            RestaurantEnclosure.Ensure(transform.Find("Generated 3D World/"+RestaurantVisuals.RootName));
+            // 60 frames a second: every frame then carries about one physics step, so frame times stay even
+            // (uncapped it ran at 300+ fps with a heavy frame every few), and the laptop stays cooler.
+            // -robomoriUncapped turns this off; batch runs keep their own timing.
+            // After a slow frame Unity runs physics steps to catch up (up to a third of a second's worth by
+            // default); each step plans routes, so one hitch could snowball into a freeze. Catch up at most
+            // 0.1 s: the simulation slows for a moment instead.
+            if (!Application.isBatchMode && !Environment.GetCommandLineArgs().Contains("-robomoriUncapped")) { QualitySettings.vSyncCount=0; Application.targetFrameRate=60; Time.maximumDeltaTime=.1f; }
             if (GetComponent<GuardianCapture>() == null) gameObject.AddComponent<GuardianCapture>();
-            if (arguments.Contains("-guardianVerify")) _mode=GuardianSimulationMode.LegacyStory;
-            Settings=GuardianSettingsLoader.LoadOverrideOrKeep(Settings);
-            if (arguments.Contains("-guardianPedestrianDemo")) Settings.PedestrianDemoEnabled=true;
+            if (GetComponent<GuardianNetworkBridge>() == null) gameObject.AddComponent<GuardianNetworkBridge>();
+            // The supervisory hub on this PC (scripts/guardian_hub): it may only lower speeds; a person restores them.
+            HubLink=GetComponent<GuardianHubLink>()??gameObject.AddComponent<GuardianHubLink>();
+            if (!Application.isBatchMode && Environment.GetCommandLineArgs().Contains("-guardianPhoneDemo") && GetComponent<GuardianPhoneLink>() == null) gameObject.AddComponent<GuardianPhoneLink>();
+            if (Environment.GetCommandLineArgs().Contains("-guardianVerify")) _mode=GuardianSimulationMode.LegacyStory;
+            ApplyVerificationTrafficDefaults();
+            ConfigurePublicDemonstrations();
             ResetScenario();
-            if (arguments.Contains("-guardianInteractionDemo"))
+            if(!CustomPresentationActive)
             {
-                _interactionPanel=GetComponent<GuardianInteractionPanel>()??gameObject.AddComponent<GuardianInteractionPanel>();
-                _interactionPanel.Initialize(this);
+                DemoInterface=GetComponent<GuardianDemoInterface>()??gameObject.AddComponent<GuardianDemoInterface>();
+                DemoInterface.Initialize(this);
+                if(!Application.isBatchMode)(GetComponent<GuardianSoundscape>()??gameObject.AddComponent<GuardianSoundscape>()).Initialize(this);
+                // Not during recorded verifications: they click robots and expect only the card on screen.
+                if(!Application.isBatchMode && !GetComponents<MonoBehaviour>().Any(c=>c!=null && c.GetType().Name.EndsWith("Verification")))
+                {
+                    RobotTalk=GetComponent<GuardianRobotTalk>()??gameObject.AddComponent<GuardianRobotTalk>();RobotTalk.Initialize(this);
+                    RepairCrew=GetComponent<GuardianRepairCrew>()??gameObject.AddComponent<GuardianRepairCrew>();RepairCrew.Initialize(this);
+                    CapabilityBoard=GetComponent<GuardianCapabilityBoard>()??gameObject.AddComponent<GuardianCapabilityBoard>();CapabilityBoard.Initialize(this);
+                    PitchMode=GetComponent<GuardianPitchMode>()??gameObject.AddComponent<GuardianPitchMode>();PitchMode.Initialize(this);
+                    if(GuardianAutoFilm.Wanted)(GetComponent<GuardianAutoFilm>()??gameObject.AddComponent<GuardianAutoFilm>()).Initialize(this);
+                }
+                var args=Environment.GetCommandLineArgs();int mode=Array.IndexOf(args,"-guardianInteractionMode");
+                InteractionMode=mode>=0 && mode+1<args.Length && args[mode+1]=="voice"?GuardianInteractionMode.RuleVoice:GuardianInteractionMode.Click;
+                if(InteractionMode==GuardianInteractionMode.RuleVoice)
+                {Conversation=GetComponent<GuardianConversationExperience>()??gameObject.AddComponent<GuardianConversationExperience>();Conversation.Initialize(this);}
             }
-            if (arguments.Contains("-guardianPhysicsTest") && GetComponent<GuardianPhysicsVerification>()==null)
+            if(!DeveloperMode && !CustomPresentationActive && GetComponent<GuardianInteractiveExperience>()==null && _mode==GuardianSimulationMode.Physics)EnableDemoEvidence();
+            if (Environment.GetCommandLineArgs().Contains("-guardianPhysicsTest") && GetComponent<GuardianPhysicsVerification>()==null)
                 gameObject.AddComponent<GuardianPhysicsVerification>();
+        }
+
+        /// <summary>Recorded regression suites assert the single-track aisle semantics and calm order pacing.
+        /// Keep them on that baseline unless -guardianTrafficStyle direct|single is given explicitly.</summary>
+        private void ApplyVerificationTrafficDefaults()
+        {
+            string[] args=Environment.GetCommandLineArgs();
+            bool verifying=args.Contains("-guardianPhysicsTest") || GetComponents<MonoBehaviour>().Any(c=>c!=null
+                && (c.GetType().Name.EndsWith("Verification") || c.GetType().Name=="GuardianPedestrianRegression"));
+            if(verifying) DeveloperMode=true;
+            _regressionBaseline=verifying;
+            int at=Array.IndexOf(args,"-guardianTrafficStyle");
+            if (at>=0 && at+1<args.Length)
+                Settings.Traffic=args[at+1].StartsWith("single",StringComparison.OrdinalIgnoreCase)?GuardianTrafficStyle.SingleTrackAisle:GuardianTrafficStyle.DirectConcurrent;
+            else if (verifying) Settings.Traffic=GuardianTrafficStyle.SingleTrackAisle;
+            if (verifying) Settings.BusyOrders=false;
+            // Looping walkers only when asked for: a scene saved with the old default must not bring them back.
+            Settings.WalkingGuests=args.Contains("-guardianWalkingGuests");
+            if (verifying) Settings.Diners=false;
+            if (verifying) Settings.KeepServing=false;
         }
 
         /// <summary>Called by the editor scene generator as well as runtime fallback.</summary>
@@ -220,8 +288,9 @@ namespace Guardian.UnitySim
 
         public void ResetScenario()
         {
-            if (Settings==null) Settings=new GuardianSimulationSettings(); Settings.Validate();
             ScenarioRevision++;
+            if(HumanExperienceActive) { humanExperience.Restart(); return; }
+            if (Settings==null) Settings=new GuardianSimulationSettings(); Settings.Validate();
             _robots.Clear();
             _tasks.Clear(); _requests.Clear();
             _events.Clear();
@@ -231,11 +300,7 @@ namespace Guardian.UnitySim
             if (_camera == null) _camera = Camera.main;
             if (_traffic==null) _traffic=GetComponent<GuardianTrafficController>()??gameObject.AddComponent<GuardianTrafficController>();
             if (_physicsWorld==null) _physicsWorld=GetComponent<GuardianPhysicsWorld>()??gameObject.AddComponent<GuardianPhysicsWorld>();
-            if (_pedestrianSystem==null) _pedestrianSystem=GetComponent<GuardianPedestrianSystem>();
-            if (_pedestrianSystem==null && Settings.PedestrianDemoEnabled) _pedestrianSystem=gameObject.AddComponent<GuardianPedestrianSystem>();
             _traffic.ResetTraffic(this,Settings.Seed);
-            if (_pedestrianSystem!=null && _pedestrianSystem.Configure(this,_mode==GuardianSimulationMode.Physics && Settings.PedestrianDemoEnabled))
-                _physicsWorld.Invalidate();
             _physicsWorld.Ensure(this,_mode==GuardianSimulationMode.Physics);
             if (_inventory!=null) _inventory.ClearInventory();
             Transform world=transform.Find("Generated 3D World");
@@ -250,9 +315,12 @@ namespace Guardian.UnitySim
                 robot.Arrived -= OnRobotArrived;
                 robot.Arrived += OnRobotArrived;
                 _robots.Add(robot);
-                RobotCondition condition = robot.RobotId == "A" ? RobotCondition.Normal :
-                    robot.RobotId == "B" ? RobotCondition.Warning : spare?RobotCondition.Normal:RobotCondition.Limited;
-                float vibration = robot.RobotId == "A" ? 0.12f : robot.RobotId == "B" ? 0.45f : spare?0.12f:0.82f;
+                // The shop opens with every robot healthy and ready to serve. The legacy story and the regression
+                // suites start from the mixed fleet instead, so each robot shows a different capability at once.
+                bool mixed=_mode==GuardianSimulationMode.LegacyStory || _regressionBaseline;
+                RobotCondition condition = !mixed || spare || robot.RobotId == "A" ? RobotCondition.Normal :
+                    robot.RobotId == "B" ? RobotCondition.Warning : RobotCondition.Limited;
+                float vibration = condition == RobotCondition.Normal ? 0.12f : condition == RobotCondition.Warning ? 0.45f : 0.82f;
                 if (!_starts.ContainsKey(robot.RobotId)) _starts[robot.RobotId] = robot.transform.position;
                 var motor=robot.GetComponent<GuardianPhysicsDriver>()??robot.gameObject.AddComponent<GuardianPhysicsDriver>();
                 motor.Configure(robot,_traffic,Settings,_mode==GuardianSimulationMode.Physics);
@@ -270,12 +338,21 @@ namespace Guardian.UnitySim
                         float radius=0; Vector3 bodyHalf=motor.Shape.size*.5f;
                         for (int x=-1;x<=1;x+=2) for (int z=-1;z<=1;z+=2)
                             radius=Mathf.Max(radius,new Vector2(motor.Shape.center.x+x*bodyHalf.x,motor.Shape.center.z+z*bodyHalf.z).magnitude);
-                        home.z=Mathf.Min(home.z,wallZ-.02f-radius);
+                        // A collision-free pose alone is insufficient: the low-speed
+                        // approach must also fit the actuator's stopping envelope.
+                        // Otherwise C brakes just outside the arrival tolerance forever.
+                        float stoppingMargin=Settings.Physical.Enabled?Settings.Physical.StoppingMargin:.12f;
+                        float parkingMargin=stoppingMargin+GuardianTrafficController.SurfaceMargin+GuardianDirectControl.ArrivalTolerance;
+                        home.z=Mathf.Min(home.z,wallZ-parkingMargin-radius);
                     }
                 }
                 robot.ResetRobot(home, condition, vibration);
                 if (robot.GetComponent<GuardianStatusIndicator>()==null) robot.gameObject.AddComponent<GuardianStatusIndicator>();
+                if (robot.GetComponent<GuardianRobotFace>()==null) robot.gameObject.AddComponent<GuardianRobotFace>();
+                if (robot.GetComponent<GuardianRobotLivery>()==null) robot.gameObject.AddComponent<GuardianRobotLivery>();
+                var marker=robot.GetComponent<GuardianRobotAlertMarker>()??robot.gameObject.AddComponent<GuardianRobotAlertMarker>();marker.Initialize(this,robot);
             }
+            _traffic.ConfigureClearance();
             if (Fleet==null) Fleet=GetComponent<GuardianFleetOperator>()??gameObject.AddComponent<GuardianFleetOperator>();
             Fleet.ResetOperator(this);
             if (_mode==GuardianSimulationMode.Physics)
@@ -283,14 +360,27 @@ namespace Guardian.UnitySim
                 _inventory=GetComponent<GuardianDishInventory>()??gameObject.AddComponent<GuardianDishInventory>(); _inventory.ResetInventory(this);
                 _workloadRandom=new System.Random(Settings.Seed); _faultRandom=new System.Random(Settings.Seed^0x37ab);
                 _generated=0; RejectedWorkload=0; _nextTask=Range(_workloadRandom,.5f,2); _nextFault=Range(_faultRandom,Settings.MinimumFaultInterval,Settings.MaximumFaultInterval);
+                DemoEvidence?.Initialize(this,true);
+                if(Walkers==null && Settings.WalkingGuests && !CustomPresentationActive && _traffic.DirectActive)
+                    Walkers=GetComponent<GuardianRestaurantWalkers>()??gameObject.AddComponent<GuardianRestaurantWalkers>();
+                Walkers?.ResetPeople(this,Settings.WalkingGuests && !CustomPresentationActive && _traffic.DirectActive);
+                bool diners=Settings.Diners && !CustomPresentationActive && _traffic.DirectActive;
+                if(Diners==null && diners) Diners=GetComponent<GuardianDinerFlow>()??gameObject.AddComponent<GuardianDinerFlow>();
+                Diners?.ResetDiners(this,diners);
+                ConfigureLegacyPedestrian();
+                GetComponent<GuardianNetworkBridge>()?.ReapplySnapshot();
                 Log("Physics reset; seed="+Settings.Seed+"; dynamic bodies; local branch/service point and narrow aisle reservations");
                 return;
             }
+            Walkers?.ResetPeople(this,false);
+            Diners?.ResetDiners(this,false);
             _tasks.Add(new DeliveryTask("S-101", DeliveryKind.Soup, Kitchen, Tables[0]));
             _tasks.Add(new DeliveryTask("F-102", DeliveryKind.Food, Kitchen, Tables[1]));
             _tasks.Add(new DeliveryTask("R-103", DeliveryKind.EmptyDishes, Tables[2], ReturnStation));
             // Three initial tasks are fixed so Robot A/B/C display different
             // capabilities immediately. Follow-on work arrives at t=18s.
+            ConfigureLegacyPedestrian();
+            GetComponent<GuardianNetworkBridge>()?.ReapplySnapshot();
             Log("Scenario initialized: 3 robot actors");
             Replan();
         }
@@ -300,23 +390,59 @@ namespace Guardian.UnitySim
             return GuardianCapabilityPolicy.Allows(condition,kind);
         }
 
+        public void EnableDemoEvidence()
+        {DemoEvidence=DemoEvidence??new GuardianEvidenceInput{NotifyOperator=true};DemoEvidence.Initialize(this,true);}
+        internal void RefreshDemoEvidence() {if(!CustomPresentationActive && _mode==GuardianSimulationMode.Physics)DemoEvidence?.Tick(GuardianEvidenceInput.ReceiverNow);}
+        /// <summary>GuardianNetworkBridge received a state for this robot; the mock input stops writing it.</summary>
+        internal void NoteLinkedEvidence(string id) {DemoEvidence?.Link(id,GuardianEvidenceInput.ReceiverNow);}
+        internal bool TryAcknowledgeDemoEvidence(string id)
+        {
+            if(DemoEvidence==null || !DemoEvidence.Channels.TryGetValue(id,out var channel) || !channel.Fresh)return false;
+            var hold=_robots.Find(r=>r.RobotId==id)?.GetComponent<GuardianMotionInterlock>();
+            return hold!=null && hold.Release(DemoClock);
+        }
         public void SubmitVibration(string robotId, float value)
         {
+            if(GetComponent<GuardianNetworkBridge>()?.Drives(robotId)==true)return;
+            if(!float.IsFinite(value))return;value=Mathf.Clamp01(value);
+            if(DemoEvidence!=null && !DemoEvidence.SetMockValue(robotId,value)) {Log("Mock input refused for non-mock source "+robotId);return;}
+            SubmitCalibratedEvidence(robotId,value,Settings.WarningThreshold,Settings.LimitedThreshold);
+        }
+        public bool SubmitCalibratedEvidence(string robotId,float value,float warning,float limited)
+        { return SubmitCalibratedEvidence(robotId,value,warning,limited,true); }
+        private bool SubmitCalibratedEvidence(string robotId,float value,float warning,float limited,bool notifyOperator)
+        {
+            if(!float.IsFinite(value) || value<0 || value>1 || !float.IsFinite(warning) || !float.IsFinite(limited) || warning<=0 || limited>1 || limited<=warning)return false;
             GuardianRobot robot = _robots.Find(r => r.RobotId == robotId);
-            if (robot == null) return;
-            robot.Vibration = Mathf.Clamp01(value);
+            if (robot == null) return false;
+            robot.Vibration = value;
             // Demo thresholds are illustrative policy, not a certified safety limit.
-            RobotCondition next = GuardianCapabilityPolicy.FromVibration(robot.Vibration,Settings);
-            if (robot.Condition == next) return;
+            RobotCondition next = value>=limited?RobotCondition.Limited:value>=warning?RobotCondition.Warning:RobotCondition.Normal;
+            if (robot.Condition == next)
+            {
+                // Detect initially restricted input independently of UI selection.
+                if(notifyOperator && DemoEvidence!=null && next!=RobotCondition.Normal)
+                {
+                    EnsureLiveSupervision();
+                    if(HumanExperienceActive && humanExperience.Actors.TryGetValue(robotId,out var initial) && initial.Revision==0)
+                        humanExperience.OnConditionEvidence(robot);
+                }
+                return true;
+            }
+            RobotCondition previous=robot.Condition;
+            if(notifyOperator) EnsureLiveSupervision();
+            if(notifyOperator && HumanExperienceActive) humanExperience.PrepareConditionEvidence(robot,previous);
             robot.Condition = next;
             Log(robot.RobotId + " -> " + next + " (evidence changed)");
+            if(notifyOperator && HumanExperienceActive) humanExperience.OnConditionEvidence(robot);
             RevokeIneligible(robot);
             Replan();
+            return true;
         }
 
         private void RevokeIneligible(GuardianRobot robot)
         {
-            if (robot.CurrentTask != null && (!robot.DispatchEnabled || !GuardianCapabilityPolicy.Allows(robot.Condition,robot.CurrentTask.Kind,robot.EmergencyStopped))
+            if (robot.CurrentTask != null && (!robot.DispatchEnabled || !AllowsWork(robot,robot.CurrentTask.Kind))
                 && robot.CurrentTask.RevokedVersion!=robot.CurrentTask.AssignmentVersion)
             {
                 robot.CurrentTask.RevokedVersion=robot.CurrentTask.AssignmentVersion;
@@ -340,24 +466,31 @@ namespace Guardian.UnitySim
         private void Replan()
         {
             ProgressSameVisitPickups();
+            // Dishes left on a table are sent for first, whether or not guests are waiting; meals come next and go to
+            // the place of the guest who ordered them. With no guests and no dishes there is nothing to do: robots wait.
+            for (int pass = 0; pass < 2; pass++)
             foreach (DeliveryTask task in _tasks)
             {
-                if (task.Phase != TaskPhase.Pending) continue;
+                if (task.Phase != TaskPhase.Pending || (task.Kind == DeliveryKind.EmptyDishes) != (pass == 0)) continue;
+                if(!string.IsNullOrEmpty(task.OperatorHoldReason)) { task.PendingReason=task.OperatorHoldReason; continue; }
                 if(_mode==GuardianSimulationMode.Physics && (Settings.CollectEmptyOnDelivery || _tasks.Any(t=>t.FixedDishBatch && t.Phase!=TaskPhase.Completed)) && ReturningSourceBlocks(task))
                 { task.PendingReason="Waiting for cargo source return at this service point"; continue; }
-                GuardianRobot[] eligible=_robots.Where(r=>r.DispatchEnabled && GuardianCapabilityPolicy.Allows(r.Condition,task.Kind,r.EmergencyStopped)).ToArray();
+                GuardianRobot[] eligible=_robots.Where(r=>r.DispatchEnabled && AllowsWork(r,task.Kind) && OperatorAllowsAssignment(task,r)).ToArray();
                 task.PendingReason=eligible.Length==0?"All robots ineligible for "+task.Kind:"Waiting for eligible idle robot";
                 GuardianRobot best = null;
                 float bestCost = float.MaxValue;
                 foreach (GuardianRobot robot in _robots)
                 {
-                    if (!robot.DispatchEnabled || !robot.IsIdle || !GuardianCapabilityPolicy.Allows(robot.Condition, task.Kind,robot.EmergencyStopped)) continue;
+                    if (!robot.DispatchEnabled || !robot.AvailableForDispatch || !AllowsWork(robot,task.Kind) || !OperatorAllowsAssignment(task,robot)) continue;
                     // Prefer to preserve higher capability actors for sensitive tasks.
                     float scarcityPenalty = task.Kind == DeliveryKind.EmptyDishes && robot.Condition == RobotCondition.Normal ? 5f : 0f;
                     float cost = Vector3.Distance(robot.transform.position, task.Pickup) + scarcityPenalty;
                     if (cost < bestCost) { best = robot; bestCost = cost; }
                 }
                 if (best == null) continue;
+                // Live demo: a clearing job whose place at the return counter is taken uses the other place if it is free.
+                if (_mode==GuardianSimulationMode.Physics && Settings.KeepServing && task.Kind==DeliveryKind.EmptyDishes && !task.FixedDishBatch
+                    && !_traffic.CanAssign(task) && FreeReturnPoint(out Vector3 other)) task.Destination=other;
                 if (_mode==GuardianSimulationMode.Physics && !_traffic.CanAssign(task))
                 { task.PendingReason="Waiting for local pickup/dropoff service point"; continue; }
                 if (Inventory!=null && !Inventory.Reserve(task)) continue;
@@ -404,10 +537,14 @@ namespace Guardian.UnitySim
 
         private void Update()
         {
+            if(CustomPresentationActive)return;
+            if(Input.GetKeyDown(KeyCode.F12)) { DeveloperMode=!DeveloperMode; Log("Developer controls "+(DeveloperMode?"opened":"closed")); }
+            if(_mode==GuardianSimulationMode.Physics && !DeveloperMode)return;
+            if (Input.GetKeyDown(KeyCode.V)) CycleCamera();
             if (Input.GetKeyDown(KeyCode.F7)) { SetMode(_mode==GuardianSimulationMode.Physics?GuardianSimulationMode.LegacyStory:GuardianSimulationMode.Physics); return; }
             if (_mode==GuardianSimulationMode.Physics) { PhysicsInput(); return; }
             _demoClock += Time.deltaTime;
-            if (_storyMode && !_storyTriggered && _demoClock >= StoryDegradationSeconds)
+            if (!SensorLinked && _storyMode && !_storyTriggered && _demoClock >= StoryDegradationSeconds)
             {
                 _storyTriggered = true;
                 // B was WARNING, hence suitable for food in the original plan.
@@ -422,7 +559,7 @@ namespace Guardian.UnitySim
                 _tasks.Add(new DeliveryTask("R-206", DeliveryKind.EmptyDishes, Tables[1], ReturnStation));
                 Replan();
             }
-            else if (!_storyMode && _autoDemo && !_demoTriggered && _demoClock >= 11.5f)
+            else if (!SensorLinked && !_storyMode && _autoDemo && !_demoTriggered && _demoClock >= 11.5f)
             {
                 _demoTriggered = true;
                 SubmitVibration("B", 0.85f);
@@ -435,10 +572,10 @@ namespace Guardian.UnitySim
             if (Input.GetKeyDown(KeyCode.Alpha3)) SubmitVibration("C", 0.12f);
         }
 
-        public void SetReserveFleet(bool enabled) { ReserveFleet=enabled; SetMode(GuardianSimulationMode.Physics); }
+        public void SetReserveFleet(bool enabled) { if(HumanExperienceActive) { humanExperience.Begin(humanExperience.Guided,enabled); return; } ReserveFleet=enabled; SetMode(GuardianSimulationMode.Physics); }
         public void SetDispatchEnabled(GuardianRobot robot,bool enabled)
         { robot.DispatchEnabled=enabled; if (!enabled) RevokeIneligible(robot); Replan(); }
-        public void SetMode(GuardianSimulationMode mode) { _mode=mode; ResetScenario(); }
+        public void SetMode(GuardianSimulationMode mode) { if(HumanExperienceActive) humanExperience.EndWithoutReset(); _mode=mode; ResetScenario(); }
         public void SetCondition(string id,RobotCondition condition)
         {
             float value=condition==RobotCondition.Normal?Settings.WarningThreshold*.4f:
@@ -448,8 +585,12 @@ namespace Guardian.UnitySim
         }
         public void SetEmergencyStop(string id,bool stopped)
         {
-            GuardianRobot robot=_robots.Find(r=>r.RobotId==id); if (robot==null || robot.EmergencyStopped==stopped) return;
-            robot.EmergencyStopped=stopped; Log(id+(stopped?" EMERGENCY STOP":" mobility recovered")); RevokeIneligible(robot); Replan();
+            GuardianRobot robot=_robots.Find(r=>r.RobotId==id); if(robot==null || robot.OperatorStopped==stopped)return;
+            if(stopped)EnsureLiveSupervision();
+            robot.EmergencyStopped=stopped;
+            Log(id+(stopped?" EMERGENCY STOP":robot.LinkedStopped?" operator STOP released; sensor hold remains":" mobility recovered"));
+            if(stopped && HumanExperienceActive)humanExperience.OnExternalEmergencyStop(robot);
+            RevokeIneligible(robot);Replan();
         }
         public void PickupUnavailable(GuardianRobot robot)
         {
@@ -457,10 +598,11 @@ namespace Guardian.UnitySim
             task.AssignedTo=null; task.Phase=TaskPhase.Pending; task.PendingReason="Pickup source unavailable";
             Log(task.Id+" waiting: no valid source dish");
         }
-        public DeliveryTask QueueTask(DeliveryKind kind,int table,GuardianMenu menu=GuardianMenu.CurryRice)
+        public DeliveryTask QueueTask(DeliveryKind kind,int table,GuardianMenu menu=GuardianMenu.CurryRice,string requestedRobotId=null,int seat=-1)
         {
             if (_mode!=GuardianSimulationMode.Physics) throw new InvalidOperationException("QueueTask requires Physics mode");
             if (table<0 || table>=Tables.Length) throw new ArgumentOutOfRangeException(nameof(table));
+            if(requestedRobotId!=null && !_robots.Any(r=>r.RobotId==requestedRobotId)) throw new ArgumentException("Unknown requested actor");
             var request=new GuardianTaskRequest{Id=_requests.Count+1,Kind=kind,TableIndex=table,ReceivedAt=DemoClock}; _requests.Add(request);
             if (kind==DeliveryKind.EmptyDishes)
             {
@@ -483,7 +625,7 @@ namespace Guardian.UnitySim
             Vector3 kitchen=Kitchen+Vector3.right*.2f,returns=ReturnStation+Vector3.right*.2f;
             var task=new DeliveryTask((kind==DeliveryKind.Soup?"S":kind==DeliveryKind.Food?"F":"R")+"-"+(++_generated).ToString("D4"),
                 kind,kind==DeliveryKind.EmptyDishes?Tables[table]:kitchen,kind==DeliveryKind.EmptyDishes?returns:Tables[table])
-                {Menu=menu,TableIndex=table,CreatedAt=DemoClock};
+                {Menu=menu,TableIndex=table,CreatedAt=DemoClock,RequestedRobotId=requestedRobotId,Seat=kind==DeliveryKind.EmptyDishes?-1:seat};
             _tasks.Add(task); request.Task=task; request.Decision="Accepted as "+task.Id; Inventory.Prepare(task);
             Log("Generated "+task.Id+" "+kind+" "+menu+" table="+(table+1)); Replan(); return task;
         }
@@ -492,7 +634,10 @@ namespace Guardian.UnitySim
         private void FixedUpdate()
         {
             if (_mode!=GuardianSimulationMode.Physics || _traffic==null) return;
-            float dt=Time.fixedDeltaTime; _demoClock+=dt; Inventory.Tick(); PhysicsStepBeginning?.Invoke(_demoClock);
+            long perfStart=MeasureFixedPerformance?System.Diagnostics.Stopwatch.GetTimestamp():0,allocatedStart=MeasureFixedPerformance?GuardianRuntimeMetrics.Allocated():0;
+            GuardianFrameMarker.Enter("physics step: sensors, dishes, people");
+            float dt=Time.fixedDeltaTime; _demoClock+=dt; RefreshDemoEvidence(); Inventory.Tick(); humanExperience?.BeforePhysicsStep(); PhysicsStepBeginning?.Invoke(_demoClock);
+            GuardianFrameMarker.Enter("physics step: orders and faults");
             if (AutomaticTasks && _demoClock>=_nextTask)
             {
                 DeliveryKind kind=(DeliveryKind)_workloadRandom.Next(3);
@@ -503,21 +648,30 @@ namespace Guardian.UnitySim
                     if (ready.Length==0) kind=DeliveryKind.Food;
                     else table=int.Parse(ready[_workloadRandom.Next(ready.Length)].OwnerKey);
                 }
-                QueueTask(kind,table,menu); _nextTask+=Range(_workloadRandom,Settings.MinimumTaskInterval,Settings.MaximumTaskInterval);
+                // With guests at the tables, meals are what they order (GuardianDinerFlow); only clearing stays automatic.
+                if (kind==DeliveryKind.EmptyDishes || Diners==null || !Diners.Running) QueueTask(kind,table,menu);
+                _nextTask+=Range(_workloadRandom,Settings.MinimumTaskInterval,Settings.MaximumTaskInterval)*Settings.OrderIntervalScale;
             }
-            if (Settings.RandomFaults && _demoClock>=_nextFault)
+            // The opening scenes (GuardianDinerFlow) play on a healthy fleet; condition events wait for the usual loop.
+            if (Settings.RandomFaults && !SensorLinked && _demoClock>=_nextFault && (Diners==null || !Diners.Opening))
             {
                 GuardianRobot robot=_robots[_faultRandom.Next(_robots.Count)]; RobotCondition next=(RobotCondition)_faultRandom.Next(3);
-                Log("Seeded condition event "+robot.RobotId+" -> "+next); SetCondition(robot.RobotId,next);
+                // Keep serving: only one robot is made worse at a time, so the others keep carrying the guests' meals.
+                if (Settings.KeepServing && next>robot.Condition && _robots.Any(r=>r!=robot && (r.Condition!=RobotCondition.Normal || r.EmergencyStopped)))
+                    Log("Seeded condition event "+robot.RobotId+" -> "+next+" skipped: another robot is already affected");
+                else { Log("Seeded condition event "+robot.RobotId+" -> "+next); SetCondition(robot.RobotId,next); }
                 _nextFault+=Range(_faultRandom,Settings.MinimumFaultInterval,Settings.MaximumFaultInterval);
             }
-            Replan(); _traffic.Tick();
-            _pedestrianSystem?.Tick(dt);
-            foreach (GuardianRobot robot in _robots) robot.PhysicsDriver.Tick(dt);
-            Fleet.Tick();
+            GuardianFrameMarker.Enter("physics step: robot route planning"); Replan(); Patrol();
+            GuardianFrameMarker.Enter("physics step: traffic"); _traffic.Tick();
+            GuardianFrameMarker.Enter("physics step: robot motion"); foreach (GuardianRobot robot in _robots) robot.PhysicsDriver.Tick(dt);
+            GuardianFrameMarker.Enter("physics step: fleet"); Fleet.Tick();
+            GuardianFrameMarker.Enter("after physics step");
+            if(MeasureFixedPerformance){LastFixedElapsedTicks=System.Diagnostics.Stopwatch.GetTimestamp()-perfStart;LastFixedAllocatedBytes=GuardianRuntimeMetrics.Allocated()-allocatedStart;PerformanceSampleId++;}
         }
         private void PhysicsInput()
         {
+            if(ExperienceInput()) return;
             if (Input.GetKeyDown(KeyCode.R)) { ResetScenario(); return; }
             if (Input.GetKeyDown(KeyCode.H)) _showTelemetry=!_showTelemetry;
             if (Input.GetKeyDown(KeyCode.Alpha1)) _selected=0;
@@ -528,7 +682,7 @@ namespace Guardian.UnitySim
             if (Input.GetKeyDown(KeyCode.N)) SetCondition(robot.RobotId,RobotCondition.Normal);
             if (Input.GetKeyDown(KeyCode.W)) SetCondition(robot.RobotId,RobotCondition.Warning);
             if (Input.GetKeyDown(KeyCode.L)) SetCondition(robot.RobotId,RobotCondition.Limited);
-            if (Input.GetKeyDown(KeyCode.E)) SetEmergencyStop(robot.RobotId,!robot.EmergencyStopped);
+            if (Input.GetKeyDown(KeyCode.E)) SetEmergencyStop(robot.RobotId,!robot.OperatorStopped);
         }
         private Vector2 guiScreenOrigin;
         private GUISkin physicsSkin;
@@ -537,7 +691,7 @@ namespace Guardian.UnitySim
         private Rect savedViewport;
         private float savedFov;
         private string seedText;
-        private int PanelWidth=>Mathf.Clamp(Mathf.RoundToInt(Screen.width*.29f),350,460);
+        private int PanelWidth=>HumanExperienceActive?Mathf.Clamp(Mathf.RoundToInt(Screen.width*.36f),450,580):Mathf.Clamp(Mathf.RoundToInt(Screen.width*.29f),350,460);
         private void EnsurePhysicsSkin()
         {
             if (physicsSkin!=null) return;
@@ -547,11 +701,14 @@ namespace Guardian.UnitySim
         }
         private void LateUpdate()
         {
+            if(CustomPresentationActive)return;
             if (_camera==null) return;
+            if(_mode==GuardianSimulationMode.Physics && !DeveloperMode) { _camera.rect=new Rect(0,0,1,1); return; }
             if (!cameraDefaultsSaved) { savedViewport=_camera.rect; savedFov=_camera.fieldOfView; cameraDefaultsSaved=true; }
             bool panel=_mode==GuardianSimulationMode.Physics && _showTelemetry;
             _camera.rect=panel?new Rect(0,0,Mathf.Max(.45f,(Screen.width-PanelWidth-20f)/Screen.width),1):savedViewport;
             _camera.fieldOfView=panel?Mathf.Max(savedFov,58):savedFov;
+            ApplyCameraPreset();
         }
         private void OnDestroy() { if (physicsSkin!=null) Destroy(physicsSkin); if (panelTexture!=null) Destroy(panelTexture); }
 
@@ -583,29 +740,30 @@ namespace Guardian.UnitySim
         private void PhysicsGUI()
         {
             int width=PanelWidth;
+            if(HumanExperienceActive) { humanExperience.DrawPanel(width); return; }
             GUILayout.BeginArea(new Rect(Screen.width-width-10,10,width,Screen.height-20),GUI.skin.box);
             _physicsScroll=GUILayout.BeginScrollView(_physicsScroll);
             GUILayout.Label("PHYSICAL AI GUARDIAN / PHYSICS",GUI.skin.box);
             if (ModePanelButton("40s legacy regression mode (F7)"))
             { GUILayout.EndScrollView(); GUILayout.EndArea(); SetMode(GuardianSimulationMode.LegacyStory); return; }
+            if(ControlButton("human-experience","Judge interaction / 人間介入体験を開始",28))
+            { GUILayout.EndScrollView(); GUILayout.EndArea(); EnterHumanExperience(true,ReserveFleet); return; }
             if (GUILayout.Button(ReserveFleet?"Fleet: five bays (reset to three)":"Fleet: three bays (reset to 3 + 2 reserves)")) SetReserveFleet(!ReserveFleet);
             GUILayout.Label("Seed "+Settings.Seed+" | "+DemoClock.ToString("F1")+"s | dynamic bodies");
             GUILayout.BeginHorizontal(); if (seedText==null) seedText=Settings.Seed.ToString(); seedText=GUILayout.TextField(seedText,GUILayout.Width(110)); if(Event.current.type==EventType.Repaint) nativePoints["seed-field"]=GUIUtility.GUIToScreenPoint(GUILayoutUtility.GetLastRect().center)-guiScreenOrigin;
             if (ControlButton("seed-apply","Apply seed + reset") && int.TryParse(seedText,out int chosenSeed)) { Settings.Seed=chosenSeed; ResetScenario(); }
             GUILayout.EndHorizontal();
             MealControlsGUI();
+            MotionControlsGUI();
+            OperatorSupervisionEnabled=GUILayout.Toggle(OperatorSupervisionEnabled,"Ask for a human decision when a lamp changes");
             if (ReserveFleet)
             {
                 if (GUILayout.Button("Deploy next healthy standby")) Fleet.Deploy();
                 foreach (var command in Fleet.Commands.Reverse().Take(3)) GUILayout.Label("#"+command.Id+" "+command.Action+" "+command.RobotId+" / "+command.State+": "+command.Reason);
             }
             GUILayout.Label("Dispatch "+_robots.Count(r=>r.DispatchEnabled)+" | standby "+_robots.Count(r=>r.FleetRole==GuardianFleetRole.Standby)+" | retiring "+_robots.Count(r=>r.FleetRole==GuardianFleetRole.Retiring));
-            GUILayout.Label("1/2/3 select  N/W/L condition  E stop  R reset  F7 mode | scroll for task controls");
+            GUILayout.Label("1/2/3 select  N/W/L condition  E stop  R reset  F7 mode  V camera | scroll for task controls");
             GUILayout.Label("Single-track route: "+(_traffic.Owner==null?"free":_traffic.Owner.Robot.RobotId)+" | waiting "+_traffic.QueueLength);
-            if (_pedestrianSystem!=null && _pedestrianSystem.Active)
-                GUILayout.Label("Pedestrian demo: "+(_pedestrianSystem.Pedestrian.Moving?"crossing":"waiting")+
-                    " | robot holds "+_robots.Count(r=>r.PhysicsDriver.PedestrianSafetyHold)+
-                    " | SIMULATED observation only");
             foreach (GuardianRobot robot in _robots)
             {
                 GUILayout.Label(robot.RobotId+"  "+robot.FleetRole+"  "+robot.Condition.ToString().ToUpperInvariant()+"  "+GuardianCapabilityPolicy.AllowedText(robot.Condition,robot.EmergencyStopped));
@@ -614,7 +772,7 @@ namespace Guardian.UnitySim
                 if (GUILayout.Button("Normal")) SetCondition(robot.RobotId,RobotCondition.Normal);
                 if (GUILayout.Button("Warning")) SetCondition(robot.RobotId,RobotCondition.Warning);
                 if (GUILayout.Button("Limited")) SetCondition(robot.RobotId,RobotCondition.Limited);
-                if (ControlButton("stop/"+robot.RobotId,robot.EmergencyStopped?"Recover":"STOP")) SetEmergencyStop(robot.RobotId,!robot.EmergencyStopped);
+                if (ControlButton("stop/"+robot.RobotId,robot.OperatorStopped?"Recover":"STOP")) SetEmergencyStop(robot.RobotId,!robot.OperatorStopped);
                 GUILayout.EndHorizontal();
                 if (ReserveFleet)
                 {
@@ -641,15 +799,17 @@ namespace Guardian.UnitySim
             GUILayout.EndScrollView(); GUILayout.EndArea();
         }
 
-        private void Log(string message)
+        internal void Log(string message)
         {
             _events.Insert(0, string.Format("{0:00.0}s  {1}", _demoClock, message));
             if (_events.Count > 12) _events.RemoveAt(_events.Count - 1);
-            Debug.Log("[Guardian] " + message);
+            if(Settings.VerboseRuntimeLogs)Debug.Log("[Guardian] " + message);
         }
 
         private void OnGUI()
         {
+            if(CustomPresentationActive)return;
+            if(Application.isPlaying && _mode==GuardianSimulationMode.Physics && !DeveloperMode) { DemoInterface?.Draw(); return; }
             if (!Application.isPlaying || !_showTelemetry) return;
             guiScreenOrigin=GUIUtility.GUIToScreenPoint(Vector2.zero);
             if (Event.current.type==EventType.MouseUp && GetComponent<GuardianPhysicsVerification>()!=null) Debug.Log("[Guardian] Native mouse root="+Event.current.mousePosition+" screenOrigin="+guiScreenOrigin);
@@ -662,7 +822,7 @@ namespace Guardian.UnitySim
             { GUILayout.EndArea(); SetMode(GuardianSimulationMode.Physics); return; }
             GUILayout.Label("Unity 3D Fleet Simulator | 6000.3.12f1", GUI.skin.label);
             GUILayout.Label(StoryScene + "   " + _demoClock.ToString("00.0") + "s / 40s");
-            GUILayout.Label("H: HUD  R: reset  F8: story/interactive  F9: capture");
+            GUILayout.Label("H: HUD  R: reset  F8: story/interactive  F9: capture  V: camera");
             GUILayout.Label("RUN MODE: " + (_storyMode ? "40s STORY" : "INTERACTIVE"));
             GUILayout.Space(6);
             foreach (GuardianRobot robot in _robots)

@@ -1,4 +1,4 @@
-"""Original serving meals, Blender 5.1.1. No external inputs, textures or services."""
+"""Original serving meals, each on its own dish set, Blender 5.1.1. No external inputs, textures or services."""
 import bpy
 import importlib.util
 import json
@@ -21,15 +21,17 @@ def oval(name,loc,scale,material):
     for face in obj.data.polygons: face.use_smooth=True
     return obj
 
+# Parts named "Leftover ..." show only once the meal is eaten; "Dish ..." parts always.
 def soup():
-    kit.bowl()
-    kit.lathe('Soup liquid',[(0,.127),(.116,.127),(.116,.134),(0,.134)],mat='Soup')
+    kit.soup_bowl()
+    kit.lathe('Soup liquid',[(0,.118),(.116,.118),(.116,.124),(0,.124)],mat='Soup')
     for i in range(6):
         a=i*2*math.pi/6
-        oval('Vegetable garnish',(.06*math.cos(a),.06*math.sin(a),.139),(.012,.008,.004),'VegetableGreen')
+        oval('Vegetable garnish',(.06*math.cos(a),.06*math.sin(a),.127),(.012,.008,.004),'VegetableGreen')
+    kit.lathe('Leftover soup film',[(0,.046),(.052,.046),(.052,.049),(0,.049)],mat='Soup')
 
 def curry():
-    kit.plate()
+    kit.curry_plate()
     oval('Rice mound',(-.065,0,.075),(.085,.11,.045),'FoodRice')
     oval('Thick curry sauce',(.065,0,.053),(.095,.12,.018),'CurrySauce')
     for x,y in [(.06,-.055),(.10,.02),(.02,.06)]:
@@ -37,24 +39,42 @@ def curry():
     for i in range(10):
         a=i*2*math.pi/10
         oval('Rice grain',(-.065+.045*math.cos(a),.07*math.sin(a),.107),(.009,.018,.006),'FoodRice')
+    for x in [-.02,0,.02]:
+        kit.box('Pickled radish',(x,-.107,.059),(.016,.012,.01),'TomatoRed',.003)
+    oval('Leftover curry smear',(.04,-.01,.034),(.085,.06,.004),'CurrySauce')
+    for x,y in [(-.05,.03),(-.03,-.04),(0,.05)]:
+        oval('Leftover rice grain',(x,y,.034),(.009,.018,.005),'FoodRice')
 
 def noodles():
-    kit.plate()
+    kit.square_plate()
     for strand in range(8):
-        points=[(-.12+t*.020,-.09+strand*.025+.014*math.sin(t*.9+strand),.065+.015*math.sin(t*.6+strand)**2) for t in range(13)]
+        points=[(-.12+t*.020,-.09+strand*.025+.014*math.sin(t*.9+strand),.042+.015*math.sin(t*.6+strand)**2) for t in range(13)]
         for a,b in zip(points,points[1:]): kit.rod('Dry stir-fried noodle',a,b,.009,'NoodleDough')
     for i in range(5):
-        oval('Cabbage',(-.09+i*.043,.05*math.sin(i),.095),(.025,.019,.009),'VegetableGreen')
+        oval('Cabbage',(-.09+i*.043,.05*math.sin(i),.072),(.025,.019,.009),'VegetableGreen')
+    for x,y in [(.05,-.03),(.066,-.018),(.058,-.045)]:
+        kit.box('Pickled ginger',(x,y,.084),(.024,.006,.005),'TomatoRed',.002)
+    kit.rod('Leftover noodle strand',(-.06,-.03,.031),(.02,-.012,.031),.008,'NoodleDough')
+    kit.rod('Leftover noodle strand',(.0,.04,.031),(.06,.025,.031),.008,'NoodleDough')
+    oval('Leftover cabbage',(-.03,.02,.03),(.02,.015,.004),'VegetableGreen')
 
 def hamburg():
-    kit.plate()
-    oval('Hamburg steak',(.025,0,.087),(.10,.075,.045),'MeatBrown')
-    oval('Demi sauce',(.025,0,.126),(.083,.062,.008),'CurrySauce')
-    oval('Rice side',(-.10,.025,.071),(.045,.075,.037),'FoodRice')
-    for i in range(3): oval('Broccoli',(-.035+i*.04,-.115,.075),(.023,.025,.025),'VegetableGreen')
-    oval('Tomato',(.105,.10,.075),(.034,.025,.019),'TomatoRed')
+    kit.skillet()
+    oval('Hamburg steak',(.035,0,.088),(.095,.07,.04),'MeatBrown')
+    oval('Demi sauce',(.035,0,.124),(.08,.058,.008),'CurrySauce')
+    for y in [-.055,-.012]: oval('Broccoli',(-.105,y,.068),(.022,.024,.022),'VegetableGreen')
+    for i in range(4): oval('Sweet corn',(-.11+.012*(i%2),.03+.012*i,.054),(.011,.009,.008),'NoodleDough')
+    oval('Glazed carrot',(-.07,.07,.056),(.026,.016,.012),'Soup')
+    oval('Leftover demi smear',(.03,0,.048),(.07,.045,.003),'CurrySauce')
 
-manifest=[kit.export(name,build) for name,build in [('FoodSoup',soup),('FoodCurryRice',curry),('FoodNoodles',noodles),('FoodHamburg',hamburg)]]
+def serving(name,build):
+    entry=kit.export(name,build)
+    lo,hi=entry['blender_bounds_min'],entry['blender_bounds_max']
+    # Robot tray shelves take a .41m square footprint and .15m height at the fixed dish scale.
+    assert max(abs(v) for v in lo[:2]+hi[:2])<=.2051 and hi[2]-lo[2]<=.15,(name,lo,hi)
+    return entry
+
+manifest=[serving(name,build) for name,build in [('FoodSoup',soup),('FoodCurryRice',curry),('FoodNoodles',noodles),('FoodHamburg',hamburg)]]
 (source/'food-manifest.json').write_text(json.dumps({'blender':bpy.app.version_string,'units':'meters',
     'provenance':'Original authored meal geometry; no external inputs',
     'classification':{'FoodSoup':'Soup/liquid','FoodCurryRice':'Food','FoodNoodles':'Food/dry stir-fried noodles','FoodHamburg':'Food'},'assets':manifest},indent=2)+'\n')

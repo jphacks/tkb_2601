@@ -3,155 +3,79 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using UnityEngine;
 
 namespace Guardian.UnitySim
 {
-    public enum GuardianConversationKind
-    {
-        Invalid,Help,FleetStatus,RobotStatus,PrepareStop,PrepareRecover,Confirm,Cancel
-    }
+    public enum GuardianInteractionMode { Click, RuleVoice }
+    public struct GuardianSpeechMessage {public string Id,Text;public float Confidence;public double ReceivedAt;}
+    public interface IGuardianSpeechRecognizer {bool TryRead(out GuardianSpeechMessage message);}
+    public interface IGuardianSpeechOutput {void Say(string text);}
 
-    public struct GuardianConversationIntent
-    {
-        public GuardianConversationKind Kind;
-        public string RobotId;
-        public string Error;
-    }
-
-    /// <summary>Deterministic Japanese command grammar. It performs no speech or network processing.</summary>
-    public static class GuardianConversationParser
-    {
-        public const int MaximumInputLength=120;
-
-        public static GuardianConversationIntent Parse(string input,IEnumerable<string> robotIds)
-        {
-            if (string.IsNullOrWhiteSpace(input)) return Invalid("入力が空です。");
-            if (input.Length>MaximumInputLength) return Invalid("入力が長すぎます。");
-            if (input.Any(char.IsControl)) return Invalid("改行や制御文字は使用できません。");
-            string text=input.Normalize(NormalizationForm.FormKC).ToUpperInvariant()
-                .Replace(" ","").Replace("　","").Trim('。','！','!','?','？');
-            if (text=="ヘルプ" || text=="使い方" || text=="HELP") return Of(GuardianConversationKind.Help);
-            if (text=="状況" || text=="状態" || text=="STATUS") return Of(GuardianConversationKind.FleetStatus);
-            if (text=="実行" || text=="はい") return Of(GuardianConversationKind.Confirm);
-            if (text=="キャンセル" || text=="やめる" || text=="いいえ") return Of(GuardianConversationKind.Cancel);
-
-            text=text.Replace("ロボット","").Replace("ROBOT","");
-            MatchCollection matches=Regex.Matches(text,"[A-Z]");
-            if (matches.Count!=1) return Invalid(matches.Count==0?"ロボットを1台指定してください。":"ロボットは1台だけ指定してください。");
-            string id=matches[0].Value;
-            var valid=new HashSet<string>(robotIds??Array.Empty<string>(),StringComparer.Ordinal);
-            if (!valid.Contains(id)) return Invalid("指定したロボットは現在の編成にいません。");
-            string action=text.Remove(matches[0].Index,matches[0].Length).Trim('を','の','に','は',':','：');
-            switch (action)
-            {
-                case "状況": case "状態": return Of(GuardianConversationKind.RobotStatus,id);
-                case "停止": case "止めて": case "緊急停止": return Of(GuardianConversationKind.PrepareStop,id);
-                case "復帰": case "再開": case "解除": case "停止解除": return Of(GuardianConversationKind.PrepareRecover,id);
-                default: return Invalid("対応していない指示です。状況・停止・復帰から選んでください。");
-            }
-        }
-
-        private static GuardianConversationIntent Of(GuardianConversationKind kind,string id=null)=>
-            new GuardianConversationIntent{Kind=kind,RobotId=id};
-        private static GuardianConversationIntent Invalid(string error)=>
-            new GuardianConversationIntent{Kind=GuardianConversationKind.Invalid,Error=error};
-    }
-
+    /// <summary>Deterministic Japanese grammar. Every action goes through the click session's safety/version checks.</summary>
     public sealed class GuardianRuleConversation
     {
-        private sealed class Pending
-        {
-            public string RobotId;
-            public bool Stop,ExpectedEmergency;
-            public bool ExpectedPedestrianHold;
-            public RobotCondition ExpectedCondition;
-            public int ScenarioRevision;
-            public double CreatedAt;
-        }
-
         private readonly GuardianSimulator sim;
+        private readonly GuardianDemoInterface operations;
+        private readonly HashSet<string> seen=new HashSet<string>();
+        private readonly Queue<string> order=new Queue<string>();
+        private sealed class Pending {public string Id;public int Selection,State;public GuardianDemoChoice Choice;}
         private Pending pending;
         public bool HasPending=>pending!=null;
-        public int ExecutedCommands { get; private set; }
-
-        public GuardianRuleConversation(GuardianSimulator simulator)
+        public string Reply {get;private set;}="";
+        public GuardianRuleConversation(GuardianSimulator simulator){sim=simulator;operations=sim.DemoInterface;}
+        public string DescribeAlerts()
         {
-            sim=simulator??throw new ArgumentNullException(nameof(simulator));
-        }
-
-        public string Submit(string input)
-        {
-            GuardianConversationIntent intent=GuardianConversationParser.Parse(input,sim.Robots.Select(r=>r.RobotId));
-            if (intent.Kind!=GuardianConversationKind.Confirm && intent.Kind!=GuardianConversationKind.Cancel) pending=null;
-            switch (intent.Kind)
+            var alerts=sim.Robots.Where(r=>GuardianDemoInterface.HasAlert(sim,r)).ToArray();
+            if(alerts.Length==0)return "現在、対応が必要なロボットはいません。";
+            return string.Join(" ",alerts.Select(r=>
             {
-                case GuardianConversationKind.Invalid: return intent.Error+" 操作は実行していません。";
-                case GuardianConversationKind.Help: return "例：『状況』『A 状況』『A 停止』『A 復帰』。変更操作は確認後に『実行』と入力します。";
-                case GuardianConversationKind.FleetStatus: return DescribeFleet();
-                case GuardianConversationKind.RobotStatus: return DescribeRobot(Find(intent.RobotId));
-                case GuardianConversationKind.PrepareStop: return Prepare(intent.RobotId,true);
-                case GuardianConversationKind.PrepareRecover: return Prepare(intent.RobotId,false);
-                case GuardianConversationKind.Confirm: return Confirm();
-                case GuardianConversationKind.Cancel: pending=null; return "操作を取り消しました。ロボットの状態は変更していません。";
-                default: return "指示を解釈できません。操作は実行していません。";
+                bool unsafeMotion=r.PhysicsDriver.SafetyHeld || (sim.HumanExperienceActive && sim.HumanExperience.Actors.TryGetValue(r.RobotId,out var a) && a.MobilityUnsafe);
+                string allowed=unsafeMotion?"安全確認が済むまで停止を続けます。":
+                    "能力上は"+string.Join("・",new[]{DeliveryKind.Soup,DeliveryKind.Food,DeliveryKind.EmptyDishes}.Where(k=>GuardianCapabilityPolicy.Allows(r.Condition,k)).Select(k=>k==DeliveryKind.Soup?"スープ配膳":k==DeliveryKind.Food?"料理配膳":"皿回収"))+"が可能です。";
+                return "ロボット "+r.RobotId+" は"+(r.EmergencyStopped?"停止中。":r.Condition==RobotCondition.Warning?"注意状態。":"能力制限があります。")+allowed;
+            }))+" 対象と、続ける・引き継ぐ・停止のどれかを指定してください。";
+        }
+        private string Answer(string text){Reply=text;return text;}
+        private string Clarify(string text){pending=null;return Answer(text+" 実行していません。");}
+        public string Process(GuardianSpeechMessage message,double now)
+        {
+            sim.RefreshDemoEvidence();
+            if(string.IsNullOrWhiteSpace(message.Id) || !seen.Add(message.Id))return Clarify("同じ入力または識別できない入力です。");
+            order.Enqueue(message.Id);if(order.Count>128)seen.Remove(order.Dequeue());
+            if(!double.IsFinite(now) || !double.IsFinite(message.ReceivedAt) || now<message.ReceivedAt || now-message.ReceivedAt>10
+                || !float.IsFinite(message.Confidence) || message.Confidence<.75f || message.Confidence>1 || string.IsNullOrWhiteSpace(message.Text) || message.Text.Length>200)return Clarify("聞き取りを確定できません。対象と操作をもう一度指定してください。");
+            string text=message.Text.Normalize(NormalizationForm.FormKC).ToUpperInvariant().Replace(" ","").Replace("　","").Trim('。','！','!','?','？');
+            if(text=="キャンセル" || text=="やめる"){pending=null;return Answer("操作を取り消しました。停止状態は変えません。");}
+            if(text=="状況" || text=="どうしたらいい" || text=="状態")return Answer(DescribeAlerts());
+            if(text=="実行" || text=="はい")
+            {
+                var command=pending;pending=null;
+                if(command==null)return Answer("確認待ちの操作がありません。対象と操作を指定してください。");
+                var result=operations.Choose(command.Id,command.Selection,command.State,command.Choice);
+                return Answer((result.Accepted?"受理しました。":"拒否しました。")+"ロボット "+command.Id+"。"+result.Reason);
             }
+            pending=null;
+            text=text.Replace("ロボット","").Replace("ROBOT","").Replace("エー","A").Replace("ビー","B").Replace("シー","C").Replace("ディー","D").Replace("イー","E");
+            var ids=Regex.Matches(text,"[A-Z]");string id=null;
+            if(ids.Count>1)return Clarify("対象が複数または曖昧です。ロボットを1台指定してください。");
+            if(ids.Count==1){id=ids[0].Value;if(!sim.Robots.Any(r=>r.RobotId==id))return Clarify("そのロボットは見つかりません。");text=text.Remove(ids[0].Index,1).TrimStart('を','の','に','は',':','：');}
+            else
+            {
+                var alerts=sim.Robots.Where(r=>GuardianDemoInterface.HasAlert(sim,r)).ToArray();
+                if(alerts.Length!=1)return Clarify("対象を1台指定してください。");id=alerts[0].RobotId;
+            }
+            GuardianDemoChoice choice;
+            switch(text)
+            {
+                case "続けて":case "続ける":case "続行":case "できる仕事を続けて":case "仕事を続けて":choice=GuardianDemoChoice.ContinueCapable;break;
+                case "引き継いで":case "引き継ぐ":case "引継ぎ":case "別のロボットへ引き継いで":choice=GuardianDemoChoice.Transfer;break;
+                case "止めて":case "停止":case "停止を続けて":case "停止を続ける":choice=GuardianDemoChoice.KeepStopped;break;
+                default:return Clarify("その指示には対応していません。対象と、続ける・引き継ぐ・停止を指定してください。");
+            }
+            operations.SelectForCommand(id);operations.RefreshState();
+            if(!operations.NeedsDecision)return Clarify("その機体には現在、対応が必要な異常がありません。");
+            pending=new Pending{Id=id,Selection=operations.SelectionVersion,State=operations.StateVersion,Choice=choice};
+            return Answer("確認：ロボット "+id+" に「"+(choice==GuardianDemoChoice.ContinueCapable?"できる仕事を続ける":choice==GuardianDemoChoice.Transfer?"引き継ぐ":"停止を続ける")+"」。実行する場合は「実行」、取り消す場合は「キャンセル」と言ってください。");
         }
-
-        public string DescribeFleet()
-        {
-            if (sim.Mode!=GuardianSimulationMode.Physics) return "日本語操作パネルはPhysicsモード専用です。";
-            return string.Join("\n",sim.Robots.Select(DescribeRobot));
-        }
-
-        private string Prepare(string id,bool stop)
-        {
-            GuardianRobot robot=Find(id);
-            if (robot==null) return "対象ロボットが見つかりません。操作は実行していません。";
-            if (robot.EmergencyStopped==stop)
-                return stop?"ロボット "+id+" はすでに緊急停止中です。":"ロボット "+id+" は緊急停止していません。";
-            if (!stop && robot.PhysicsDriver.PedestrianSafetyHold)
-                return "ロボット "+id+" は歩行者安全停止中です。安全保持中は復帰操作を受け付けません。";
-            pending=new Pending{RobotId=id,Stop=stop,ExpectedEmergency=robot.EmergencyStopped,
-                ExpectedPedestrianHold=robot.PhysicsDriver.PedestrianSafetyHold,ExpectedCondition=robot.Condition,
-                ScenarioRevision=sim.ScenarioRevision,CreatedAt=Time.realtimeSinceStartupAsDouble};
-            return "確認：ロボット "+id+(stop?" を緊急停止します。":" の緊急停止を解除します。")+
-                "実行する場合は『実行』、取り消す場合は『キャンセル』と入力してください。";
-        }
-
-        private string Confirm()
-        {
-            Pending command=pending; pending=null;
-            if (command==null) return "確認待ちの操作はありません。";
-            double now=Time.realtimeSinceStartupAsDouble;
-            if (double.IsNaN(now) || double.IsInfinity(now) || now<command.CreatedAt || now-command.CreatedAt>15
-                || command.ScenarioRevision!=sim.ScenarioRevision)
-                return "確認の有効期限が切れたか、シナリオが更新されました。操作は実行していません。";
-            GuardianRobot robot=Find(command.RobotId);
-            if (robot==null || robot.EmergencyStopped!=command.ExpectedEmergency || robot.Condition!=command.ExpectedCondition
-                || robot.PhysicsDriver.PedestrianSafetyHold!=command.ExpectedPedestrianHold)
-                return "確認後に対象の状態が変化しました。操作は実行していません。";
-            if (!command.Stop && robot.PhysicsDriver.PedestrianSafetyHold)
-                return "歩行者安全停止が継続中です。復帰操作は実行していません。";
-            sim.SetEmergencyStop(command.RobotId,command.Stop); ExecutedCommands++;
-            return "実行しました。"+DescribeRobot(robot);
-        }
-
-        private GuardianRobot Find(string id)=>sim.Robots.FirstOrDefault(r=>r.RobotId==id);
-
-        private static string DescribeRobot(GuardianRobot robot)
-        {
-            if (robot==null) return "対象ロボットが見つかりません。";
-            string state=robot.Condition==RobotCondition.Normal?"正常":robot.Condition==RobotCondition.Warning?"注意":"能力制限";
-            string mobility=robot.EmergencyStopped?"緊急停止中":robot.PhysicsDriver.PedestrianSafetyHold?"歩行者安全停止中":"走行可能";
-            string work=robot.CurrentTask==null?"担当なし":robot.CurrentTask.Id+" "+Kind(robot.CurrentTask.Kind)+" "+Phase(robot.CurrentTask.Phase);
-            string allowed=robot.EmergencyStopped?"作業不可":robot.Condition==RobotCondition.Normal?"スープ・料理・皿回収":
-                robot.Condition==RobotCondition.Warning?"料理・皿回収":"皿回収のみ";
-            return "ロボット "+robot.RobotId+"："+state+"、"+mobility+"、担当 "+work+"、可能作業 "+allowed+"。";
-        }
-
-        private static string Kind(DeliveryKind kind)=>kind==DeliveryKind.Soup?"スープ":kind==DeliveryKind.Food?"料理":"皿回収";
-        private static string Phase(TaskPhase phase)=>phase==TaskPhase.Pending?"待機":phase==TaskPhase.ToPickup?"受取へ移動":
-            phase==TaskPhase.ToDropoff?"目的地へ移動":phase==TaskPhase.ReturningCargo?"返却中":"完了";
     }
 }

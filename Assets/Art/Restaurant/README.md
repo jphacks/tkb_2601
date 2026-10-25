@@ -9,9 +9,9 @@ mesh, photo, texture, font, paid API or external generation service is used.
 | `Source/mesh-manifest.json` | Per-model object, vertex and triangle counts and source bounds |
 | `Source/generate_people.py` | Original three seated adult variants and standing apron/cap staff generator |
 | `Source/people-manifest.json` | People topology, bounds and seat-height design anchors |
-| `Source/generate_food.py` | Original soup, curry/rice, dry noodles and hamburg generator, with food-manifest.json |
+| `Source/generate_food.py` | Original soup, curry/rice, dry noodles and hamburg generator, each on its own dish set, with food-manifest.json |
 | `Models/` | 21 FBX files, without embedded textures or animation |
-| `Materials/` | 33 shared Unity Built-in Standard materials |
+| `Materials/` | 37 shared Unity Built-in Standard materials |
 | `Textures/` | 2 original images generated from analytic grain and hand-coded menu graphics |
 | `Prefabs/` | 21 independently placeable Unity prefabs; furniture/people floor pivots, tabletop detail support pivot |
 | `Resources/RestaurantCatalog.asset` | Player-compatible direct references to every prefab |
@@ -19,7 +19,13 @@ mesh, photo, texture, font, paid API or external generation service is used.
 Furniture: a rounded oak table with apron and tapered legs, slatted chairs with
 stretchers and sage cushions, upholstered booth, stainless prep shelves, depressed
 sink and curved faucet, oven/hob and tapered extractor hood, fluted pickup shelf,
-open three-tier return trolley with casters, and hollow ceramic tableware. The room
+open three-tier return trolley with casters, and hollow ceramic tableware.
+Each menu has its own dish set: soup in an earthenware bowl on a saucer with a spoon,
+curry on an indigo-rim oval plate, noodles on a celadon square plate and hamburg in
+a cast-iron skillet on a walnut board. Every serving dish stays inside a 0.41 m square
+and 0.15 m height so it fits each robot tray shelf; `generate_food.py` asserts this.
+The prep shelves and the return trolley hold stacks of every set, and the pickup pass
+is left clear for the waiting meals. The room
 shell keeps the existing room dimensions, wall positions and plank rhythm, adding
 oak wainscoting. These are visual meshes without navigation/physics colliders.
 
@@ -44,6 +50,13 @@ Regenerate with Unity closed:
 ```
 
 Then open the project in Unity and run **Guardian > Restaurant > Validate Layout**.
+`generate_food.py` regenerates the four meal FBX files the same way.
+
+In a meal FBX, parts named `Dish ...` are the serving dish and stay after the meal
+is eaten; parts named `Leftover ...` show only on an eaten dish (see
+`GuardianDishInventory`). The meal, prep and return trolley FBX importers remap their
+FBX materials to the shared `Materials/` assets, so the glaze materials show without
+rebuilding the prefabs.
 
 No `.blend` file is imported by Unity. FBX regeneration needs Blender; using the
 checked-in FBX/prefabs needs only the pinned Unity Editor. Geometry is deterministic;
@@ -59,11 +72,11 @@ the prefab wrapper scale at one. World placement is in `RestaurantVisuals.cs`.
   video assets. No third-party license grant is claimed or required for these inputs.
 - Blender and Unity are authoring tools; their installed software is not copied into
   the repository. Standard shaders are referenced from the user's Unity installation.
-- See the repository [LICENSE](../../../LICENSE) for repository-level terms.
-  This notice does not grant permission to redistribute third-party models.
+- This public repository includes a root LICENSE file. Third-party assets and their
+  separate conditions are documented in docs/ASSET_LICENSE_STATUS.md.
 - The supplied Gemini video was reviewed for design cues only. Neither that video
   nor extracted frames are included. Captured evidence uses project-owned robot
   placeholders. The local BOOTH model, textures, materials, ZIP and unitypackage remain
-  excluded. See [public scope](../../../docs/PUBLIC_SCOPE.md). Third-party redistribution permission remains unconfirmed.
+  excluded. See `docs/ASSET_LICENSE_STATUS.md` for that separate unresolved license.
 
 No Nekobot texture or mesh is used by this art kit.
