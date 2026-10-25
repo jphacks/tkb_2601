@@ -69,7 +69,7 @@ Unityバッチ検証入口 `Guardian.UnitySim.Editor.GuardianPedestrianBatch.Ver
 別入力の `実行` があるまで反映しません。確認後に対象状態やシナリオが変化した場合、
 15秒を超えた場合、歩行者安全停止中に復帰を求めた場合はfail-closedで拒否します。
 
-この公開版はマイク入力、音声認識、音声合成、録音音声、生成AI、外部API、
+日本語操作パネル自体はマイク入力、音声認識、音声合成、録音音声、生成AI、外部API、
 ネットワーク通信を含みません。非公開側の会話文や音声素材はコピーしていません。
 入力内容を外部へ送信せず、応答は現在の公開シミュレーション状態だけから生成します。
 
@@ -153,7 +153,7 @@ Unity 6000.3.12f1 のコンパイルと設定ロード検証は、ライセン�
 
 `Guardian.UnitySim.Editor.GuardianIntegrationBatch.Verify`
 
-設定ロード、能力マトリクスと閾値境界、歩行者予測、日本語入力、シーン生成を
+設定ロード、能力マトリクスと閾値境界、歩行者予測、日本語入力、センサー受信、シーン生成を
 同じUnityプロセスで順に実行します。Windowsでは
 `scripts/Invoke-GuardianVerification.ps1`、macOS / Linuxでは
 `scripts/verify-guardian-unity.sh`から実行できます。Unity 6000.3.12f1の
@@ -162,6 +162,14 @@ Unity 6000.3.12f1 のコンパイルと設定ロード検証は、ライセン�
 GitHub Actionsの`Guardian Integration Harness CI`は、統合入口が全チェックを
 呼び出すこと、成功・失敗マーカー、起動スクリプトの構文を検証します。
 クラウドCIではUnityを起動しないため、CI成功をPlayModeや描画の確認とは表現しません。
+
+## センサー連携の範囲
+
+`GuardianNetworkBridge` は、この PC のループバック TCP に接続する受信側です。中継から有効な状態を受け取るまでは既存デモを保ち、受信後は対象ロボットの状態を中継が決めます。Warning / Limited は能力制限、Hold は停止として扱います。
+
+中継全体の通信が 1.5 秒以上途切れると全機を保持し、データが戻っても人が通信復旧を確認するまで再開しません。人の STOP と中継の保持は別に管理します。シナリオのリセットでも中継の状態と通信断の保持を再適用します。
+
+M5StickS3 と PSoC 6 のファームウェアも収録しています。模擬入力・ループバック通信・CPython 上のファームウェア検証は、実機接続や安全性の認証を意味しません。接続仕様と検証入口は [STICKS3_UNITY_LINK.md](STICKS3_UNITY_LINK.md) にまとめています。
 
 ## 権利関係
 

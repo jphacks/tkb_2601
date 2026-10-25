@@ -27,6 +27,7 @@ jobs:
               "VerifyCapabilityPolicy()",
               "GuardianPedestrianBatch.RunChecks()",
               "GuardianInteractionBatch.RunChecks()",
+              "GuardianNetworkBatch.RunChecks()",
               "GuardianSceneBatch.RunChecks()",
               "GUARDIAN_INTEGRATION_OK",
           ]
@@ -37,7 +38,7 @@ jobs:
 
           for name in ["GuardianBatchRunner", "GuardianIntegrationBatch"]:
               assert (editor / f"{name}.cs.meta").is_file(), name
-          for name in ["GuardianSettingsBatch", "GuardianPedestrianBatch", "GuardianInteractionBatch", "GuardianSceneBatch"]:
+          for name in ["GuardianSettingsBatch", "GuardianPedestrianBatch", "GuardianInteractionBatch", "GuardianNetworkBatch", "GuardianSceneBatch"]:
               source = (editor / f"{name}.cs").read_text(encoding="utf-8-sig")
               assert "public static void RunChecks()" in source, name
               assert "GuardianBatchRunner.Execute" in source, name

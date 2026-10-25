@@ -110,7 +110,7 @@ Unity を起動せずに通信を確かめるときは、中継を起動した�
 
 StickS3 本体には何もしない。中継が StickS3 と同じ形の行を自分で作り、正常 → 注意 → 制限 → KEY2 で正常 を流す。
 
-この公開版への Unity 受信側 `GuardianNetworkBridge` の追加は別途行う。以下の自動確認は、Unity と実機を使わず、中継が TCP で送る状態を確認する。Unity での目視確認には受信側を備えた構成が必要。
+Unity 受信側 `GuardianNetworkBridge` はこの公開版に含まれる。以下の自動確認は、Unity と実機を使わず、中継が TCP で送る状態を確認する。模擬入力を起動して Unity で Play すると、受信した B の状態を確認できる。通信断の保持は、データが戻ったあと Unity 左上の `Resume (checked by a person)` で解除する。人が押した STOP は別に残る。
 
 macOS / Linux:
 
@@ -124,7 +124,7 @@ Windows（PowerShell）:
 ```powershell
 # Unity なしで自動で確かめる（約 10 秒。OK / NG を表示）
 .venv\Scripts\python scripts\sensor_bridge\check_stages.py
-# 模擬入力を繰り返す（Unity の目視確認は受信側を備えた構成で行う。Ctrl+C で止める）
+# 模擬入力を繰り返す（Unity で Play して B を確認する。Ctrl+C で止める）
 .venv\Scripts\python scripts\sensor_bridge\sensor_bridge.py --simulate --loop
 # 一括起動の中で両方を行う
 powershell -ExecutionPolicy Bypass -File core\host\demo.ps1 -StageTest

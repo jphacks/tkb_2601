@@ -63,7 +63,7 @@ namespace Guardian.UnitySim
         private sealed class Pending
         {
             public string RobotId;
-            public bool Stop,ExpectedEmergency;
+            public bool Stop,ExpectedEmergency,ExpectedOperator;
             public bool ExpectedPedestrianHold;
             public RobotCondition ExpectedCondition;
             public int ScenarioRevision;
@@ -108,11 +108,14 @@ namespace Guardian.UnitySim
         {
             GuardianRobot robot=Find(id);
             if (robot==null) return "対象ロボットが見つかりません。操作は実行していません。";
-            if (robot.EmergencyStopped==stop)
+            if (!stop && robot.LinkedStopped)
+                return "センサー由来の保持中です。中継の KEY2 または通信復旧の確認を先に行ってください。";
+            if (robot.OperatorStopped==stop)
                 return stop?"ロボット "+id+" はすでに緊急停止中です。":"ロボット "+id+" は緊急停止していません。";
             if (!stop && robot.PhysicsDriver.PedestrianSafetyHold)
                 return "ロボット "+id+" は歩行者安全停止中です。安全保持中は復帰操作を受け付けません。";
             pending=new Pending{RobotId=id,Stop=stop,ExpectedEmergency=robot.EmergencyStopped,
+                ExpectedOperator=robot.OperatorStopped,
                 ExpectedPedestrianHold=robot.PhysicsDriver.PedestrianSafetyHold,ExpectedCondition=robot.Condition,
                 ScenarioRevision=sim.ScenarioRevision,CreatedAt=Time.realtimeSinceStartupAsDouble};
             return "確認：ロボット "+id+(stop?" を緊急停止します。":" の緊急停止を解除します。")+
@@ -128,11 +131,13 @@ namespace Guardian.UnitySim
                 || command.ScenarioRevision!=sim.ScenarioRevision)
                 return "確認の有効期限が切れたか、シナリオが更新されました。操作は実行していません。";
             GuardianRobot robot=Find(command.RobotId);
-            if (robot==null || robot.EmergencyStopped!=command.ExpectedEmergency || robot.Condition!=command.ExpectedCondition
+            if (robot==null || robot.EmergencyStopped!=command.ExpectedEmergency || robot.OperatorStopped!=command.ExpectedOperator || robot.Condition!=command.ExpectedCondition
                 || robot.PhysicsDriver.PedestrianSafetyHold!=command.ExpectedPedestrianHold)
                 return "確認後に対象の状態が変化しました。操作は実行していません。";
             if (!command.Stop && robot.PhysicsDriver.PedestrianSafetyHold)
                 return "歩行者安全停止が継続中です。復帰操作は実行していません。";
+            if (!command.Stop && robot.LinkedStopped)
+                return "センサー由来の保持が継続中です。復帰操作は実行していません。";
             sim.SetEmergencyStop(command.RobotId,command.Stop); ExecutedCommands++;
             return "実行しました。"+DescribeRobot(robot);
         }

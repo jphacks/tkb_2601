@@ -42,3 +42,14 @@ jobs:
       - name: Verify startup order and failure handling without Docker or hardware
         shell: powershell
         run: ./core/host/test_demo.ps1
+
+  psoc6-firmware:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify sharing and PSoC 6 firmware with simulated machine and serial input
+        run: python -m unittest discover -s scripts/guardian_share -v

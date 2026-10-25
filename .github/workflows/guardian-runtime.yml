@@ -23,8 +23,8 @@ jobs:
           assert root.is_dir()
 
           scripts = sorted(root.glob("*.cs"))
-          assert len(scripts) == 26, (
-              f"Expected 26 C# files, got {len(scripts)}"
+          assert len(scripts) == 28, (
+              f"Expected 28 C# files, got {len(scripts)}"
           )
 
           guids = []
@@ -49,6 +49,8 @@ jobs:
 
           required = [
               "GuardianSimulator.cs",
+              "GuardianSimulator.Sensor.cs",
+              "GuardianNetworkBridge.cs",
               "GuardianRobot.cs",
               "GuardianCapabilityPolicy.cs",
               "GuardianSettingsLoader.cs",

@@ -88,6 +88,7 @@ namespace Guardian.UnitySim
             }
             if (arguments.Contains("-guardianPhysicsTest") && GetComponent<GuardianPhysicsVerification>()==null)
                 gameObject.AddComponent<GuardianPhysicsVerification>();
+            if (GetComponent<GuardianNetworkBridge>()==null) gameObject.AddComponent<GuardianNetworkBridge>();
         }
 
         /// <summary>Called by the editor scene generator as well as runtime fallback.</summary>
@@ -284,6 +285,7 @@ namespace Guardian.UnitySim
                 _workloadRandom=new System.Random(Settings.Seed); _faultRandom=new System.Random(Settings.Seed^0x37ab);
                 _generated=0; RejectedWorkload=0; _nextTask=Range(_workloadRandom,.5f,2); _nextFault=Range(_faultRandom,Settings.MinimumFaultInterval,Settings.MaximumFaultInterval);
                 Log("Physics reset; seed="+Settings.Seed+"; dynamic bodies; local branch/service point and narrow aisle reservations");
+                GetComponent<GuardianNetworkBridge>()?.ReapplySnapshot();
                 return;
             }
             _tasks.Add(new DeliveryTask("S-101", DeliveryKind.Soup, Kitchen, Tables[0]));
@@ -292,6 +294,7 @@ namespace Guardian.UnitySim
             // Three initial tasks are fixed so Robot A/B/C display different
             // capabilities immediately. Follow-on work arrives at t=18s.
             Log("Scenario initialized: 3 robot actors");
+            GetComponent<GuardianNetworkBridge>()?.ReapplySnapshot();
             Replan();
         }
 
@@ -301,6 +304,12 @@ namespace Guardian.UnitySim
         }
 
         public void SubmitVibration(string robotId, float value)
+        {
+            if (GetComponent<GuardianNetworkBridge>()?.Drives(robotId)==true) return;
+            SubmitVibrationUnchecked(robotId,value);
+        }
+
+        private void SubmitVibrationUnchecked(string robotId, float value)
         {
             GuardianRobot robot = _robots.Find(r => r.RobotId == robotId);
             if (robot == null) return;
@@ -407,7 +416,7 @@ namespace Guardian.UnitySim
             if (Input.GetKeyDown(KeyCode.F7)) { SetMode(_mode==GuardianSimulationMode.Physics?GuardianSimulationMode.LegacyStory:GuardianSimulationMode.Physics); return; }
             if (_mode==GuardianSimulationMode.Physics) { PhysicsInput(); return; }
             _demoClock += Time.deltaTime;
-            if (_storyMode && !_storyTriggered && _demoClock >= StoryDegradationSeconds)
+            if (!SensorLinked && _storyMode && !_storyTriggered && _demoClock >= StoryDegradationSeconds)
             {
                 _storyTriggered = true;
                 // B was WARNING, hence suitable for food in the original plan.
@@ -422,7 +431,7 @@ namespace Guardian.UnitySim
                 _tasks.Add(new DeliveryTask("R-206", DeliveryKind.EmptyDishes, Tables[1], ReturnStation));
                 Replan();
             }
-            else if (!_storyMode && _autoDemo && !_demoTriggered && _demoClock >= 11.5f)
+            else if (!SensorLinked && !_storyMode && _autoDemo && !_demoTriggered && _demoClock >= 11.5f)
             {
                 _demoTriggered = true;
                 SubmitVibration("B", 0.85f);
@@ -448,8 +457,10 @@ namespace Guardian.UnitySim
         }
         public void SetEmergencyStop(string id,bool stopped)
         {
-            GuardianRobot robot=_robots.Find(r=>r.RobotId==id); if (robot==null || robot.EmergencyStopped==stopped) return;
-            robot.EmergencyStopped=stopped; Log(id+(stopped?" EMERGENCY STOP":" mobility recovered")); RevokeIneligible(robot); Replan();
+            GuardianRobot robot=_robots.Find(r=>r.RobotId==id); if (robot==null || robot.OperatorStopped==stopped) return;
+            robot.EmergencyStopped=stopped;
+            Log(id+(stopped?" EMERGENCY STOP":robot.LinkedStopped?" operator stop released; sensor hold remains":" mobility recovered"));
+            RevokeIneligible(robot); Replan();
         }
         public void PickupUnavailable(GuardianRobot robot)
         {
@@ -505,7 +516,7 @@ namespace Guardian.UnitySim
                 }
                 QueueTask(kind,table,menu); _nextTask+=Range(_workloadRandom,Settings.MinimumTaskInterval,Settings.MaximumTaskInterval);
             }
-            if (Settings.RandomFaults && _demoClock>=_nextFault)
+            if (Settings.RandomFaults && !SensorLinked && _demoClock>=_nextFault)
             {
                 GuardianRobot robot=_robots[_faultRandom.Next(_robots.Count)]; RobotCondition next=(RobotCondition)_faultRandom.Next(3);
                 Log("Seeded condition event "+robot.RobotId+" -> "+next); SetCondition(robot.RobotId,next);
@@ -528,7 +539,7 @@ namespace Guardian.UnitySim
             if (Input.GetKeyDown(KeyCode.N)) SetCondition(robot.RobotId,RobotCondition.Normal);
             if (Input.GetKeyDown(KeyCode.W)) SetCondition(robot.RobotId,RobotCondition.Warning);
             if (Input.GetKeyDown(KeyCode.L)) SetCondition(robot.RobotId,RobotCondition.Limited);
-            if (Input.GetKeyDown(KeyCode.E)) SetEmergencyStop(robot.RobotId,!robot.EmergencyStopped);
+            if (Input.GetKeyDown(KeyCode.E)) SetEmergencyStop(robot.RobotId,!robot.OperatorStopped);
         }
         private Vector2 guiScreenOrigin;
         private GUISkin physicsSkin;
@@ -614,7 +625,7 @@ namespace Guardian.UnitySim
                 if (GUILayout.Button("Normal")) SetCondition(robot.RobotId,RobotCondition.Normal);
                 if (GUILayout.Button("Warning")) SetCondition(robot.RobotId,RobotCondition.Warning);
                 if (GUILayout.Button("Limited")) SetCondition(robot.RobotId,RobotCondition.Limited);
-                if (ControlButton("stop/"+robot.RobotId,robot.EmergencyStopped?"Recover":"STOP")) SetEmergencyStop(robot.RobotId,!robot.EmergencyStopped);
+                if (ControlButton("stop/"+robot.RobotId,robot.OperatorStopped?"Recover":"STOP")) SetEmergencyStop(robot.RobotId,!robot.OperatorStopped);
                 GUILayout.EndHorizontal();
                 if (ReserveFleet)
                 {
@@ -641,7 +652,7 @@ namespace Guardian.UnitySim
             GUILayout.EndScrollView(); GUILayout.EndArea();
         }
 
-        private void Log(string message)
+        internal void Log(string message)
         {
             _events.Insert(0, string.Format("{0:00.0}s  {1}", _demoClock, message));
             if (_events.Count > 12) _events.RemoveAt(_events.Count - 1);

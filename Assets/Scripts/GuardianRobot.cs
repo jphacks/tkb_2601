@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Guardian.UnitySim
 {
@@ -59,7 +60,12 @@ namespace Guardian.UnitySim
         public RobotCondition Condition;
         [Range(0f, 1f)] public float Vibration;
         public float Speed = 1.9f;
-        public bool EmergencyStopped;
+        [FormerlySerializedAs("EmergencyStopped")]
+        [SerializeField] private bool operatorStopped;
+        public bool OperatorStopped=>operatorStopped;
+        public bool LinkedStopped { get; private set; }
+        public bool EmergencyStopped { get=>operatorStopped || LinkedStopped; set=>operatorStopped=value; }
+        internal void SetLinkedStop(bool stopped) { LinkedStopped=stopped; }
         public bool DispatchEnabled=true;
         public GuardianFleetRole FleetRole=GuardianFleetRole.Active;
         public DeliveryTask CurrentTask { get; private set; }
@@ -85,6 +91,7 @@ namespace Guardian.UnitySim
             CurrentTask = null;
             Carrying = false;
             EmergencyStopped=false;
+            LinkedStopped=false;
             ClearRoute();
             ClearCargo();
         }
