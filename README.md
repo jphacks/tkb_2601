@@ -1,6 +1,6 @@
 # ロボもり
 
-[![ロボもり：不調なロボットにも、できる仕事を。](docs/images/hero.png)](https://docs.google.com/presentation/d/1iMbaZZ9icVo0Tvb6plEj2R-0JYNWx0dC/edit?usp=sharing)
+[![ロボもり：不調なロボットにも、できる仕事を。](docs/images/hero.png)](https://docs.google.com/presentation/d/1q2pgb6V9POOfRLsT5mzcMe8IJzqaaZ57/edit?usp=sharing&ouid=109700156691244901586&rtpof=true&sd=true)
 
 不調なロボットにも、できる仕事を。
 
