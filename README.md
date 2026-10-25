@@ -6,7 +6,7 @@
 
 <div align="center">
 
-[![Used Skills](https://skillicons.dev/icons?i=unity,cs,py,blender)](https://skillicons.dev)
+[![Used Skills](https://skillicons.dev/icons?i=unity,cs,py,blender,docker,django,js)](https://skillicons.dev)
 
 </div>
 
@@ -175,6 +175,12 @@ GitHub Actions は、C# の境界、設定、素材、起動スクリプト、�
 | ![Blender](https://img.shields.io/badge/Blender-E87D0D?style=flat&logo=blender&logoColor=white) ![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white) | 家具・料理・人物の 3D 素材を生成し、追加モデルなしで店内デモを再現します。 |
 | ![M5StickS3](https://img.shields.io/badge/M5StickS3-222222?style=flat) ![Arduino](https://img.shields.io/badge/Arduino-00878F?style=flat&logo=arduino&logoColor=white) | 実機連携の計測端末。内蔵 ESP32-S3-PICO-1-N8R8 と BMI270 を M5Unified で扱い、振動を USB シリアルで Python 中継へ送ります。 |
 | ![JSON](https://img.shields.io/badge/JSON-555555?style=flat&logo=json&logoColor=white) | シミュレーター設定を、人が読んで確認できる形式で保存・読み込みします。 |
+| ![PSoC 6](https://img.shields.io/badge/PSoC%206-0A6EB4?style=flat&logo=infineon&logoColor=white) ![MicroPython](https://img.shields.io/badge/MicroPython-2B2728?style=flat&logo=micropython&logoColor=white) | 人の鍵（扉 2）。CY8CPROTO-062-4343W の SW2 を押したときだけ、記録を Google Drive へ送り、共有を始めます。 |
+| ![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white) ![pySerial](https://img.shields.io/badge/pySerial-3776AB?style=flat) | センサー中継。M5StickS3 の測定値を Normal / Warning / Limited / Hold に変え、TCP で Unity へ送ります。 |
+| ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white) ![Django](https://img.shields.io/badge/Django-092E20?style=flat&logo=django&logoColor=white) | Robomori core。PC 1 台で動くダッシュボード、ルール AI（`rules.json`）、ワンタイムパスワード、外へ出る道を絞る許可リスト。 |
+| ![Bluesky](https://img.shields.io/badge/Bluesky-0285FF?style=flat&logo=bluesky&logoColor=white) ![AT Protocol](https://img.shields.io/badge/AT%20Protocol-555555?style=flat) | 会社ごとの障害記録の共有。独自 Lexicon（`internal.robomori.report`）の記録を、社内 VPN の PDS または bsky.social に置きます。 |
+| ![Web Crypto](https://img.shields.io/badge/Web%20Crypto-F7DF1E?style=flat&logo=javascript&logoColor=black) | 記録の暗号化（ECDH P-256 + HKDF-SHA256 + AES-256-GCM）。会社と保守会社の鍵でしか開けず、鍵はブラウザの外に出ません。 |
+| ![Google Drive](https://img.shields.io/badge/Google%20Drive-4285F4?style=flat&logo=googledrive&logoColor=white) | 社内向けの記録の書き出し先。 |
 | ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=flat&logo=githubactions&logoColor=white) | Unity Editor がない環境でも、素材・コードの境界・検証入口を静的に確認します。 |
 
 判断に外部 API や生成 AI は使いません。通常のデモはインターネット接続なしで動作します。外へ出るのは、人が扉 2（PSoC 6 の SW2）を開けたときの暗号化した要約だけで、送り先は社内 VPN の PDS（または bsky.social）に限ります。アカウントやパスワードはすべて `.env` に置き、リポジトリには含めません。
