@@ -3,7 +3,32 @@ guid: 2acb9ef7acc7ea042a23df17baa7226a
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Ceramic
+    second: {fileID: 2100000, guid: 25def851902b7ab41848878d0d84bd94, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: CurrySauce
+    second: {fileID: 2100000, guid: efc60010224af484fb252aaaf9d0edd0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: FoodRice
+    second: {fileID: 2100000, guid: 977dd753f5b0926418b9cd9feae8c074, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: GlazeIndigo
+    second: {fileID: 2100000, guid: 496397df74ba4a2d8d3cd51825e675f0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: TomatoRed
+    second: {fileID: 2100000, guid: c76889b97a174424a8292d49ce571a62, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

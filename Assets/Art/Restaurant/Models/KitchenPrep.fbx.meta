@@ -3,7 +3,52 @@ guid: 2b9d39cc7a98c60488bc6cc00ffc0bcf
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: CastIron
+    second: {fileID: 2100000, guid: 276762cf66124d4595adb868e65fe734, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Ceramic
+    second: {fileID: 2100000, guid: 25def851902b7ab41848878d0d84bd94, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: GlazeCeladon
+    second: {fileID: 2100000, guid: c77fd25234ff4d109342c7043f09e6a3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: GlazeEarth
+    second: {fileID: 2100000, guid: 1d7ba7db14614697b453d65104b63266, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: GlazeIndigo
+    second: {fileID: 2100000, guid: 496397df74ba4a2d8d3cd51825e675f0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Oak
+    second: {fileID: 2100000, guid: 825a7e4fbc9f5a34a978542e32b1f7cb, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Steel
+    second: {fileID: 2100000, guid: 944f38e859e82a64f99fe42327035de9, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: SteelDark
+    second: {fileID: 2100000, guid: c5326463ab27f1140bf55231128d0b99, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Walnut
+    second: {fileID: 2100000, guid: 0172cd6f080b91a44948d8d43fc0a12c, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

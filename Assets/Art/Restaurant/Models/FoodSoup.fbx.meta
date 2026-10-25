@@ -3,7 +3,32 @@ guid: 5bafd346076001c4dac8dafc1b8e63b1
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Ceramic
+    second: {fileID: 2100000, guid: 25def851902b7ab41848878d0d84bd94, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: GlazeEarth
+    second: {fileID: 2100000, guid: 1d7ba7db14614697b453d65104b63266, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Soup
+    second: {fileID: 2100000, guid: 0b27beb6a9c44d145a417c9ccd641783, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Steel
+    second: {fileID: 2100000, guid: 944f38e859e82a64f99fe42327035de9, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: VegetableGreen
+    second: {fileID: 2100000, guid: 70d5f4b99a70a8842bf55fff5c9ed5e7, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

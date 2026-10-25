@@ -52,3 +52,36 @@ __pycache__.meta
 
 # Local-only Guardian control settings. Never commit operational values.
 /.guardian/*.json
+
+/EnduranceRuns/
+/Assets/Scenes/GuardianInteractive_PublicEvidence.unity
+/Assets/Scenes/GuardianInteractive_PublicEvidence.unity.meta
+
+# Offline .NET checks (scripts/direct-traffic-sim, scripts/face-preview) build outputs
+/scripts/*/bin/
+/scripts/*/obj/
+
+# Guardian network: keys and runtime logs stay on the PC that made them (SPEC N-05).
+/network/secrets/
+/network/wheelhouse/
+/network/var/
+*.key
+.pytest_cache/
+.venv/
+
+# Memory measurements stay on the PC that ran them (scripts/measure-memory.ps1).
+/memory-logs/
+
+# Phone gateway test builds
+/phone/tests/bin/
+/phone/tests/obj/
+/phone/tests/node_modules/
+/phone/tests/package-lock.json
+
+# Patent-restricted sources and internal-only Unity validation stay outside this repository.
+/Assets/Private/
+/Assets/Private.meta
+/private/
+
+# Arduino のビルド結果
+firmware/**/build/

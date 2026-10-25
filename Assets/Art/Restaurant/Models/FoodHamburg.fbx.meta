@@ -3,7 +3,42 @@ guid: d0f5b25a86ea1c047b93361949deabf1
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: CastIron
+    second: {fileID: 2100000, guid: 276762cf66124d4595adb868e65fe734, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: CurrySauce
+    second: {fileID: 2100000, guid: efc60010224af484fb252aaaf9d0edd0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: MeatBrown
+    second: {fileID: 2100000, guid: 100b4e5696d96a14e8cfbad82d3d6fc8, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: NoodleDough
+    second: {fileID: 2100000, guid: feadff60e8abbaa4db60291974d4e82b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Soup
+    second: {fileID: 2100000, guid: 0b27beb6a9c44d145a417c9ccd641783, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: VegetableGreen
+    second: {fileID: 2100000, guid: 70d5f4b99a70a8842bf55fff5c9ed5e7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Walnut
+    second: {fileID: 2100000, guid: 0172cd6f080b91a44948d8d43fc0a12c, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

@@ -3,7 +3,27 @@ guid: d2bd92f180e99fe4996bcecfe4578501
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: GlazeCeladon
+    second: {fileID: 2100000, guid: c77fd25234ff4d109342c7043f09e6a3, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: NoodleDough
+    second: {fileID: 2100000, guid: feadff60e8abbaa4db60291974d4e82b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: TomatoRed
+    second: {fileID: 2100000, guid: c76889b97a174424a8292d49ce571a62, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: VegetableGreen
+    second: {fileID: 2100000, guid: 70d5f4b99a70a8842bf55fff5c9ed5e7, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
