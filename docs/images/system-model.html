@@ -46,11 +46,11 @@ body{width:1920px;height:1080px;background:#fff;font-family:'Noto Sans JP',sans-
   <path d="M1140 600 H 1242" stroke="#1B232C" stroke-width="7" marker-end="url(#h)"/>
   <!-- relay log -> core (read only) -->
   <path d="M865 420 V 452" stroke="#8A97A5" stroke-width="6" stroke-dasharray="10 7" marker-end="url(#h)"/>
-  <!-- core -> share (summary, only when door 2 is opened) -->
+  <!-- core -> sharing routes (manual AT/Gemini; manual or scheduled Drive export) -->
   <path d="M865 690 V 770" stroke="#7B4FC9" stroke-width="8" stroke-dasharray="16 10" marker-end="url(#hp)"/>
   <!-- KEY2 -->
   <path d="M262 735 V 595" stroke="#22A86B" stroke-width="7" stroke-dasharray="18 12" fill="none" marker-end="url(#hg)"/>
-  <!-- SW2: person opens door 2 -->
+  <!-- SW2: person starts AT/Gemini and writes a Drive export -->
   <path d="M532 850 H 588" stroke="#22A86B" stroke-width="7" stroke-dasharray="14 10" fill="none" marker-end="url(#hg)"/>
 </svg>
 
@@ -58,7 +58,7 @@ body{width:1920px;height:1080px;background:#fff;font-family:'Noto Sans JP',sans-
 <div class="abs" style="left:560px;top:30px;width:1332px;height:690px;border:4px dashed #2E5B7A;border-radius:40px;z-index:0"></div>
 <div class="abs" style="left:600px;top:10px;background:#fff;padding:0 14px;font-family:'M PLUS Rounded 1c';font-size:29px;color:#2E5B7A;display:flex;align-items:center;gap:10px;z-index:2">
   <svg width="40" height="34" viewBox="0 0 40 34"><g fill="none" stroke="#2E5B7A" stroke-width="4" stroke-linecap="round"><path d="M4 12 Q20 -1 36 12"/><path d="M10 19 Q20 10 30 19"/><path d="M16 26 Q20 22 24 26"/><path d="M6 31 L34 3" stroke="#D93A3F"/></g></svg>
-  1 台の PC で完結（インターネットに出るのは、人が扉 2 を開けたときの要約だけ）
+  判定・再割り当て・見守りは 1 台の PC。外部への共有は下の 3 経路
 </div>
 
 <!-- ① measure -->
@@ -142,7 +142,7 @@ body{width:1920px;height:1080px;background:#fff;font-family:'Noto Sans JP',sans-
   <div class="title" style="left:228px;top:18px;font-size:34px">
     <svg width="38" height="42" viewBox="0 0 40 44"><circle cx="20" cy="12" r="10" fill="#22A86B"/><path d="M2 44 q0 -20 18 -20 q18 0 18 20z" fill="#22A86B"/></svg>店員
   </div>
-  <div class="t" style="left:32px;top:100px;font-size:21px;line-height:1.35"><b>見る</b>　状態・理由・ルール AI の判断<br><b>聞く</b>　「いま危ない？」「B は？」<br><b>センサー復帰</b>　データ受信中に KEY2<br><b>通信復旧</b>　新しい状態を受信してから<br>　Unity の「Resume (checked by a person)」<br><b>手動 STOP</b>　画面で別に解除<br><b>共有</b>　<svg width="54" height="36" viewBox="0 0 54 36" style="vertical-align:-9px"><rect x="2" y="3" width="50" height="30" rx="4" fill="#1F4E8C" stroke="#1B232C" stroke-width="3"/><rect x="9" y="10" width="14" height="14" rx="2" fill="#1B232C"/><g fill="#E8C35A"><circle cx="8" cy="29" r="1.6"/><circle cx="14" cy="29" r="1.6"/><circle cx="20" cy="29" r="1.6"/><circle cx="26" cy="29" r="1.6"/><circle cx="32" cy="29" r="1.6"/></g><circle cx="40" cy="16" r="6.5" fill="#22A86B" stroke="#fff" stroke-width="2"/></svg> PSoC 6 の <b>SW2</b> → Drive</div>
+  <div class="t" style="left:32px;top:100px;font-size:21px;line-height:1.35"><b>見る</b>　状態・理由・ルール AI の判断<br><b>聞く</b>　「いま危ない？」「B は？」<br><b>センサー復帰</b>　データ受信中に KEY2<br><b>通信復旧</b>　新しい状態を受信してから<br>　Unity の「Resume (checked by a person)」<br><b>手動 STOP</b>　画面で別に解除<br><b>共有</b>　<svg width="54" height="36" viewBox="0 0 54 36" style="vertical-align:-9px"><rect x="2" y="3" width="50" height="30" rx="4" fill="#1F4E8C" stroke="#1B232C" stroke-width="3"/><rect x="9" y="10" width="14" height="14" rx="2" fill="#1B232C"/><g fill="#E8C35A"><circle cx="8" cy="29" r="1.6"/><circle cx="14" cy="29" r="1.6"/><circle cx="20" cy="29" r="1.6"/><circle cx="26" cy="29" r="1.6"/><circle cx="32" cy="29" r="1.6"/></g><circle cx="40" cy="16" r="6.5" fill="#22A86B" stroke="#fff" stroke-width="2"/></svg> PSoC 6 の <b>SW2</b></div>
 </div>
 <div class="lbl" style="left:280px;top:640px;font-size:25px;color:#22A86B">KEY2 で再開</div>
 <div class="lbl" style="left:536px;top:790px;font-size:17px;line-height:1.1;color:#22A86B;text-align:center">PSoC 6<br><span style="font-size:22px">SW2</span></div>
@@ -150,24 +150,31 @@ body{width:1920px;height:1080px;background:#fff;font-family:'Noto Sans JP',sans-
 <!-- ⑤ share -->
 <div class="box" style="left:600px;top:776px;width:1290px;height:200px;border-color:#7B4FC9;background:#F4EFFC">
   <div class="hdr" style="background:#7B4FC9">⑤ 共有する</div>
-  <div class="t" style="left:300px;top:24px;font-size:22px">人が <b>PSoC 6 の SW2</b> を押したときだけ共有。<b>会社ごと</b>に暗号化し、<b>自社と保守会社だけ</b>が読める</div>
-  <div class="row" style="left:26px;top:100px;gap:6px">
-    <span class="pill" style="font-size:22px;padding:8px 16px;flex-direction:column;line-height:1.25">要約を<b style="font-family:'Noto Sans JP'">暗号化</b><span style="font-size:15px;color:var(--sub);font-family:'Noto Sans JP'">ECDH P-256・AES-GCM</span></span><span class="ar"></span>
-    <span class="pill" style="font-size:22px;padding:8px 16px;flex-direction:column;line-height:1.25">会社の PDS<span style="font-size:15px;color:var(--sub);font-family:'Noto Sans JP'">AT プロトコル・社内 VPN／bsky.social</span></span><span class="ar"></span>
-    <span class="pill" style="font-size:22px;padding:8px 16px;flex-direction:column;line-height:1.25">保守会社のビューア<span style="font-size:15px;color:var(--sub);font-family:'Noto Sans JP'">障害の多い会社に修理・買い替えを提案</span></span>
-    <span style="width:18px"></span>
-    <span class="pill" style="font-size:22px;padding:8px 16px;flex-direction:column;line-height:1.25">Google Drive<span style="font-size:15px;color:var(--sub);font-family:'Noto Sans JP'">SW2 で記録を送信</span></span>
+  <div class="t" style="left:300px;top:18px;font-size:20px;line-height:1.5">AT と Gemini は <b>SW2</b>（代替：Enter）で開始。共有先・方式は人が設定。<br>Drive は<b>時間割でも平文を書き出し</b>、PC 側で同期する。</div>
+  <div class="abs" id="sharing-routes" style="left:24px;top:98px;width:1234px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+    <div class="route" style="background:#fff;border-radius:16px;padding:8px 12px;font-size:17px;line-height:1.35;color:var(--sub)">
+      <div style="font-size:20px;font-weight:700;color:var(--ink)">AT プロトコル → PDS → ビューア</div>
+      既定「会社だけ」：宛先の公開鍵で暗号化<br>公開モードは平文。共有しない設定も選べる
+    </div>
+    <div class="route" style="background:#fff;border-radius:16px;padding:8px 12px;font-size:17px;line-height:1.35;color:var(--sub)">
+      <div style="font-size:20px;font-weight:700;color:var(--ink)">Google Drive（別経路）</div>
+      時間割か SW2 → 平文のファイルを書き出し<br>PC が同期。守りは Drive の共有設定に頼る
+    </div>
+    <div class="route" style="background:#fff;border-radius:16px;padding:8px 12px;font-size:17px;line-height:1.35;color:var(--sub)">
+      <div style="font-size:20px;font-weight:700;color:var(--ink)">Gemini（任意）</div>
+      有効にした店だけ、SW2 時に要約を送信<br>宛先の鍵では暗号化せず、意見は提案のみ
+    </div>
   </div>
 </div>
 
 <!-- slogan -->
-<div class="abs" style="left:600px;top:992px;width:880px;height:68px;background:var(--navy);border-radius:16px;color:#fff;font-family:'M PLUS Rounded 1c';font-size:34px;display:flex;align-items:center;justify-content:center;z-index:1">制限を強めるのは自動。解除と共有は人が決める。</div>
+<div class="abs" style="left:600px;top:992px;width:880px;height:68px;background:var(--navy);border-radius:16px;color:#fff;font-family:'M PLUS Rounded 1c';font-size:32px;display:flex;align-items:center;justify-content:center;z-index:1">制限を強めるのは自動。復帰と共有の設定は人が決める。</div>
 
 <!-- legend -->
 <div class="abs" style="left:1500px;top:986px;width:400px;height:90px;font-size:19px;line-height:1.45;z-index:1;white-space:nowrap">
   <div style="display:flex;align-items:center;gap:10px"><svg width="46" height="14"><path d="M2 7 H 36" stroke="#1B232C" stroke-width="6"/><path d="M34 0 L46 7 L34 14z" fill="#1B232C"/></svg>データ（JSON Lines）</div>
   <div style="display:flex;align-items:center;gap:10px"><svg width="46" height="14"><path d="M2 7 H 36" stroke="#22A86B" stroke-width="6" stroke-dasharray="10 6"/><path d="M34 0 L46 7 L34 14z" fill="#22A86B"/></svg>人の操作</div>
-  <div style="display:flex;align-items:center;gap:10px"><svg width="46" height="14"><path d="M2 7 H 36" stroke="#7B4FC9" stroke-width="6" stroke-dasharray="10 6"/><path d="M34 0 L46 7 L34 14z" fill="#7B4FC9"/></svg>暗号化して共有（会社の鍵だけ）</div>
+  <div style="display:flex;align-items:center;gap:10px"><svg width="46" height="14"><path d="M2 7 H 36" stroke="#7B4FC9" stroke-width="6" stroke-dasharray="10 6"/><path d="M34 0 L46 7 L34 14z" fill="#7B4FC9"/></svg>共有のデータ（保護は経路ごと）</div>
 </div>
 
 </body></html>

@@ -62,8 +62,8 @@
 |---|---|
 | **誰のため** | 配膳ロボットといっしょに働く飲食店のホール責任者と、そのロボットを受け持つ保守会社の担当者 |
 | **何に困っているか** | ロボットが不調になると「全部止める」か「そのまま動かす」しかない。つながったロボットが乗っ取られても、店では気づけない |
-| **ロボもりの答え** | ロボットの外から揺れを測り、危ない仕事だけを外して、できる仕事は続けてもらう。制限を強める判断はシステムが自動で行い、通常運転に戻す判断と、記録を外部に共有する判断は人が行う |
-| **どう作ったか** | 揺れを M5StickS3 で測り、Python のセンサー中継が状態を判定し、Unity のシミュレーターで仕事を再割り当てする。店全体の状況は、PC 上の Robomori core（Docker）のルール AI が評価する。記録の外部共有は、PSoC 6 のボタンを押したときだけ、暗号化して AT プロトコルで行う |
+| **ロボもりの答え** | ロボットの外から揺れを測り、危ない仕事だけを外して、できる仕事は続けてもらう。制限を強める判断はシステムが自動で行い、通常運転に戻す判断、共有先と方式、書き出しの時間割は人が決める |
+| **どう作ったか** | 揺れを M5StickS3 で測り、Python のセンサー中継が状態を判定し、Unity のシミュレーターで仕事を再割り当てする。店全体の状況は、PC 上の Robomori core（Docker）のルール AI が評価する。AT プロトコルへの共有は人のボタン操作で開始し、既定の「会社だけ」では宛先の公開鍵で暗号化する。Drive には時間割でも平文を書き出す |
 
 | 状態 | 任せる仕事 | 動き |
 |---|---|---|
@@ -141,9 +141,9 @@
 | 不調になると、全部止める | **仕事ごとに任せるかを決める。** 状態を「任せてよい仕事」の表に置き換え、許されなくなった仕事だけを外して、別のロボットに再割り当てする。できる仕事は止めずに続ける |
 | 判断が現場の人に残る | **理由まで見せて、人の問いに答える。** 状態、任せている仕事、変わった理由を同じ画面に出す。「いま危ない？」「B は？」には、ルール AI が数字の根拠を付けて答える |
 | つながるロボットは攻撃の入口 | **ロボットの外から測り、ネットワークからの操作を絞る。** ロボットの自己申告ではなく、後付けのセンサーで外から測る。ネットワーク経由で届く指示のうち、受け付けるのは「速度を下げる」指示だけにする。おかしな指示が続けば、ロボットとの通信を自動で切る（扉 1） |
-| 記録を外部に出せない | **記録の共有は人が承認し、選んだ相手だけが読めるようにする。** 人がボタンを押したときだけ、暗号化した要約を会社のデータ置き場に保存する。復号できるのは、会社と、会社が選んだ保守会社の鍵だけ |
+| 記録を外部に出せない | **共有先と方式は人が選ぶ。** AT プロトコルの既定の「会社だけ（暗号化）」では、人が共有を開始し、登録した宛先の秘密鍵でだけ開ける記録を保存する。公開モードも選べる。Drive の平文書き出しは、ボタン操作に加え、人が設定した時間割でも動く |
 
-設計の原則は、制限を強める判断はシステムが自動で行い、制限を解いて通常運転に戻す判断と、記録を外部に共有する判断は人が行うことです。
+設計の原則は、制限を強める判断はシステムが自動で行い、制限を解いて通常運転に戻す判断、共有先と方式、書き出しの時間割は人が決めることです。AT プロトコルへの共有は人の操作で開始し、Drive への書き出しは設定した時間割でも動きます。
 
 ![Normal、Warning、Limited で任せる仕事を段階的に変えるユースケース](docs/images/pitch-usecase.png)
 
@@ -156,7 +156,7 @@
 | 何が起きているか知りたい | 保守会社に電話して説明する | ダッシュボードで B の状態と、その理由を確認できる。「B は？」と聞くと、ルール AI が根拠の数字を付けて答える |
 | 同じ場所で何台も揺れる | 気づけない | 監視 AI が床の段差など場所の問題と判断し、その場所を通るときだけ速度を下げる |
 | 直ったので戻したい | 再起動して様子を見る | 人が M5StickS3 のボタン（KEY2）を押して通常運転に戻す。自動では戻らない |
-| 閉店後、記録を保守会社へ | 口頭やメールで伝える | 共有ボタン（PSoC 6 の SW2）を押すと、暗号化した要約が会社のデータ置き場（PDS）に置かれる。保守会社は自分の鍵で復号し、会社ごとの障害の件数を集計できる |
+| 閉店後、記録を保守会社へ | 口頭やメールで伝える | 既定の「会社だけ」と宛先を設定して共有ボタン（PSoC 6 の SW2）を押すと、暗号化した要約が PDS に置かれる。登録した保守会社は自分の鍵で復号し、会社ごとの障害の件数を集計できる |
 
 ## この公開リポジトリで確認できる範囲
 
@@ -167,13 +167,13 @@
 | 仕事ごとの能力判定と再割り当て | 収録 | [`GuardianCapabilityPolicy.cs`](Assets/Scripts/GuardianCapabilityPolicy.cs) / [`GuardianSimulator.cs`](Assets/Scripts/GuardianSimulator.cs) |
 | 皿の所有権と物理的な引き継ぎ | 収録 | [`GuardianDishInventory.cs`](Assets/Scripts/GuardianDishInventory.cs) |
 | 通路予約と障害物ブレーキ | 収録 | [`GuardianTrafficController.cs`](Assets/Scripts/GuardianTrafficController.cs) |
-| 歩行者安全デモ | オプトインで収録 | [`GuardianPedestrianSafety.cs`](Assets/Scripts/GuardianPedestrianSafety.cs) |
-| 日本語の定型操作デモ | オプトインで収録 | [`GuardianInteractionPanel.cs`](Assets/Scripts/GuardianInteractionPanel.cs) / [`GuardianRuleConversation.cs`](Assets/Scripts/GuardianRuleConversation.cs) |
+| 歩行者安全デモ | オプトインで収録 | [`GuardianLegacyPedestrianSafety.cs`](Assets/Scripts/GuardianLegacyPedestrianSafety.cs) |
+| 日本語の定型操作デモ | オプトインで収録 | [`GuardianInteractionPanel.cs`](Assets/Scripts/GuardianInteractionPanel.cs) / [`GuardianLegacyRuleConversation.cs`](Assets/Scripts/GuardianLegacyRuleConversation.cs) |
 | M5StickS3・Python 中継・Unity の受信側 | 収録 | [接続手順と通信仕様](docs/STICKS3_UNITY_LINK.md) / [`firmware/sticks3_check/`](firmware/sticks3_check/README.md) |
 | PSoC 6 のボタン・ランプ | ファームウェアを収録 | [`firmware/psoc6_share_panel/`](firmware/psoc6_share_panel/README.md) |
 | ルール AI とダッシュボード | 収録 | [`core/guardian/rules.json`](core/guardian/rules.json) / [`core/README.md`](core/README.md) |
 | 監視 AI と扉 1・扉 2 | 収録 | [`scripts/guardian_hub/`](scripts/guardian_hub/README.md) |
-| 会社だけの共有（暗号化・AT プロトコル・仮想 VPN） | 収録（秘密の値は `.env` のみ） | [`scripts/guardian_share/seal.py`](scripts/guardian_share/seal.py) / [`core/viewer/`](core/viewer/index.html) |
+| 会社だけの共有（暗号化・AT プロトコル・仮想 VPN） | 収録（接続設定は `.env`、秘密鍵はローカル管理） | [`scripts/guardian_share/seal.py`](scripts/guardian_share/seal.py) / [`core/viewer/`](core/viewer/index.html) |
 | 実ロボット、権利未確認モデル | 非収録 | [公開範囲と制約](docs/PUBLIC_SCOPE.md) |
 
 ## 特長
@@ -192,15 +192,15 @@
 
 ### 3. 歩行者による停止とロボットの状態を分ける
 
-歩行者との接近は現在速度、停止距離、最接近距離から予測します。危険な間は移動出力だけをゼロにし、ロボットの能力状態、担当仕事、積載した皿は変更しません。通過後は同じ仕事を再開できます。
+`-guardianPedestrianDemo` で有効にする従来の公開デモでは、歩行者との接近を現在速度、停止距離、最接近距離から予測します。危険な間は移動出力だけをゼロにし、ロボットの能力状態、担当仕事、積載した皿は変更しません。通過後は同じ仕事を再開できます。
 
-実装: [`GuardianPedestrianSafety.cs`](Assets/Scripts/GuardianPedestrianSafety.cs) / [歩行者検証](Assets/Editor/GuardianPedestrianBatch.cs)
+実装: [`GuardianLegacyPedestrianSafety.cs`](Assets/Scripts/GuardianLegacyPedestrianSafety.cs) / [歩行者検証](Assets/Editor/GuardianPedestrianBatch.cs)
 
 ### 4. 日本語の操作は確認してから反映する
 
-定型文をローカルで解析し、対象と操作を確認待ちにします。「実行」が来るまで状態を変えず、対象の状態が変化した、確認が古い、入力が曖昧、歩行者安全停止中に復帰を求めた、という場合は拒否します。生成 AI、外部 API、録音音声は使いません。
+`-guardianInteractionDemo` で有効にする従来の公開デモでは、定型文をローカルで解析し、対象と操作を確認待ちにします。「実行」が来るまで状態を変えず、対象の状態が変化した、確認が古い、入力が曖昧、歩行者安全停止中に復帰を求めた、という場合は拒否します。生成 AI、外部 API、録音音声は使いません。
 
-実装: [`GuardianRuleConversation.cs`](Assets/Scripts/GuardianRuleConversation.cs) / [`GuardianInteractionPanel.cs`](Assets/Scripts/GuardianInteractionPanel.cs) / [入力検証](Assets/Editor/GuardianInteractionBatch.cs)
+実装: [`GuardianLegacyRuleConversation.cs`](Assets/Scripts/GuardianLegacyRuleConversation.cs) / [`GuardianInteractionPanel.cs`](Assets/Scripts/GuardianInteractionPanel.cs) / [入力検証](Assets/Editor/GuardianInteractionBatch.cs)
 
 ### 5. シーンを作り直すときも既存の作業を守る
 
@@ -219,12 +219,12 @@ Editor の生成ツールは別シーンを勝手に閉じず、再生成前に�
 | Normal / Warning / Limited / Hold | ロボットの状態。Normal（正常）、Warning（注意：スープだけ外す）、Limited（制限）、Hold（停止：センサーの値が途切れたとき）。詳しくは[本アプローチ](#本アプローチ)の表 |
 | 再割り当て | 状態に合わなくなった仕事を、ほかのロボットに付け替えること |
 | KEY1 / KEY2 | M5StickS3 本体のボタン。KEY1 はふだんの揺れを基準として記録し、KEY2 は人が Normal に戻すときに押す |
-| SW2 | PSoC 6（Infineon のマイコンボード）にあるボタン。人が押したときだけ、記録を外部に共有する |
+| SW2 | PSoC 6（Infineon のマイコンボード）にある、AT 共有と任意の Gemini への通信を人が開始するボタン。Drive への書き出しは時間割でも動く |
 | ルール AI | `rules.json` に書いたしきい値だけで「安全・注意・危険」を判定する、ルールベースの仕組み。学習済みのモデルは使わない |
 | 監視 AI | 全ロボットの揺れを比べ、ふだんの値（指数移動平均）からのずれで、床の問題か機体の問題かを見分ける統計の仕組み。学習済みのモデルは使わない |
 | Robomori core | ルール AI・監視 AI・ダッシュボードをまとめた、PC 1 台で動くサーバー（Docker） |
 | 扉 1 | ロボットと店内 PC のあいだの通信を、切ったりつないだりする仕組み。おかしな指示が続くと自動で切る |
-| 扉 2 | 店内 PC からインターネットに出る、ただ 1 つの通り道。人が SW2 を押したときだけ開く |
+| 扉 2 | 人の操作で AT プロトコルと任意の Gemini への通信を一時的に許可する処理。時間割の Drive 書き出しでも「開」と表示するが、その処理では AT・Gemini に送らない。PC 側の Drive 同期は別経路 |
 | 時間割 | どの時間帯に、どこまで接続してよいかを、人が前もって決めた表 |
 | AT プロトコル / PDS / DID | Bluesky が使っている分散型 SNS の仕組みが AT プロトコル。PDS はデータを置くサーバー、DID はアカウントの ID |
 
@@ -232,7 +232,7 @@ Editor の生成ツールは別シーンを勝手に閉じず、再生成前に�
 
 ### 全体の構成
 
-[![システムモデル：M5StickS3 で測り、センサー中継が判断し、Unity が再割り当てする。Robomori core がルール AI で見守り、人が PSoC 6 の SW2 を押したときだけ暗号化して共有する。](docs/images/system-model.png)](docs/images/system-model.png)
+[![システムモデル：M5StickS3 の測定、センサー中継の判定、Unity の再割り当てと、AT プロトコル・Drive・任意の Gemini への共有。開始条件と保護方法は経路ごとに異なる。](docs/images/system-model.png)](docs/images/system-model.png)
 
 すべて 1 台の PC の中で動き、ふだんはインターネットを使いません。外部に出る経路は、扉 2 を開けたときの AT プロトコルと Gemini、店の Google Drive への同期の 3 つで、それぞれ守り方が違います（[外部に出る経路](#外部に出る経路)）。ロボットはシミュレーター上で動かし、振動センサーと PSoC 6 は実物を使っています。M5StickS3 がなくても、模擬入力で能力制限、仕事の取り消し、再割り当て、皿の返却、停止と復帰を確認できます。
 
@@ -243,11 +243,11 @@ Editor の生成ツールは別シーンを勝手に閉じず、再生成前に�
 | ② 見守る | Robomori core（Docker） | ルール AI、監視 AI、ダッシュボード、接続してよい時間帯（時間割）、監査ログ。この PC からだけ見られる | [`core/`](core/README.md)、[`scripts/guardian_hub/`](scripts/guardian_hub/README.md) |
 | ③ 再割り当てする | Unity シミュレーター（C#） | 店内のロボット・客・皿を動かし、仕事の可否を決め、外した仕事を別のロボットに割り当て直す | [`Assets/Scripts/`](Assets/Scripts/) |
 | ④ 人 | 店員 | 状態と理由を確認する、ルール AI に質問する、KEY2 で再開する、STOP で止める、SW2 で記録を外部に共有する | |
-| ⑤ 共有する | PSoC 6 と扉 2 | SW2 を押したときだけ、暗号化した要約を AT プロトコルで会社の PDS に置き、Google Drive にも書き出す | [`core/host/`](core/host/)、[`scripts/guardian_share/`](scripts/guardian_share/README.md) |
+| ⑤ 共有する | PSoC 6・扉 2・PC 側の Drive 同期 | AT 共有と任意の Gemini への通信は SW2（代替は Enter）で開始する。既定の「会社だけ」では AT の記録を暗号化する。Drive はそのときに加え、時間割でも平文を書き出す | [`core/host/`](core/host/)、[`scripts/guardian_share/`](scripts/guardian_share/README.md) |
 
 ### 独自技術
 
-ロボもりの中心は、状態を仕事ごとの許可へ変換し、許されない仕事だけを、物を見失わずに別のロボットへ再割り当てすることです。これを、外から測る仕組み、判断の理由を示すルール AI、ネットワークからの操作を絞る扉 1・扉 2、会社の鍵でしか読めない記録の共有が支えます。
+ロボもりの中心は、状態を仕事ごとの許可へ変換し、許されない仕事だけを、物を見失わずに別のロボットへ再割り当てすることです。これを、外から測る仕組み、判断の理由を示すルール AI、ネットワークからの操作を絞る扉 1・扉 2、既定の「会社だけ」モードで宛先の鍵を持つ人だけが読める AT 記録の共有が支えます。
 
 #### 測る：後付けのセンサーで、ロボットの外から測定する
 
@@ -282,8 +282,8 @@ Unity の代わりに、同じ形のデータを送る模擬プログラム（si
 | 処理 | すること |
 |---|---|
 | 見守る | ルール AI が `rules.json` の数字だけで「安全 / 注意 / 危険」を決め、根拠を付けて答える。監視 AI は場所の問題と機体の問題を見分けて速度を下げ、向かう人を推薦する。外部の AI や API は使わない |
-| 閉じる | 扉 1（ロボットと店内 PC のあいだの通信）は、使えない指示が続くと自動で切る。扉 2（店内 PC からインターネットへの出口）は、人が PSoC 6 のボタン（SW2）を押したときだけ開く |
-| 共有する | 扉 2 を開けたときだけ、会社と保守会社の鍵でしか開けない暗号化した記録を、AT プロトコルのデータ置き場（PDS）に置く |
+| 閉じる | 扉 1（ロボットと店内 PC のあいだの通信）は、使えない指示が続くと自動で切る。AT・Gemini に通じる扉 2 のコンテナは、人の操作で起動し、完了後に消す。Drive の書き出しは時間割でも動き、PC 側で同期する |
+| 共有する | AT プロトコルでは「共有しない」「会社だけ（暗号化）」「記録だけ（公開）」「投稿と記録（公開）」を選ぶ。暗号化されるのは「会社だけ」の記録 |
 
 **[見守りの画面と共有の説明を読む →](docs/dashboard/README.md)**
 
@@ -294,10 +294,10 @@ Unity の代わりに、同じ形のデータを送る模擬プログラム（si
 | ![Unity](https://img.shields.io/badge/Unity-222222?style=flat&logo=unity&logoColor=white) ![C#](https://img.shields.io/badge/C%23-512BD4?style=flat) | Unity 6000.3.12f1。3D 店内、仕事の割り当て、操作画面、Editor 検証。Rigidbody / BoxCast で移動・停止・障害物を扱い、IMGUI / TextMesh で状態と理由を表示する |
 | ![M5StickS3](https://img.shields.io/badge/M5StickS3-222222?style=flat) ![Arduino](https://img.shields.io/badge/Arduino-00878F?style=flat&logo=arduino&logoColor=white) | 揺れを測る端末。内蔵の ESP32-S3-PICO-1-N8R8 と BMI270 を M5Unified で扱い、振動を USB シリアルで Python 中継へ送る |
 | ![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white) ![pySerial](https://img.shields.io/badge/pySerial-3776AB?style=flat) | センサー中継、監視 AI、共有の部品、単体テスト（Python 3.10 以上） |
-| ![PSoC 6](https://img.shields.io/badge/PSoC%206-0A6EB4?style=flat&logo=infineon&logoColor=white) ![MicroPython](https://img.shields.io/badge/MicroPython-2B2728?style=flat&logo=micropython&logoColor=white) | 外部への共有を人が承認する物理ボタン。CY8CPROTO-062-4343W の SW2 を押したときだけ扉 2（インターネットへの出口）を開け、共有を待つ記録があることをランプで知らせる |
+| ![PSoC 6](https://img.shields.io/badge/PSoC%206-0A6EB4?style=flat&logo=infineon&logoColor=white) ![MicroPython](https://img.shields.io/badge/MicroPython-2B2728?style=flat&logo=micropython&logoColor=white) | 外部への共有を人が承認する物理ボタン。CY8CPROTO-062-4343W の SW2 で AT 共有と任意の Gemini への通信を開始し、共有を待つ記録があることをランプで知らせる。Drive の時間割書き出しにはボタン操作は不要 |
 | ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white) ![Django](https://img.shields.io/badge/Django-092E20?style=flat&logo=django&logoColor=white) ![nginx](https://img.shields.io/badge/nginx-009639?style=flat&logo=nginx&logoColor=white) ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat&logo=sqlite&logoColor=white) | Robomori core。PC 1 台で動く画面、ルール AI（`rules.json`）、ワンタイムパスワード、時間割、監査ログ、扉 2、インターネットへの出口を絞る中継 |
 | ![Bluesky](https://img.shields.io/badge/Bluesky-0285FF?style=flat&logo=bluesky&logoColor=white) ![AT Protocol](https://img.shields.io/badge/AT%20Protocol-555555?style=flat) | 会社ごとの障害記録の共有。独自に定義した記録の形（Lexicon `internal.robomori.report`）で、社内 VPN の PDS（データを置くサーバー）または bsky.social に置く |
-| ![Web Crypto](https://img.shields.io/badge/Web%20Crypto-F7DF1E?style=flat&logo=javascript&logoColor=black) ![cryptography](https://img.shields.io/badge/cryptography-3776AB?style=flat&logo=python&logoColor=white) | 記録の暗号化（ECDH P-256 + HKDF-SHA256 + AES-256-GCM）。会社と保守会社の鍵でしか開けず、鍵はブラウザの外に出ない |
+| ![Web Crypto](https://img.shields.io/badge/Web%20Crypto-F7DF1E?style=flat&logo=javascript&logoColor=black) ![cryptography](https://img.shields.io/badge/cryptography-3776AB?style=flat&logo=python&logoColor=white) | 「会社だけ（暗号化）」の AT 記録を ECDH P-256 + HKDF-SHA256 + AES-256-GCM で暗号化する。復号には登録した宛先の秘密鍵が必要。通常のビューアと標準デモの鍵の違いは下記を参照 |
 | ![Google Drive](https://img.shields.io/badge/Google%20Drive-4285F4?style=flat&logo=googledrive&logoColor=white) | 社内向けの要約の書き出し先 |
 | ![Gemini](https://img.shields.io/badge/Gemini-8E75B2?style=flat&logo=googlegemini&logoColor=white) | 任意。扉 2 を開けたとき、店が選べば要約への意見を聞く（提案として出すだけ） |
 | ![JSON](https://img.shields.io/badge/JSON-555555?style=flat&logo=json&logoColor=white) | シミュレーターの設定と、センサー中継・監視 AI とのやりとり（JSON Lines）。人が読んで確かめられる形で残す |
@@ -305,7 +305,9 @@ Unity の代わりに、同じ形のデータを送る模擬プログラム（si
 | ![Claude Code](https://img.shields.io/badge/Claude%20Code-D97757?style=flat&logo=claude&logoColor=white) ![Codex](https://img.shields.io/badge/Codex-000000?style=flat&logo=openai&logoColor=white) | 実装の支援（コーディングエージェント）。設計と判断は人が行い、生成したコードはテストと人の確認を通してから取り込む。製品の判断には使わない（ロボもりの判断はルール AI だけ） |
 | ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=flat&logo=githubactions&logoColor=white) | Unity Editor がない環境でも、素材・コードの境界・検証入口を静的に確認する |
 
-判断に外部 API や生成 AI は使いません。通常のデモはインターネット接続なしで動作します。アカウントやパスワードはすべて `.env` に置き、リポジトリには含めません。
+判断に外部 API や生成 AI は使いません。通常のデモはインターネット接続なしで動作します。接続アカウントやパスワードなどの設定は `.env` に置きます。宛先の秘密鍵は別にローカルで管理し、リポジトリには含めません。
+
+通常のビューアは、宛先の人がブラウザで秘密鍵を作成・使用します。標準デモの `demo.ps1` は例外で、[`demo_setup.py`](core/guardian/management/commands/demo_setup.py) がデモ用の秘密鍵を Python で作り、[`demo.ps1`](core/host/demo.ps1) が `Logs/.robomori-demo-key.json` に保存してビューアへ渡します。このファイルは Git 管理外のローカルファイルです。
 
 #### 外部に出る経路
 
@@ -313,9 +315,9 @@ Unity の代わりに、同じ形のデータを送る模擬プログラム（si
 
 | 経路 | いつ出るか | 何が出て、どう守るか |
 |---|---|---|
-| AT プロトコル（社内 VPN の PDS か bsky.social） | 人が PSoC 6 の SW2 で扉 2 を開けたとき | 要約を宛先の公開鍵で暗号化して置く。中身を読めるのは宛先の鍵を持つ人だけ。誰がいつ記録を置いたかは外から見えうる |
+| AT プロトコル（社内 VPN の PDS か bsky.social） | 人が SW2（代替は Enter）で扉 2 を開け、共有対象の記録があるとき | 既定の「会社だけ（暗号化）」では宛先の公開鍵で暗号化し、その秘密鍵を持つ人だけが読める。「記録だけ（公開）」「投稿と記録（公開）」は平文で公開する。「共有しない」なら記録を送らない。誰がいつ記録を置いたかは外から見えうる |
 | Google Drive | 時間割の書き出しの時刻か、扉 2 を開けたとき | 要約のファイルを暗号化せずに、PC の Google Drive for desktop が店のアカウントの Drive に同期する。守りは Drive の共有設定に頼る |
-| Gemini（任意） | 店が有効にした場合だけ、扉 2 を開けたとき | 要約を送って意見をもらう。意見は提案として出すだけで、ロボットの動きは変えない |
+| Gemini（任意） | 店が有効にし、人が SW2（代替は Enter）で通信を開始したとき | 要約を送って意見をもらう。意見は提案として出すだけで、ロボットの動きは変えない |
 
 実機連携で使用するハードウェアは、揺れを測る M5StickS3 と、人が記録を外部に共有するときに押すボタンとして使う PSoC 6（CY8CPROTO-062-4343W）の 2 つです。連携構成と使用機能は [実機連携ガイド](docs/HARDWARE_ASSEMBLY.md) にまとめています。
 
@@ -341,7 +343,7 @@ Unity のレストランでは通常 3 台、予備機を含めると 5 台の�
 | 日本語で停止を指示する | 対象と操作を確認待ちにし、別入力の「実行」で確定する |
 | 同じ通路でロボットが揺れる（模擬の段差） | 監視 AI がその場所の速度を下げ、理由を画面に出す |
 | ロボットに使えない指示が続けて届く | 3 回で扉 1 が自動で通信を切り、ロボットはネットワークから切り離された状態で動き続ける |
-| PSoC 6 の SW2 を押す | 扉 2 が開き、暗号化した記録が会社の PDS（データ置き場）に置かれ、扉 2 は自動で閉じる。ビューアで開いて読める |
+| PSoC 6 の SW2 を押す | 扉 2 が開き、共有対象の記録があれば店の設定に従って送る。既定の「会社だけ（暗号化）」では、登録した宛先の鍵で開ける記録を PDS に置く。処理後は自動で閉じる |
 
 歩行者と日本語操作は明示的に有効化する公開デモです。通常起動時の既存の配膳挙動を無断で変更しません。
 
