@@ -33,6 +33,6 @@
 | `RiggedGuestValidation.HeadlessFamily` | 自作人物4種類の生成と GUID、着席や解放の PlayMode 検証 |
 | `GuardianInteractiveSetup.Headless` | 並行稼働、入力途絶、停止・復帰、操作デモの進行 |
 
-追加検証は、終了コードに加え、新しく作った結果 JSON の `status: PASS` を確認する。GitHub Actions ではセンサー22件、監視48件、共有33件、PC 側の鍵18件、出口8件、ローカル PDS 応答2件、Windows 起動6ケースと既存の静的検査を実行する。Unity Editor の実行はローカルで行う。
+追加検証は、終了コードに加え、新しく作った結果 JSON の `status: PASS` を確認する。GitHub Actions ではセンサー22件、監視48件、共有33件、PC 側の鍵22件、出口8件、ローカル PDS 応答2件、Windows 起動6ケースと既存の静的検査を実行する。Unity Editor の実行はローカルで行う。
 
 実ロボットの安全性、実センサーと PSoC 6 のピン・LED、マイク入力と録音音声、長時間の実演・描画は未検証。物理モデルの数値は試験用の仮定で、実機の同定値や安全認証を示さない。

@@ -163,6 +163,7 @@ class _Answer(BaseHTTPRequestHandler):
 class CoreAccessTest(unittest.TestCase):
     def setUp(self):
         self.core = ThreadingHTTPServer(("127.0.0.1", 0), _Answer)
+        self.addCleanup(self.core.server_close)
         threading.Thread(target=self.core.serve_forever, daemon=True).start()
         self.addCleanup(self.core.shutdown)
         self.port = self.core.server_address[1]
@@ -174,16 +175,58 @@ class CoreAccessTest(unittest.TestCase):
         self.assertEqual(read_state("http://127.0.0.1:1/api/key", "right"), (None, "down"))
 
     def ask(self, port):
-        with socket.create_connection(("127.0.0.1", port), timeout=2) as connection:
-            connection.sendall(b"GET /x HTTP/1.0\r\nX-Robomori-Key: right\r\n\r\n")
-            connection.settimeout(2)
-            data = b""
-            try:
+        data = b""
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=2) as connection:
+                connection.settimeout(2)
+                connection.sendall(b"GET /x HTTP/1.0\r\nX-Robomori-Key: right\r\n\r\n")
                 while chunk := connection.recv(4096):
                     data += chunk
-            except OSError:
-                pass
-            return data
+        except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError):
+            # Refusal can reset connect, send or recv. Connection refused, timeouts
+            # and unrelated IO errors must still fail the test.
+            pass
+        return data
+
+    def test_relay_read_handles_disconnect_during_connect(self):
+        for error in (ConnectionResetError, ConnectionAbortedError, BrokenPipeError):
+            with self.subTest(error=error.__name__):
+                with mock.patch.object(socket, "create_connection", side_effect=error("peer closed during connect")):
+                    self.assertEqual(self.ask(self.port), b"")
+
+    def test_relay_read_handles_disconnect_during_send(self):
+        for error in (ConnectionResetError, ConnectionAbortedError, BrokenPipeError):
+            with self.subTest(error=error.__name__):
+                connection = mock.MagicMock()
+                connection.sendall.side_effect = error("peer closed before send")
+                with mock.patch.object(socket, "create_connection") as connect:
+                    connect.return_value.__enter__.return_value = connection
+                    self.assertEqual(self.ask(self.port), b"")
+                connection.recv.assert_not_called()
+
+    def test_relay_read_handles_disconnect_during_receive(self):
+        for error in (ConnectionResetError, ConnectionAbortedError, BrokenPipeError):
+            with self.subTest(error=error.__name__):
+                connection = mock.MagicMock()
+                connection.recv.side_effect = [b"partial response", error("peer closed during receive")]
+                with mock.patch.object(socket, "create_connection") as connect:
+                    connect.return_value.__enter__.return_value = connection
+                    self.assertEqual(self.ask(self.port), b"partial response")
+                connection.sendall.assert_called_once()
+
+    def test_relay_read_does_not_hide_timeouts_or_unexpected_errors(self):
+        for phase in ("connect", "sendall", "recv"):
+            for error in (TimeoutError, OSError, ConnectionRefusedError):
+                with self.subTest(phase=phase, error=error.__name__):
+                    connection = mock.MagicMock()
+                    with mock.patch.object(socket, "create_connection") as connect:
+                        connect.return_value.__enter__.return_value = connection
+                        if phase == "connect":
+                            connect.side_effect = error("not a peer disconnect")
+                        else:
+                            getattr(connection, phase).side_effect = error("not a peer disconnect")
+                        with self.assertRaises(error):
+                            self.ask(self.port)
 
     def test_relay_serves_this_pc_and_cuts_other_pcs(self):
         relay = HostOnlyRelay("127.0.0.1", 0, self.port)

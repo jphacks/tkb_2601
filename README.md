@@ -394,7 +394,7 @@ scripts/verify-guardian-unity.sh
 python -m unittest discover -s scripts/sensor_bridge    # センサー中継（22 件）
 python -m unittest discover -s scripts/guardian_hub     # 監視 AI、扉 1・扉 2（48 件）
 python -m unittest discover -s scripts/guardian_share   # Bluesky の部品と暗号化（33 件）
-python -m unittest discover -s core/host                # PSoC 6 の鍵と Drive へ写す処理（18 件）
+python -m unittest discover -s core/host                # PSoC 6 の鍵と Drive へ写す処理（22 件）
 python -m unittest discover -s core/egress              # 扉 2 の出口の中継（8 件）
 cd core && docker compose run --rm --no-deps --entrypoint python web manage.py test guardian   # Robomori core（62 件）
 ```
