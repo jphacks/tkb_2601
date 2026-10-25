@@ -127,6 +127,18 @@ namespace Guardian.UnitySim
             if (document == null)
                 throw new InvalidDataException("Guardian settings JSON is empty or malformed");
             if (document.Settings!=null && pedestrianFields==0) ApplyPedestrianDefaults(document.Settings);
+            if(document.Settings!=null)
+            {
+                var defaults=new GuardianSimulationSettings();
+                if(!HasField(json,"VerboseRuntimeLogs"))document.Settings.VerboseRuntimeLogs=defaults.VerboseRuntimeLogs;
+                if(!HasField(json,"MotionSpeedMultiplier"))document.Settings.MotionSpeedMultiplier=defaults.MotionSpeedMultiplier;
+                if(!HasField(json,"Traffic"))document.Settings.Traffic=defaults.Traffic;
+                if(!HasField(json,"BusyOrders"))document.Settings.BusyOrders=defaults.BusyOrders;
+                if(!HasField(json,"WalkingGuests"))document.Settings.WalkingGuests=defaults.WalkingGuests;
+                if(!HasField(json,"Diners"))document.Settings.Diners=defaults.Diners;
+                if(!HasField(json,"KeepServing"))document.Settings.KeepServing=defaults.KeepServing;
+                if(!HasField(json,"Physical"))document.Settings.Physical=defaults.Physical;
+            }
             document.Validate();
             return document;
         }

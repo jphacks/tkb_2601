@@ -48,8 +48,8 @@ namespace Guardian.UnitySim.Editor
                     Require(link.ApplyPacket(Packet(2,State("B","Warning")),.2f),"Warning rejected");
                     Require(!b.EmergencyStopped && !GuardianCapabilityPolicy.Allows(b.Condition,DeliveryKind.Soup) &&
                         GuardianCapabilityPolicy.Allows(b.Condition,DeliveryKind.Food),"Warning stopped capable work");
-                    Require(link.ApplyPacket(Packet(3,State("B","Limited")),.4f),"Limited rejected");
-                    Require(!b.EmergencyStopped && GuardianCapabilityPolicy.Allows(b.Condition,DeliveryKind.EmptyDishes) &&
+                    Require(link.ApplyPacket(Packet(3,State("B","Hold","Limited")),.4f),"Limited rejected");
+                    Require(b.EmergencyStopped && GuardianCapabilityPolicy.Allows(b.Condition,DeliveryKind.EmptyDishes) &&
                         !GuardianCapabilityPolicy.Allows(b.Condition,DeliveryKind.Food),"Limited permits changed");
                     Require(link.ApplyPacket(Normal(4),.6f) && b.Condition==RobotCondition.Normal,"KEY2 recovery failed");
                 });
@@ -147,7 +147,7 @@ namespace Guardian.UnitySim.Editor
                 Case("Japanese recovery rejects a sensor hold",(sim,link)=>
                 {
                     link.ApplyPacket(Packet(1,State("B","Hold","Normal","Untrusted")),0);
-                    var conversation=new GuardianRuleConversation(sim);
+                    var conversation=new GuardianLegacyRuleConversation(sim);
                     Require(conversation.Submit("B 復帰").Contains("センサー"),"Sensor hold was not explained to the operator");
                     sim.SetEmergencyStop("B",true);
                     conversation.Submit("B 復帰"); conversation.Submit("実行");
@@ -170,6 +170,8 @@ namespace Guardian.UnitySim.Editor
             try
             {
                 var sim=root.AddComponent<GuardianSimulator>();
+                sim.DeveloperMode=true;sim.OperatorSupervisionEnabled=false;
+                sim.Settings.Traffic=GuardianTrafficStyle.SingleTrackAisle;sim.Settings.BusyOrders=false;sim.Settings.Diners=false;sim.Settings.KeepServing=false;
                 sim.AutomaticTasks=false; sim.Settings.RandomFaults=false;
                 sim.EnsureWorld(); sim.ResetScenario();
                 var link=root.AddComponent<GuardianNetworkBridge>();

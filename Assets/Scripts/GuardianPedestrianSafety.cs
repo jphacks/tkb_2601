@@ -1,225 +1,165 @@
 using System;
-using System.Linq;
 using UnityEngine;
 
 namespace Guardian.UnitySim
 {
-    public struct GuardianPedestrianRisk
-    {
-        public float TimeToClosest;
-        public float ClosestDistance;
-        public float RequiredDistance;
-        public float StoppingDistance;
-        public bool Hazard;
-    }
-
-    /// <summary>One public-demo pedestrian. This is simulated motion, not a real sensor input.</summary>
     public sealed class GuardianPedestrianMotion : MonoBehaviour
     {
         public const float Radius=.40f;
-        public Rigidbody Body { get; private set; }
-        public CapsuleCollider Shape { get; private set; }
-        public Vector3 Velocity { get; private set; }
-        public bool Moving { get; private set; }
-        public bool WaitingForClearance { get; private set; }
-        public Vector3 StartPoint { get; private set; }
-        public Vector3 EndPoint { get; private set; }
-
-        private readonly RaycastHit[] hits=new RaycastHit[32];
-        private bool atEnd;
-        private float speed;
-
-        public void Initialize(Vector3 start,Vector3 end,float metresPerSecond)
+        public Rigidbody Body {get;private set;}public CapsuleCollider Shape {get;private set;}
+        public Vector3 Velocity {get;private set;}public bool Crossing {get;private set;}
+        public bool Retreating {get;private set;}
+        public bool WaitingForClearance {get;private set;}public string WaitReason {get;private set;}="";
+        public Vector3 StartPoint=new Vector3(-2.8f,0,-1.9f),EndPoint=new Vector3(2.2f,0,-1.9f);
+        private RiggedRestaurantGuest guest;
+        private readonly GuardianQueryBuffer query=new GuardianQueryBuffer();
+        private const float Clearance=.15f;
+        public void Initialize()
         {
-            StartPoint=start; EndPoint=end; speed=metresPerSecond;
-            Body=GetComponent<Rigidbody>()??gameObject.AddComponent<Rigidbody>();
-            Body.isKinematic=true; Body.useGravity=false; Body.collisionDetectionMode=CollisionDetectionMode.ContinuousSpeculative;
-            Shape=GetComponent<CapsuleCollider>()??gameObject.AddComponent<CapsuleCollider>();
-            Shape.radius=Radius; Shape.height=1.83f; Shape.center=Vector3.up*.93f; Shape.enabled=true;
-            Body.detectCollisions=true; ResetMotion(); Physics.SyncTransforms();
+            guest=GetComponent<RiggedRestaurantGuest>();Body=gameObject.AddComponent<Rigidbody>();Body.isKinematic=true;Body.useGravity=false;Body.collisionDetectionMode=CollisionDetectionMode.ContinuousSpeculative;
+            Shape=gameObject.AddComponent<CapsuleCollider>();Shape.radius=Radius;Shape.height=1.83f;Shape.center=Vector3.up*.93f;ResetPedestrian();
         }
-
-        public void ResetMotion()
+        public void ResetPedestrian() {Crossing=false;Retreating=false;WaitingForClearance=false;WaitReason="";Velocity=Vector3.zero;transform.SetPositionAndRotation(StartPoint,Quaternion.Euler(0,90,0));Body.position=StartPoint;Body.rotation=transform.rotation;guest.Play(GuestPose.Idle);}
+        public void Walk() {Crossing=true;Retreating=false;WaitingForClearance=false;WaitReason="";guest.Play(GuestPose.Walk);}
+        public void Retreat() {Crossing=true;Retreating=true;WaitingForClearance=false;WaitReason="";guest.Play(GuestPose.Walk);}
+        public void Wait() {Crossing=false;Retreating=false;WaitingForClearance=false;WaitReason="";Velocity=Vector3.zero;guest.Play(GuestPose.Waiting);}
+        public void Step(float dt)
         {
-            atEnd=false; Moving=false; WaitingForClearance=false; Velocity=Vector3.zero;
-            transform.SetPositionAndRotation(StartPoint,Quaternion.Euler(0,90,0));
-            Body.position=StartPoint; Body.rotation=transform.rotation;
+            if(!Crossing || dt<=0){Velocity=Vector3.zero;return;}
+            Vector3 delta=(Retreating?StartPoint:EndPoint)-Body.position;delta.y=0;float distance=delta.magnitude;
+            Velocity=distance>.01f?delta.normalized*Mathf.Min(.8f,distance/dt):Vector3.zero;
+            MoveChecked(Velocity,dt);
+            if(distance<.01f)Wait();
         }
-
-        public void BeginCrossing() { Moving=true; WaitingForClearance=false; }
-
-        public bool Step(float dt)
+        public void MoveAlongRoute(Vector3 velocity,float yaw,float dt)
         {
-            if (!Moving || dt<=0) { Velocity=Vector3.zero; return false; }
-            Vector3 target=atEnd?StartPoint:EndPoint;
-            Vector3 delta=target-Body.position; delta.y=0;
-            if (delta.magnitude<=.02f)
-            {
-                Body.MovePosition(target); atEnd=!atEnd; Moving=false; WaitingForClearance=false; Velocity=Vector3.zero;
-                return true;
-            }
-
-            Velocity=delta.normalized*Mathf.Min(speed,delta.magnitude/dt);
-            if (Blocked(Velocity,dt)) { Velocity=Vector3.zero; WaitingForClearance=true; return false; }
-            WaitingForClearance=false;
-            Body.MoveRotation(Quaternion.LookRotation(Velocity,Vector3.up));
-            Body.MovePosition(Body.position+Velocity*dt);
-            return false;
+            if(dt<=0)return;
+            if(!Crossing)Walk();
+            Body.MoveRotation(Quaternion.RotateTowards(Body.rotation,Quaternion.Euler(0,yaw,0),180*dt));
+            MoveChecked(Vector3.ClampMagnitude(velocity,.8f),dt);
+            var pose=Velocity.sqrMagnitude>.0001f?GuestPose.Walk:GuestPose.Waiting;
+            if(guest.Pose!=pose)guest.Play(pose);
         }
-
-        public void Disable(Vector3 originalPosition,Quaternion originalRotation)
+        private void MoveChecked(Vector3 velocity,float dt)
         {
-            Moving=false; WaitingForClearance=false; Velocity=Vector3.zero;
-            if (Shape!=null) Shape.enabled=false;
-            if (Body!=null) { Body.detectCollisions=true; Body.position=originalPosition; Body.rotation=originalRotation; }
-            transform.SetPositionAndRotation(originalPosition,originalRotation);
-            Physics.SyncTransforms();
-        }
-
-        private bool Blocked(Vector3 velocity,float dt)
-        {
+            Velocity=velocity;
+            // A kinematic body is not stopped by contacts. Check its full upright
+            // capsule, including the next fixed-step displacement and clearance,
+            // before issuing MovePosition. Check already occupied space separately
+            // rather than relying on a sweep to report initial overlap contacts.
             Vector3 center=Body.position+Body.rotation*Shape.center;
             Vector3 axis=Body.rotation*Vector3.up*(Shape.height*.5f-Shape.radius);
-            int count=Physics.CapsuleCastNonAlloc(center-axis,center+axis,Shape.radius,velocity.normalized,hits,
-                velocity.magnitude*dt+.08f,~0,QueryTriggerInteraction.Ignore);
-            if (count==hits.Length) return true;
-            for (int index=0;index<count;index++)
+            bool blocked=false;WaitReason="";
+            int count=query.OverlapCapsule(center-axis,center+axis,Shape.radius+Clearance);
+            for(int i=0;i<count;i++)if(Blocks(query.Colliders[i])){blocked=true;WaitReason=query.Colliders[i].name;break;}
+            if(!blocked && Velocity.sqrMagnitude>.00001f)
             {
-                Collider other=hits[index].collider;
-                if (other==null || other.attachedRigidbody==Body || other.transform.IsChildOf(transform)) continue;
-                if (other.GetComponent<GuardianPhysicsObstacle>()?.Floor==true) continue;
-                // The robot owns the conservative yield decision. Avoid mutual wait in the public demo.
-                if (other.GetComponentInParent<GuardianRobot>()!=null) continue;
-                return true;
+                count=query.Capsule(center-axis,center+axis,Shape.radius,Velocity.normalized,Velocity.magnitude*dt+Clearance);
+                for(int i=0;i<count;i++)if(Blocks(query.Hits[i].collider)){blocked=true;WaitReason=query.Hits[i].collider.name;break;}
             }
-            return false;
+            if(blocked){Velocity=Vector3.zero;if(!WaitingForClearance)guest.Play(GuestPose.Waiting);WaitingForClearance=true;return;}
+            if(WaitingForClearance)guest.Play(GuestPose.Walk);WaitingForClearance=false;
+            if(Velocity.sqrMagnitude>.00001f)Body.MoveRotation(Quaternion.LookRotation(Velocity,Vector3.up));
+            Body.MovePosition(Body.position+Velocity*dt);
         }
+        private bool Blocks(Collider other)
+        {return other!=null && other.attachedRigidbody!=Body && !other.transform.IsChildOf(transform) && other.GetComponent<GuardianPhysicsObstacle>()?.Floor!=true;}
     }
-
-    /// <summary>
-    /// Public-demo crossing coordinator. It uses simulated ground truth and must not be described
-    /// as a certified safety controller or a substitute for real sensing and independent stopping.
-    /// </summary>
-    public sealed class GuardianPedestrianSystem : MonoBehaviour
+    public struct GuardianPedestrianRisk {public float Ttc,ClosestDistance,RequiredDistance,StoppingDistance;public bool Hazard,Observed,Tracked;}
+    public sealed class GuardianPedestrianSafety
     {
-        private GuardianSimulator sim;
-        private RestaurantPerson person;
-        private RestaurantFixture fixture;
-        private GuardianPedestrianMotion motion;
-        private Vector3 originalPosition;
-        private Quaternion originalRotation;
-        private bool originalBlocksRoutes;
-        private bool initialized,active;
-        private float nextCrossing;
-        private float[] lastHazard=Array.Empty<float>();
-
-        public GuardianPedestrianRisk[] Risks { get; private set; }=Array.Empty<GuardianPedestrianRisk>();
-        public int HoldTransitions { get; private set; }
-        public bool Active=>active;
-        public string ObservationSource=>"SIMULATED ground truth; NOT a real pedestrian sensor";
-        public GuardianPedestrianMotion Pedestrian=>motion;
-
-        public bool Configure(GuardianSimulator simulator,bool enabled)
+        private GuardianSimulator sim;private GuardianPedestrianMotion person;private readonly GuardianQueryBuffer query=new GuardianQueryBuffer();
+        public Vector3 Observer=new Vector3(0,7,-5);private Vector3 seenPosition,seenVelocity;private float seenAt=float.NegativeInfinity;
+        private int observationSteps;
+        private readonly GuardianSafetyBroadphase broadphase=new GuardianSafetyBroadphase();private GuardianSafetyAgent[] agents=Array.Empty<GuardianSafetyAgent>();private bool[] candidates=Array.Empty<bool>();
+        public int CandidatePairs {get;private set;}public int PossiblePairs=>sim.Robots.Count;public int BroadphaseFallbacks=>broadphase.Fallbacks;
+        public bool Observed {get;private set;}public bool Tracked {get {float age=sim.DemoClock-seenAt;return age>=0 && age<=.75f;}}
+        public string ObservationSource=>"SIMULATED shared overhead LOS; NOT a real camera";
+        public GuardianPedestrianRisk[] Risks {get;private set;}
+        public int HoldTransitions {get;private set;}
+        public void Initialize(GuardianSimulator simulator,GuardianPedestrianMotion pedestrian) {sim=simulator;person=pedestrian;Risks=new GuardianPedestrianRisk[sim.Robots.Count];ResetObservations();}
+        public void ResetObservations()
         {
-            sim=simulator; active=enabled; HoldTransitions=0;
-            if (!active)
+            seenAt=float.NegativeInfinity;observationSteps=0;seenPosition=seenVelocity=Vector3.zero;Observed=false;HoldTransitions=0;
+            Array.Clear(Risks,0,Risks.Length);
+            // BeginDemo, every fixed step and every ACK evaluate LOS before motion
+            // or release. Resetting the clock itself supplies no new observation.
+        }
+        public void Evaluate(bool forceObservation=false)
+        {
+            if(forceObservation || --observationSteps<=0)
             {
-                bool changed=initialized && fixture.BlocksRoutes!=originalBlocksRoutes;
-                if (initialized)
+            Vector3 to=person.Body.position+Vector3.up*.95f-Observer;int count=query.Ray(Observer,to.normalized,to.magnitude+.1f);float closest=float.PositiveInfinity;Collider first=null;
+            for(int i=0;i<count;i++)if(query.Hits[i].distance<closest){closest=query.Hits[i].distance;first=query.Hits[i].collider;}
+            Observed=first!=null && first.GetComponentInParent<GuardianPedestrianMotion>()==person;
+            if(Observed){seenPosition=person.Body.position;seenVelocity=person.Velocity;seenAt=sim.DemoClock;}
+            observationSteps=sim.Settings.Physical.Enabled?Mathf.Max(1,GuardianPlanarDynamics.QuantizedSteps(sim.Settings.Physical.SensorPeriod,Time.fixedDeltaTime)):1;
+            }
+            float age=sim.DemoClock-seenAt;
+            int robots=sim.Robots.Count;
+            if(agents.Length<robots+1){agents=new GuardianSafetyAgent[robots+1];candidates=new bool[robots];}
+            if(Risks.Length!=robots)Risks=new GuardianPedestrianRisk[robots];Array.Clear(candidates,0,candidates.Length);CandidatePairs=0;
+            if(Tracked)
+            {
+                for(int i=0;i<robots;i++){var d=sim.Robots[i].PhysicsDriver;agents[i]=new GuardianSafetyAgent{Robot=true,Position=d.Body.position,Velocity=d.PlanarVelocity,Intent=d.IntentVelocity,Radius=d.TurningRadius,MaximumSpeed=d.EffectiveMaximumSpeed,Uncertainty=.4f*age*age,Model=d.Dynamics};}
+                agents[robots]=new GuardianSafetyAgent{Position=seenPosition+seenVelocity*age,Velocity=seenVelocity,Radius=GuardianPedestrianMotion.Radius};
+                broadphase.Build(agents,robots+1,Time.fixedDeltaTime);CandidatePairs=broadphase.Pairs.Count;for(int j=0;j<broadphase.Pairs.Count;j++)candidates[broadphase.Pairs[j].Robot]=true;
+            }
+            for(int i=0;i<sim.Robots.Count;i++)
+            {
+                var r=sim.Robots[i];var driver=r.PhysicsDriver;var hold=r.GetComponent<GuardianMotionInterlock>();bool prior=hold.Held;
+                hold.Set(GuardianMotionHold.Unobserved,!Tracked,sim.DemoClock);
+                var risk=new GuardianPedestrianRisk{Observed=Observed,Tracked=Tracked,Ttc=float.PositiveInfinity};
+                if(Tracked && candidates[i])
                 {
-                    fixture.BlocksRoutes=originalBlocksRoutes;
-                    motion?.Disable(originalPosition,originalRotation);
+                    Vector3 predictedPerson=seenPosition+seenVelocity*age;Vector3 v=driver.PlanarVelocity;
+                    float uncertainty=.4f*age*age;
+                    float required=driver.TurningRadius+GuardianPedestrianMotion.Radius+.20f+uncertainty;
+                    risk=driver.Dynamics!=null?PredictPhysical(driver.Body.position,v,predictedPerson,seenVelocity,required,driver.Dynamics,driver.EffectiveMaximumSpeed,Time.fixedDeltaTime):Predict(driver.Body.position,v,predictedPerson,seenVelocity,required,driver.EffectiveAcceleration,Time.fixedDeltaTime);
+                    GuardianPedestrianRisk intended=driver.Dynamics!=null?PredictPhysical(driver.Body.position,driver.IntentVelocity,predictedPerson,seenVelocity,required,driver.Dynamics,driver.EffectiveMaximumSpeed,Time.fixedDeltaTime):Predict(driver.Body.position,driver.IntentVelocity,predictedPerson,seenVelocity,required,driver.EffectiveAcceleration,Time.fixedDeltaTime);
+                    bool anyHazard=risk.Hazard || intended.Hazard;
+                    if(intended.Hazard || intended.ClosestDistance<risk.ClosestDistance)risk=intended;
+                    risk.Hazard=anyHazard;
+                    risk.Observed=Observed;risk.Tracked=true;
+                    // Release needs more clearance than entry; one clear fixed step is not an acknowledgement.
+                    bool near=Vector2.Distance(new Vector2(predictedPerson.x,predictedPerson.z),new Vector2(driver.Body.position.x,driver.Body.position.z))<required+.15f;
+                    hold.Set(GuardianMotionHold.Pedestrian,risk.Hazard || near,sim.DemoClock);
                 }
-                ClearRobotHolds(); return changed;
+                else hold.Set(GuardianMotionHold.Pedestrian,false,sim.DemoClock);
+                Risks[i]=risk;if(!prior && hold.Held)HoldTransitions++;
             }
-
-            Transform environment=sim.transform.Find("Generated 3D World/"+RestaurantVisuals.RootName);
-            if (environment==null) throw new InvalidOperationException("Pedestrian demo requires the restaurant environment");
-            person=environment.GetComponentsInChildren<RestaurantPerson>(true).SingleOrDefault(p=>p.Standing);
-            if (person==null) throw new InvalidOperationException("Pedestrian demo requires one standing staff model");
-            fixture=person.GetComponent<RestaurantFixture>();
-            if (fixture==null) throw new InvalidOperationException("Pedestrian demo staff is missing its route fixture");
-            if (!initialized)
+        }
+        public static GuardianPedestrianRisk PredictPhysical(Vector3 robot,Vector3 velocity,Vector3 pedestrian,Vector3 pedestrianVelocity,float required,GuardianPlanarDynamics model,float speedCap,float dt)
+        {
+            if(!float.IsFinite(dt)||dt<=0||!float.IsFinite(required)||!float.IsFinite(speedCap)||!Finite(robot)||!Finite(velocity)||!Finite(pedestrian)||!Finite(pedestrianVelocity))return Unbounded(required);
+            velocity.y=0;float speed=velocity.magnitude,cap=Mathf.Max(speed,speedCap),reaction=model.ReactionSeconds(dt);
+            Vector3 direction=speed>.00001f?velocity/speed:Vector3.zero;
+            if(direction==Vector3.zero)cap=0;
+            float horizon=Mathf.Max(1.8f,reaction+cap/model.ConservativeBrakeAcceleration+.1f);
+            // A range fallback must not enter an infinite/float-stalled narrow
+            // rollout for near-zero braking. Unsupported forecasts fail closed.
+            if(!float.IsFinite(horizon)||horizon/dt>4096||!float.IsFinite(speed))return Unbounded(required);
+            Vector3 relative=pedestrian-robot;relative.y=0;float closest=relative.magnitude,at=0;
+            for(float t=0;t<horizon;t+=dt)
             {
-                originalPosition=person.transform.position; originalRotation=person.transform.rotation;
-                originalBlocksRoutes=fixture.BlocksRoutes; initialized=true;
+                float h=Mathf.Min(dt,horizon-t),next=t+1e-6f<reaction?Mathf.Min(cap,speed+model.DriveAcceleration*h):Mathf.Max(0,speed-model.ConservativeBrakeAcceleration*h);
+                Vector3 step=pedestrianVelocity*h-direction*((speed+next)*.5f*h);step.y=0;
+                float u=step.sqrMagnitude>.0000001f?Mathf.Clamp01(-Vector3.Dot(relative,step)/step.sqrMagnitude):0;
+                float gap=(relative+step*u).magnitude;if(gap<closest){closest=gap;at=t+u*h;}relative+=step;speed=next;
             }
-
-            bool topologyChanged=fixture.BlocksRoutes;
-            fixture.BlocksRoutes=false;
-            motion=person.GetComponent<GuardianPedestrianMotion>()??person.gameObject.AddComponent<GuardianPedestrianMotion>();
-            motion.Initialize(new Vector3(-3.2f,originalPosition.y,-1.9f),new Vector3(2.2f,originalPosition.y,-1.9f),sim.Settings.PedestrianSpeed);
-            nextCrossing=sim.DemoClock+sim.Settings.PedestrianFirstCrossing;
-            EnsureRiskArrays(); ClearRobotHolds();
-            return topologyChanged;
+            return new GuardianPedestrianRisk{Ttc=at,ClosestDistance=closest,RequiredDistance=required,StoppingDistance=model.StoppingBound(velocity.magnitude,speedCap,dt),Hazard=closest<required};
         }
-
-        public void Tick(float dt)
+        private static bool Finite(Vector3 v)=>float.IsFinite(v.x)&&float.IsFinite(v.y)&&float.IsFinite(v.z);
+        private static GuardianPedestrianRisk Unbounded(float required)=>new GuardianPedestrianRisk{Hazard=true,Ttc=0,ClosestDistance=0,RequiredDistance=float.IsFinite(required)?required:0,StoppingDistance=float.MaxValue};
+        public static GuardianPedestrianRisk Predict(Vector3 robot,Vector3 robotVelocity,Vector3 pedestrian,Vector3 pedestrianVelocity,float required,float acceleration,float dt)
         {
-            if (!active || motion==null) return;
-            if (!motion.Moving && sim.DemoClock>=nextCrossing) motion.BeginCrossing();
-            if (motion.Step(dt)) nextCrossing=sim.DemoClock+sim.Settings.PedestrianCrossingInterval;
-            Evaluate(dt);
+            Vector2 p=new Vector2(pedestrian.x-robot.x,pedestrian.z-robot.z),v=new Vector2(pedestrianVelocity.x-robotVelocity.x,pedestrianVelocity.z-robotVelocity.z);
+            float speed=new Vector2(robotVelocity.x,robotVelocity.z).magnitude,stop=speed*speed/(2*Mathf.Max(.1f,acceleration))+speed*dt+.20f;
+            float t=v.sqrMagnitude>.00001f?Mathf.Clamp(-Vector2.Dot(p,v)/v.sqrMagnitude,0,2.5f):0;
+            float separation=(p+v*t).magnitude;
+            bool closing=Vector2.Dot(p,v)<0;
+            return new GuardianPedestrianRisk{Ttc=t,ClosestDistance=separation,RequiredDistance=required,StoppingDistance=stop,
+                Hazard=p.magnitude<required || (closing && separation<required && t<=Mathf.Max(1.8f,speed/Mathf.Max(.1f,acceleration)+dt))};
         }
-
-        private void Evaluate(float dt)
-        {
-            EnsureRiskArrays();
-            for (int index=0;index<sim.Robots.Count;index++)
-            {
-                GuardianPhysicsDriver driver=sim.Robots[index].PhysicsDriver;
-                float radius=.5f*Mathf.Sqrt(driver.Shape.size.x*driver.Shape.size.x+driver.Shape.size.z*driver.Shape.size.z);
-                float required=radius+GuardianPedestrianMotion.Radius+sim.Settings.PedestrianSafetyMargin;
-                GuardianPedestrianRisk actual=Predict(driver.Body.position,driver.Body.linearVelocity,motion.Body.position,motion.Velocity,
-                    required,sim.Settings.MotorAcceleration,dt);
-                GuardianPedestrianRisk intended=Predict(driver.Body.position,driver.SafetyIntent,motion.Body.position,motion.Velocity,
-                    required,sim.Settings.MotorAcceleration,dt);
-                bool hazard=actual.Hazard||intended.Hazard;
-                GuardianPedestrianRisk selected=intended.ClosestDistance<actual.ClosestDistance?intended:actual;
-                selected.Hazard=hazard; Risks[index]=selected;
-                if (hazard) lastHazard[index]=sim.DemoClock;
-                bool hold=hazard || sim.DemoClock-lastHazard[index]<sim.Settings.PedestrianClearSeconds;
-                if (hold && !driver.PedestrianSafetyHold) HoldTransitions++;
-                driver.SetPedestrianSafetyHold(hold);
-            }
-        }
-
-        private void EnsureRiskArrays()
-        {
-            if (Risks.Length==sim.Robots.Count) return;
-            Risks=new GuardianPedestrianRisk[sim.Robots.Count];
-            lastHazard=Enumerable.Repeat(float.NegativeInfinity,sim.Robots.Count).ToArray();
-        }
-
-        private void ClearRobotHolds()
-        {
-            if (sim==null) return;
-            foreach (GuardianRobot robot in sim.Robots) robot.PhysicsDriver.SetPedestrianSafetyHold(false);
-            Risks=Array.Empty<GuardianPedestrianRisk>(); lastHazard=Array.Empty<float>();
-        }
-
-        public static GuardianPedestrianRisk Predict(Vector3 robot,Vector3 robotVelocity,Vector3 pedestrian,
-            Vector3 pedestrianVelocity,float required,float acceleration,float dt)
-        {
-            if (!Finite(robot)||!Finite(robotVelocity)||!Finite(pedestrian)||!Finite(pedestrianVelocity)
-                || !Finite(required)||!Finite(acceleration)||!Finite(dt)||required<0||acceleration<=0||dt<=0)
-                return new GuardianPedestrianRisk{Hazard=true,ClosestDistance=0,
-                    RequiredDistance=Finite(required)?Mathf.Max(0,required):0,StoppingDistance=float.MaxValue};
-            Vector2 relativePosition=new Vector2(pedestrian.x-robot.x,pedestrian.z-robot.z);
-            Vector2 relativeVelocity=new Vector2(pedestrianVelocity.x-robotVelocity.x,pedestrianVelocity.z-robotVelocity.z);
-            float speed=new Vector2(robotVelocity.x,robotVelocity.z).magnitude;
-            float stopping=speed*speed/(2*acceleration)+speed*dt+.20f;
-            float time=relativeVelocity.sqrMagnitude>.00001f
-                ?Mathf.Clamp(-Vector2.Dot(relativePosition,relativeVelocity)/relativeVelocity.sqrMagnitude,0,2.5f):0;
-            float closest=(relativePosition+relativeVelocity*time).magnitude;
-            bool closing=Vector2.Dot(relativePosition,relativeVelocity)<0;
-            bool hazard=relativePosition.magnitude<required ||
-                (closing && closest<required && time<=Mathf.Max(1.8f,speed/acceleration+dt));
-            return new GuardianPedestrianRisk{TimeToClosest=time,ClosestDistance=closest,RequiredDistance=required,
-                StoppingDistance=stopping,Hazard=hazard};
-        }
-
-        private static bool Finite(Vector3 value)=>Finite(value.x)&&Finite(value.y)&&Finite(value.z);
-        private static bool Finite(float value)=>!float.IsNaN(value)&&!float.IsInfinity(value);
     }
 }

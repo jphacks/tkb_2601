@@ -24,6 +24,7 @@ namespace Guardian.UnitySim.Editor
 
         private static void CreateMissingScene()
         {
+            if (Application.isBatchMode) return;
             if (EditorApplication.isCompiling || EditorApplication.isUpdating ||
                 EditorApplication.isPlayingOrWillChangePlaymode || File.Exists(ScenePath)) return;
             try

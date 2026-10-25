@@ -46,6 +46,19 @@ if ($LASTEXITCODE -ne 0) { Say 'イメージを作れなかった。上のエラ
 Say '仮想 VPN の社内 PDS を起動し、宛先を登録する'
 & docker compose -f $Compose --profile vpn up -d --force-recreate vpn-pds
 if ($LASTEXITCODE -ne 0) { Say '起動できなかった。cd core; docker compose build を先に'; exit 1 }
+# 社内 PDS が本当に答えるまで待つ（ビューアが「読めなかった」にならないように）
+$pdsOk = $false
+for ($i = 0; $i -lt 30 -and -not $pdsOk; $i++) {
+  try {
+    $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 2 -Uri 'http://127.0.0.1:2583/xrpc/com.atproto.server.describeServer'
+    $pdsOk = $r.StatusCode -eq 200
+  } catch { Start-Sleep -Milliseconds 500 }
+}
+if ($pdsOk) { Say '社内 PDS が答えた（http://127.0.0.1:2583）' }
+else {
+  & docker compose -f $Compose --profile vpn logs --tail 15 vpn-pds
+  Say '社内 PDS が答えない（上のログを見る。VPN_PDS_ACCOUNTS がない、など）'; exit 1
+}
 $migrate = @(& docker compose -f $Compose run --rm --no-deps web python manage.py migrate --noinput 2>&1)
 if ($LASTEXITCODE -ne 0) { $migrate | Select-Object -Last 15 | ForEach-Object { Write-Host $_ }; Say 'データベースを準備できなかった（上のエラーを見る）'; exit 1 }
 $output = @(& docker compose -f $Compose run --rm --no-deps web python manage.py demo_setup 2>&1 | ForEach-Object { "$_" })

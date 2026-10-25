@@ -6,12 +6,13 @@ namespace Guardian.UnitySim
     {
         public bool SensorLinked=>GetComponent<GuardianNetworkBridge>()?.HasSnapshot==true;
 
-        internal void SetLinkedCondition(string id,RobotCondition condition)
+        internal bool SetLinkedCondition(string id,RobotCondition condition)
         {
             float value=condition==RobotCondition.Normal?Settings.WarningThreshold*.4f:
                 condition==RobotCondition.Warning?(Settings.WarningThreshold+Settings.LimitedThreshold)*.5f:
                 Mathf.Lerp(Settings.LimitedThreshold,1,.5f);
-            SubmitVibrationUnchecked(id,value);
+            NoteLinkedEvidence(id);
+            return SubmitCalibratedEvidence(id,value,Settings.WarningThreshold,Settings.LimitedThreshold,false);
         }
 
         internal void SetLinkedEmergencyStop(string id,bool stopped)

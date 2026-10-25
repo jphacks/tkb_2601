@@ -53,18 +53,18 @@
     },
     {
       "name": "KitchenPrep",
-      "objects": 25,
-      "vertices": 4704,
-      "triangles": 8848,
+      "objects": 66,
+      "vertices": 13168,
+      "triangles": 24176,
       "blender_bounds_min": [
         -1.190000057220459,
-        -0.5059999823570251,
+        -0.5060000419616699,
         0.01701328158378601
       ],
       "blender_bounds_max": [
         1.190000057220459,
         0.4399999976158142,
-        2.0
+        2.065091133117676
       ]
     },
     {
@@ -101,9 +101,9 @@
     },
     {
       "name": "PickupCounter",
-      "objects": 17,
-      "vertices": 4096,
-      "triangles": 7480,
+      "objects": 10,
+      "vertices": 1024,
+      "triangles": 2008,
       "blender_bounds_min": [
         -0.44999998807907104,
         -0.800000011920929,
@@ -117,9 +117,9 @@
     },
     {
       "name": "ReturnCounter",
-      "objects": 38,
-      "vertices": 7072,
-      "triangles": 13080,
+      "objects": 67,
+      "vertices": 13184,
+      "triangles": 24268,
       "blender_bounds_min": [
         -0.5550000071525574,
         -1.2000000476837158,
@@ -127,8 +127,8 @@
       ],
       "blender_bounds_max": [
         0.5550000071525574,
-        1.3299999237060547,
-        1.3220000267028809
+        1.3300000429153442,
+        1.249500036239624
       ]
     },
     {

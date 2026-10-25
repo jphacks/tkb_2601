@@ -12,6 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4d26d16a58954a544922f33d9df6bf24, type: 3}
   m_Name: RestaurantCatalog
   m_EditorClassIdentifier: Assembly-CSharp::Guardian.UnitySim.RestaurantCatalog
+  WalkingGuest: {fileID: 935143567942312253, guid: 34174c528ab705a4cafb3e3c8a10c534, type: 3}
+  DinerGuests:
+  - {fileID: 8642905431234026850, guid: b41dc4a4733a7cb47b9c28e8b2f47bc4, type: 3}
+  - {fileID: 7731508030436352229, guid: 2bc5a344762218b41ab3e66962bb089d, type: 3}
+  - {fileID: 935143567942312253, guid: 34174c528ab705a4cafb3e3c8a10c534, type: 3}
   Entries:
   - Id: DiningTable
     Prefab: {fileID: 386649696390822931, guid: 30ba2e2066f568049a808a83fc3091c7, type: 3}

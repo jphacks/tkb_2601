@@ -29,6 +29,7 @@ namespace Guardian.UnitySim
         private void StartServeCase(string name)
         {
             Reset(2026,true); sim.Settings.MealSeconds=600;
+            clearanceCase=name;
             report.Add("SERVE_CASE "+name+" collectOnDelivery=true mealSeconds="+sim.Settings.MealSeconds);
         }
         private bool Drained()=>sim.Tasks.All(t=>t.Phase==TaskPhase.Completed) && sim.Robots.All(r=>r.IsIdle)
@@ -38,8 +39,9 @@ namespace Guardian.UnitySim
             sim.Inventory.ValidateOwnership();
             Func<string,string> csv=value=>"\""+value.Replace("\"","\"\"")+"\"";
             var lines=sim.Inventory.Events.Select(e=>string.Join(",",new[]{e.Clock.ToString("F4",CultureInfo.InvariantCulture),e.Action,e.Id,
-                e.From.ToString(),e.FromKey??"",e.To.ToString(),e.ToKey??"",e.Dirty.ToString(),e.TaskId??"",e.Position.ToString("F4")}.Select(csv)));
-            File.WriteAllLines(Path.Combine(output,name+"-dish-events.csv"),new[]{"sim_seconds,action,dish,from,from_key,to,to_key,dirty,task,world_position"}.Concat(lines));
+                e.From.ToString(),e.FromKey??"",e.To.ToString(),e.ToKey??"",e.Dirty.ToString(),e.TaskId??"",e.Position.ToString("F4"),
+                e.InstanceId.ToString(),e.ParentName,e.Active.ToString(),e.RenderVisible.ToString()}.Select(csv)));
+            File.WriteAllLines(Path.Combine(output,name+"-dish-events.csv"),new[]{"sim_seconds,action,dish,from,from_key,to,to_key,dirty,task,world_position,instance,parent,active,render_visible_cpu"}.Concat(lines));
             Check(sim.Inventory.Items.Values.All(i=>i.Owner!=GuardianDishOwner.Robot && string.IsNullOrEmpty(i.ReservedBy)),name+": no carried or reserved dishes after drain");
         }
         private void CheckMealAtTable(DeliveryTask meal)
@@ -53,7 +55,7 @@ namespace Guardian.UnitySim
         private Collider CounterBarrier()
         {
             var go=GameObject.CreatePrimitive(PrimitiveType.Cube); go.name="Test blocked return counter approach";
-            go.transform.position=new Vector3(-4.7f,1,-3.6f); go.transform.localScale=new Vector3(.2f,2,1.4f);
+            go.transform.position=new Vector3(-5.6f,1,-3.6f); go.transform.localScale=new Vector3(.2f,2,1.4f);
             var collider=go.GetComponent<Collider>(); temporaryObstacles.Add(collider); Physics.SyncTransforms(); return collider;
         }
         private void RemoveCounterBarrier(Collider barrier)
@@ -113,35 +115,39 @@ namespace Guardian.UnitySim
             foreach(bool sourceReturn in new[]{false,true})
             {
                 string label=sourceReturn?"yield-source-return":"counter-busy"; StartServeCase(label);
-                var barrier=CounterBarrier();
-                var independent=sim.QueueTask(DeliveryKind.EmptyDishes,0); var other=independent.AssignedTo;
+                var independent=sim.QueueTask(DeliveryKind.EmptyDishes,sourceReturn?0:1); var other=independent.AssignedTo;
                 Check(other!=null && other.RobotId!="A","independent return reserved to another actor"); if(failed) yield break;
                 string reserved=independent.DishIds.Single();
-                dirty=new[]{TableFixture(0,true).Id,TableFixture(0,true).Id}; var eatingItem=TableFixture(0,false);
+                dirty=sim.Inventory.AvailableDirty(0).Select(i=>i.Id).Concat(new[]{TableFixture(0,true).Id,TableFixture(0,true).Id}).ToArray(); var eatingItem=TableFixture(0,false);
                 if(!sourceReturn) Check(sim.TrySetMealSeconds(.2f),"meal time adjustable for newly served food");
                 float configured=sim.Settings.MealSeconds;
                 Check(!sim.TrySetMealSeconds(0) && !sim.TrySetMealSeconds(float.NaN) && !sim.TrySetMealSeconds(float.PositiveInfinity)
                     && sim.Settings.MealSeconds==configured,"invalid meal durations leave setting unchanged");
                 meal=sim.QueueTask(DeliveryKind.Soup,0);
+                yield return Wait(()=>meal.AssignedTo!=null && independent.Phase==TaskPhase.ToDropoff && other.Carrying
+                    && !other.PhysicsDriver.OwnsRoute && other.PhysicsDriver.Body.position.x< -4.1f,180,
+                    "counter holder clears the full turn envelope after delivery assignment");
+                if(failed) yield break;
+                sim.SetEmergencyStop(other.RobotId,true);
                 yield return Wait(()=>meal.Phase==TaskPhase.Completed && meal.SameVisitReturnId!=null,240,"delivery waits at its table while another return occupies counter");
                 if(failed) yield break;
                 collection=sim.Tasks.Single(t=>t.Id==meal.SameVisitReturnId);
-                Check(collection.AwaitingServicePickup && collection.DishIds.All(id=>dirty.Contains(id)) && sim.Inventory.Items[reserved].OwnerKey==other.RobotId,
+                Check((sourceReturn?collection.Phase==TaskPhase.Pending:collection.AwaitingServicePickup)
+                    && collection.DishIds.All(id=>dirty.Contains(id)) && sim.Inventory.Items[reserved].OwnerKey==other.RobotId,
                     "other actor's reserved cargo is never stolen; local batch waits for counter");
                 if(sourceReturn)
                 {
-                    sim.SetEmergencyStop(other.RobotId,true);
                     Check(collection.Phase==TaskPhase.Pending && !collection.AwaitingServicePickup && collection.AssignedTo==null,
                         "table yields safely when counter holder must return cargo to this source");
                     Check(collection.DishIds.All(id=>sim.Inventory.Items[id].Owner==GuardianDishOwner.Table && sim.Inventory.Items[id].ReservedBy==collection.Id),"yielded batch keeps its unique promised sources");
-                    RemoveCounterBarrier(barrier); sim.SetEmergencyStop(other.RobotId,false);
+                    sim.SetEmergencyStop(other.RobotId,false);
                 }
                 else
                 {
                     sim.SetCondition("A",RobotCondition.Limited); yield return new WaitForSeconds(.5f);
                     Check(sim.Inventory.Items[meal.DishIds.Single()].Dirty && !collection.DishIds.Contains(meal.DishIds.Single()),"newly delivered ID stays excluded even after its short timer expires while waiting");
                     Check(!eatingItem.Dirty && eatingItem.Owner==GuardianDishOwner.Table,"changing duration leaves an existing eating timer unchanged");
-                    RemoveCounterBarrier(barrier);
+                    sim.SetEmergencyStop(other.RobotId,false);
                 }
                 yield return Wait(Drained,700,"counter/source-return contention drains without a dock cycle");
                 Check(dirty.Append(reserved).All(id=>sim.Inventory.Items[id].Owner==GuardianDishOwner.ReturnCounter),"all promised plates eventually return exactly once per pickup attempt");
@@ -206,7 +212,7 @@ namespace Guardian.UnitySim
                 Check(collection.AssignedTo==a && collection.AwaitingServicePickup && !a.Carrying
                     && independent.Phase==TaskPhase.ToDropoff && b.Carrying,"counter wait begins before A takes any old plate");
                 CheckUnpickedBatch(collection,dirty,"before command");
-                yield return Wait(()=>!b.PhysicsDriver.OwnsRoute && b.PhysicsDriver.Body.position.x< -3.4f,60,
+                yield return Wait(()=>!b.PhysicsDriver.OwnsRoute && b.PhysicsDriver.Body.position.x< -4.1f,60,
                     "counter holder clears the protected central exit before immobilization");
                 if(failed) yield break;
                 sim.SetEmergencyStop("B",true);

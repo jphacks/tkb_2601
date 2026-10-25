@@ -32,6 +32,10 @@ PALETTE = {
     'FloorOakD': ((.71,.54,.40,1), .0, .85),
     'MenuPaper': ((.90,.86,.75,1),.0,.8),
     'SoyBottle': ((.21,.11,.055,1),.0,.45),
+    'GlazeIndigo': ((.16,.25,.47,1),.0,.35),
+    'GlazeCeladon': ((.56,.70,.62,1),.0,.38),
+    'GlazeEarth': ((.42,.27,.17,1),.0,.6),
+    'CastIron': ((.10,.10,.11,1),.55,.7),
 }
 for name, (color, metal, rough) in PALETTE.items():
     mat = bpy.data.materials.new(name)
@@ -75,12 +79,12 @@ def rod(name, a, b, r=.018, mat='Steel', end_r=None):
     return finish(obj, name, mat, .006)
 
 
-def lathe(name, profile, loc=(0, 0, 0), mat='Ceramic', segments=48):
+def lathe(name, profile, loc=(0, 0, 0), mat='Ceramic', segments=48, sy=1):
     vertices, faces = [], []
     for radius, z in profile:
         for i in range(segments):
             theta = i * 2 * math.pi / segments
-            vertices.append((loc[0]+radius*math.cos(theta), loc[1]+radius*math.sin(theta), loc[2]+z))
+            vertices.append((loc[0]+radius*math.cos(theta), loc[1]+sy*radius*math.sin(theta), loc[2]+z))
     for j in range(len(profile)-1):
         for i in range(segments):
             a = j*segments+i
@@ -117,6 +121,53 @@ def plate(loc=(0, 0, 0)):
 def bowl(loc=(0, 0, 0)):
     return lathe('Hollow bowl', [(0,.012),(.065,.012),(.09,.04),(.125,.11),(.14,.15),
                  (.139,.16),(.13,.162),(.117,.117),(.083,.048),(0,.033)], loc)
+
+
+# One dish set per menu. A serving dish stays inside a .41m square and .15m height, so
+# every meal fits each robot tray shelf at the fixed physical dish scale. Serving-dish
+# parts are named "Dish ..."; Unity keeps them when the meal is eaten.
+def curry_plate(loc=(0, 0, 0)):
+    # Oval white plate with a broad indigo rim, long axis along X.
+    lathe('Dish white oval curry plate', [(0,.01),(.085,.01),(.09,.016),(.15,.036),(.19,.05),(.204,.057),
+          (.205,.062),(.2,.065),(.15,.061),(.10,.034),(0,.029)], loc, 'Ceramic', sy=.78)
+    return lathe('Dish indigo rim band', [(.15,.0625),(.2,.0665),(.2,.069),(.15,.065),(.15,.0625)],
+                 loc, 'GlazeIndigo', sy=.78)
+
+
+def square_plate(loc=(0, 0, 0), size=.34):
+    x, y, z = loc
+    plate = box('Dish celadon square plate', (x,y,z+.018), (size,size,.016), 'GlazeCeladon', .007)
+    edge = size/2-.008
+    for dx, dy in [(1,0),(-1,0),(0,1),(0,-1)]:
+        box('Dish celadon raised rim', (x+dx*edge,y+dy*edge,z+.033),
+            (.016 if dx else size,.016 if dy else size,.018), 'GlazeCeladon', .006)
+    return plate
+
+
+def skillet(loc=(0, 0, 0)):
+    # Oval cast-iron steak skillet resting on a walnut board.
+    x, y, z = loc
+    box('Dish walnut steak board', (x,y,z+.024), (.40,.29,.028), 'Walnut', .01)
+    pan = lathe('Dish cast iron skillet', [(0,.038),(.15,.038),(.165,.044),(.172,.066),(.165,.068),
+                (.157,.05),(0,.046)], loc, 'CastIron', sy=.74)
+    rod('Dish skillet grip', (x+.166,y,z+.058), (x+.197,y,z+.06), .011, 'CastIron')
+    return pan
+
+
+def soup_bowl(loc=(0, 0, 0), saucer=True):
+    # Earthenware bowl; served on a white saucer with a spoon.
+    x, y, z = loc
+    if saucer:
+        lathe('Dish white saucer', [(0,.01),(.12,.01),(.17,.018),(.18,.024),(.175,.027),(.12,.021),(0,.02)], loc)
+        rod('Dish soup spoon', (x-.075,y-.15,z+.031), (x+.035,y-.157,z+.029), .006)
+        lathe('Dish soup spoon bowl', [(0,0),(.022,0),(.022,.004),(0,.006)], (x+.058,y-.158,z+.026), 'Steel', 16, .68)
+    return lathe('Dish earthenware soup bowl', [(0,.021),(.055,.021),(.06,.03),(.10,.06),(.128,.11),(.135,.14),
+                 (.13,.143),(.123,.135),(.115,.11),(.09,.065),(.05,.045),(0,.042)], loc, 'GlazeEarth')
+
+
+def rice_bowl(loc=(0, 0, 0)):
+    return lathe('Dish indigo rice bowl', [(0,.006),(.035,.006),(.04,.015),(.068,.05),(.075,.075),
+                 (.07,.078),(.064,.05),(.035,.022),(0,.02)], loc, 'GlazeIndigo', 32)
 
 
 def table():
@@ -179,8 +230,15 @@ def prep():
         box('Open wall shelf', (0,.26,z), (2.3,.35,.045), 'Steel', .015)
     for x in [-1.05,1.05]:
         rod('Shelf support', (x,.38,.95), (x,.38,2), .018)
-    for x in [-.8,-.4,0,.4,.8]:
-        bowl((x,.23,1.425))
+    # Clean stacks of every dish set on the wall shelves (tops at 1.4225 and 1.9425).
+    for i in range(3): soup_bowl((-.86,.26,1.4015+i*.035), saucer=False)
+    for i in range(4): rice_bowl((-.47,.26,1.4165+i*.02))
+    for i in range(4): square_plate((-.08,.26,1.4125+i*.02), .30)
+    for i in range(3): curry_plate((.36,.26,1.4125+i*.022))
+    for i in range(2): bowl((.84,.26,1.4105+i*.05))
+    for i in range(2): skillet((-.55,.26,1.9325+i*.062))
+    for i in range(5): lathe('Stacked white saucer', [(0,.01),(.12,.01),(.17,.018),(.18,.024),(.175,.027),
+                             (.12,.021),(0,.02)], (.25,.26,1.9325+i*.012))
 
 
 def sink():
@@ -238,11 +296,8 @@ def pickup():
         box('Front fluted oak', (.398,y,.58), (.025,.065,.77), 'Walnut', .012)
     for y in [-.65,.65]:
         rod('Pass shelf post', (-.32,y,1.1), (-.32,y,1.88), .023, 'Steel')
+    # Worktop and shelf stay clear: GuardianDishInventory places the waiting meals.
     box('Open pickup shelf', (-.13,0,1.65), (.5,1.58,.055), 'Oak', .025)
-    for i in range(4): plate((-.12,.39,1.68+i*.025))
-    bowl((.12,-.34,1.115))
-    lathe('Soup surface', [(0,0),(.114,0),(.114,.006),(0,.006)], (.12,-.34,1.24), 'Soup')
-    plate((.12,.27,1.115))
 
 
 def returns():
@@ -257,8 +312,13 @@ def returns():
         box('Open shelf tray', (0,0,z), (1.05,2.4,.055), 'Steel', .025)
         for x in [-.5,.5]: box('Tray rim', (x,0,z+.05), (.025,2.35,.07), 'Steel', .012)
         for y in [-1.15,1.15]: box('Tray end rim', (0,y,z+.05), (1,.025,.07), 'Steel', .012)
-    for i in range(5): plate((0,-.60,1.07+i*.024))
-    for i in range(3): bowl((0,.55,1.07+i*.045))
+    # Returned dish sets on the top (1.0575) and middle (.6675) trays.
+    for i in range(4): plate((0,-.78,1.0475+i*.024))
+    for i in range(3): curry_plate((0,-.28,1.0475+i*.022))
+    for i in range(3): square_plate((0,.2,1.0475+i*.02))
+    for i in range(3): soup_bowl((0,.68,1.0365+i*.035), saucer=False)
+    for i in range(2): skillet((0,-.5,.6575+i*.062))
+    for i in range(3): bowl((0,.45,.6555+i*.045))
     for x in [-.48,.48]: rod('Grip support', (x,1.1,1.03), (x,1.3,1.2), .024)
     rod('Push grip', (-.48,1.3,1.2), (.48,1.3,1.2), .03, 'Walnut')
 

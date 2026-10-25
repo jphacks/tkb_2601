@@ -67,7 +67,7 @@
 |---|---|---|
 | Normal（正常） | スープ・料理・空いた皿の回収 | 通常どおり |
 | Warning（注意） | 料理・空いた皿の回収 | スープだけ別の機体へ |
-| Limited（制限） | 空いた皿の回収 | 料理も別の機体へ |
+| Limited（制限） | センサー入力では停止して人を待つ | 料理も別の機体へ。KEY2 で人が戻す |
 | 停止中 | なし | 人が確認するまで移動しない |
 
 ## 開発の動機（作者より）
@@ -377,7 +377,7 @@ scripts/verify-guardian-unity.sh
 ### Python と Robomori core のテスト
 
 ```bash
-python -m unittest discover -s scripts/sensor_bridge    # センサー中継（21 件）
+python -m unittest discover -s scripts/sensor_bridge    # センサー中継（22 件）
 python -m unittest discover -s scripts/guardian_hub     # 監視 AI、扉 1・扉 2（48 件）
 python -m unittest discover -s scripts/guardian_share   # Bluesky の部品と暗号化（33 件）
 python -m unittest discover -s core/host                # PSoC 6 の鍵と Drive へ写す処理（18 件）
@@ -386,6 +386,10 @@ cd core && docker compose run --rm --no-deps --entrypoint python web manage.py t
 ```
 
 `scripts/guardian_share` の 33 件には、収録した PSoC 6 ファームウェアを CPython 上の仮の `machine` とシリアル入力で確認する 3 件を含みます。実機のピン・LED・割り込みの動作を確認したことは意味しません。Unity の受信・停止・復帰の検証は [接続手順](docs/STICKS3_UNITY_LINK.md#検証) を参照してください。
+
+## 一括反映したコード
+
+最新の元 main にある並行走行、積載・停止の物理モデル、来客と退店、席別の皿管理、操作・会話画面、監視 hub との接続、自作の人物・料理素材をまとめています。センサーが Limited を判定すると、能力上の区分は Limited のまま Hold で停止し、人の KEY2 を待ちます。手動 STOP は別に残ります。詳細と検証の範囲は [一括反映の記録](docs/BULK_CODE_IMPORT.md) を参照してください。
 
 ## 検証と限界
 

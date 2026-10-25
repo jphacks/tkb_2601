@@ -53,3 +53,18 @@ jobs:
           python-version: '3.12'
       - name: Verify sharing and PSoC 6 firmware with simulated machine and serial input
         run: python -m unittest discover -s scripts/guardian_share -v
+
+  hub-and-local-services:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify hub, local sharing key, egress and local viewer HTTP
+        run: |
+          python -m unittest discover -s scripts/guardian_hub -v
+          python -m unittest discover -s core/host -v
+          python -m unittest discover -s core/egress -v
+          python -m unittest discover -s core/vpnpds -v

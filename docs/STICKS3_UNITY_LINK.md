@@ -6,7 +6,7 @@ M5StickS3 の振動を Python 中継で Normal / Warning / Limited / Hold に変
 
 1. [セットアップ](SETUP.md) に従って Unity 6000.3.12f1 で公開シーンを開く。
 2. リポジトリのルートで `python3 scripts/sensor_bridge/sensor_bridge.py --simulate --loop` を起動する。Windows では `py -3` または `.venv\Scripts\python` を使う。
-3. Unity で Play する。左上に `SENSOR LINK` が表示され、B が Normal → Warning → Limited → Normal と変わる。Warning はスープ、Limited は料理も外し、皿の回収は許す。
+3. Unity で Play する。左上に `SENSOR LINK` が表示され、B が Normal → Warning → Limited → Normal と変わる。Warning はスープを外す。センサーの Limited は Hold として停止し、模擬 KEY2 または実機の KEY2 を待つ。
 4. B に STOP をかけ、次の模擬 KEY2 で状態が Normal に戻っても、STOP が残ることを確認する。
 5. 中継を止めると、最後の有効なパケットから既定 1.5 秒で全機を保持する。中継を起動し直し、データが届いたことを確認して、左上の `Resume (checked by a person)` を押す。別にかけた STOP は右側パネルで人が解除する。
 
@@ -17,7 +17,7 @@ M5StickS3 の振動を Python 中継で Normal / Warning / Limited / Hold に変
 - M5StickS3: [ファームウェアと書き込み手順](../firmware/sticks3_check/README.md)。USB シリアルで測定値と KEY2 の押下を送り、中継が状態を判定する。
 - PSoC 6: [パネルのファームウェアと準備](../firmware/psoc6_share_panel/README.md)。SW2 による共有の承認と LED の表示を扱う。Unity の能力状態は変更しない。
 
-振動の判定条件は、既存の 300 mg・2回で Warning・6回で Limited のまま。しきい値を下回る測定が1回あれば連続回数を数え直す。静かになっただけでは段階を下げず、実機で Normal に戻すのはデータが届いている間の KEY2 とする。実際の安全限界や校正済みの値ではない。
+振動の判定条件は、既存の 300 mg・2回で Warning・6回で Limited のまま。しきい値を下回る測定が2回続いたら連続回数を数え直す。1回だけの静かな測定は揺れの合間として回数を保つ。静かになっただけでは段階を下げず、実機で Normal に戻すのはデータが届いている間の KEY2 とする。実際の安全限界や校正済みの値ではない。
 
 ## 通信仕様
 
@@ -37,6 +37,10 @@ UTF-8 の JSON を1行ごとに送り、LF または CRLF で区切る。
 
 `boot` と `seq` は再送や混線を防ぐための確認で、暗号による相手認証ではない。同じ PC 上の悪意あるプロセスを、この接続だけで防げるとはしない。
 
+## Limited の扱い
+
+最新の元 main に揃え、センサーの能力状態が Limited になると `capability: Limited` と `final: Hold` を送って停止する。能力表では皿回収が許される状態でも、このセンサー経路では自動継続せず人を待つ。KEY2 で戻したあとも揺れが続けば、再び段階が上がる。
+
 ## 停止と復帰
 
 センサーの Hold と人の STOP は別に保存し、どちらかが残っていれば停止する。中継から Normal が来ても、解除できるのはセンサー由来の Hold だけ。人がセンサーの Hold 中に STOP を押した場合も、その STOP を残す。
@@ -53,4 +57,4 @@ UTF-8 の JSON を1行ごとに送り、LF または CRLF で区切る。
 
 既存の `GuardianIntegrationBatch.Verify` と [統合検証スクリプト](../scripts/Invoke-GuardianVerification.ps1) にも組み込んでいる。バッチモードでは実機用の中継へ自動接続せず、検証が用意したポートにだけ接続する。
 
-GitHub Actions ではセンサー中継21件、共有と PSoC 6 の仮のファームウェア実行33件、Unity のメタデータと検証入口を確認する。Unity Editor、描画、実クリック、M5StickS3 のビルド・書き込み、実機の通信はクラウド CI の対象外。
+GitHub Actions ではセンサー中継22件、共有と PSoC 6 の仮のファームウェア実行33件、Unity のメタデータと検証入口を確認する。Unity Editor、描画、実クリック、M5StickS3 のビルド・書き込み、実機の通信はクラウド CI の対象外。

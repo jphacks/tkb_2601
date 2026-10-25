@@ -20,12 +20,19 @@ namespace Guardian.UnitySim
         public GuardianRobot AssignedTo;
         public GuardianMenu Menu;
         public int TableIndex;
+        // The guest's place at the table (0-3) a meal is for; -1 when no particular guest ordered it.
+        public int Seat=-1;
+        // The robot a person told to hand this job over (decision card "他機へ引継ぎ"): it is not given back to that robot.
+        public string HandedOverBy;
+        // The guest who ordered it left before it was picked up: the order was taken back (Phase is Completed, nothing served).
+        public bool Withdrawn;
         public readonly List<string> DishIds=new List<string>();
         public string PendingReason;
         public int AssignmentVersion;
         public float CreatedAt,FirstAssignedAt=-1,CompletedAt;
         public int RevokedVersion=-1;
         public string ParentDeliveryId,SameVisitReturnId;
+        public string RequestedRobotId,OperatorHoldReason;
         public bool FixedDishBatch,AwaitingServicePickup;
         public readonly List<string> ExcludedDishIds=new List<string>();
 
@@ -71,7 +78,11 @@ namespace Guardian.UnitySim
         public DeliveryTask CurrentTask { get; private set; }
         public bool Carrying { get; private set; }
         public bool IsIdle { get { return CurrentTask == null && _route.Count == 0 && !(PhysicsDriver!=null && PhysicsDriver.Busy); } }
+        /// <summary>Idle, or (direct traffic) only driving home: new work starts from where the robot is.</summary>
+        public bool AvailableForDispatch=>IsIdle || (CurrentTask==null && !Carrying && !EmergencyStopped && PhysicsDriver!=null && PhysicsDriver.DirectHomeward);
         public GuardianPhysicsDriver PhysicsDriver=>GetComponent<GuardianPhysicsDriver>();
+        /// <summary>Where the robot waits between jobs (read by GuardianHubLink for the core's floor map).</summary>
+        public Vector3 Home=>_home;
         public event Action<GuardianRobot> Arrived;
 
         private readonly List<Vector3> _route = new List<Vector3>();

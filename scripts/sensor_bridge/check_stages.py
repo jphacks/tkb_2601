@@ -50,7 +50,7 @@ def main() -> int:
                     if not line:
                         break
                     robot = json.loads(line)["robots"][0]
-                    holds += robot["final"] == "Hold"
+                    holds += robot["final"] == "Hold" and robot["capability"] != "Limited"
                     if not seen or seen[-1] != robot["capability"]:
                         seen.append(robot["capability"])
                         print(f"  {time.strftime('%H:%M:%S')} ロボット {robot['id']}: {WORDS[robot['capability']]}（{robot['reasons'][0]}）", flush=True)

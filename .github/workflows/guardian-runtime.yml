@@ -1,4 +1,4 @@
-﻿name: Guardian Runtime CI
+name: Guardian Runtime CI
 
 on:
   pull_request:
@@ -23,8 +23,8 @@ jobs:
           assert root.is_dir()
 
           scripts = sorted(root.glob("*.cs"))
-          assert len(scripts) == 28, (
-              f"Expected 28 C# files, got {len(scripts)}"
+          assert len(scripts) == 90, (
+              f"Expected 90 C# files, got {len(scripts)}"
           )
 
           guids = []
@@ -34,7 +34,9 @@ jobs:
               assert meta.is_file(), f"Missing: {meta}"
 
               source = script.read_text(encoding="utf-8-sig")
-              assert "namespace Guardian.UnitySim" in source, script
+              # RobomoriTalk is shared with the optional phone gateway and has its own pure C# namespace.
+              expected_namespace = "namespace Robomori" if script.name == "RobomoriTalk.cs" else "namespace Guardian.UnitySim"
+              assert expected_namespace in source, script
 
               content = meta.read_text(encoding="utf-8-sig")
               match = re.search(

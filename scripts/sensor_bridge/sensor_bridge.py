@@ -25,6 +25,8 @@ ESPRESSIF_VID = 0x303A
 # シリアルを開いた直後は StickS3 の処理が一瞬止まり、集計の時間が伸びて振動が大きく出る（実測 1663 ms で 90 mg）。
 # この回数分は判定に使わない。
 WARMUP_SAMPLES = 2
+# 静かな秒がこの回数続いたら、続いた回数を数え直す（1 回だけの静かな秒は、揺れの合間とみなす）
+QUIET_RESET = 2
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -57,6 +59,7 @@ class Judge:
         self.last_rms_mg: float | None = None
         self.window_s = 1.0
         self.over_count = 0
+        self.quiet_count = 0
 
     def stale_after(self) -> float:
         return max(self.config.stale_min_s, self.config.stale_windows * self.window_s)
@@ -78,7 +81,15 @@ class Judge:
         """測定値を 1 つ受け取る。レベルが上がったら、その理由を返す。"""
         self.note_alive(window_ms, now)
         self.last_rms_mg = rms_mg
-        self.over_count = self.over_count + 1 if rms_mg >= self.config.threshold_mg else 0
+        # 手で揺らすと、揺れの合間に 1 秒だけ静かになることがある。静かな 1 秒は数えない（増やしも消しもしない）。
+        # 静かな秒が QUIET_RESET 回続いたら、揺れはおさまったとみなして数え直す。
+        if rms_mg >= self.config.threshold_mg:
+            self.over_count += 1
+            self.quiet_count = 0
+        else:
+            self.quiet_count += 1
+            if self.quiet_count >= QUIET_RESET:
+                self.over_count = 0
         target = ("Limited" if self.over_count >= self.config.limited_count
                   else "Warning" if self.over_count >= self.config.warning_count else None)
         if target is None or LEVELS.index(target) <= LEVELS.index(self.level):
@@ -104,13 +115,15 @@ class Judge:
         self.level = "Normal"
         self.hold = False
         self.over_count = 0
+        self.quiet_count = 0
         self.reason = "KEY2 で人が復帰"
         return True, self.reason
 
     def robot_state(self, robot_id: str, now: float) -> dict:
         return {
             "id": robot_id,
-            "final": "Hold" if self.hold else self.level,
+            # 制限まで上がったら、その機体は止めて人の判断を待つ（戻すのは KEY2）。能力は制限のまま伝える
+            "final": "Hold" if self.hold or self.level == "Limited" else self.level,
             "capability": self.level,
             "trust": "Trusted" if self.fresh(now) else "Untrusted",
             "measured": True,

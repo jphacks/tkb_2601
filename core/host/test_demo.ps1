@@ -26,11 +26,13 @@ exit 0
 function global:docker {
     if ($args -contains 'build') { $step = 'build' }
     elseif ($args -contains 'up') { $step = 'pds' }
+    elseif ($args -contains 'logs') { $step = 'pds-logs' }
     elseif ($args -contains 'migrate') { $step = 'migrate' }
     elseif ($args -contains 'demo_setup') { $step = 'setup' }
     else { throw ('Unexpected Docker command: ' + ($args -join ' ')) }
     Add-Content -LiteralPath $env:ROBOMORI_DEMO_TEST_LOG -Value $step -Encoding ASCII
     $global:LASTEXITCODE = 0
+    if ($step -eq 'pds-logs') { Write-Output 'fixture-pds-health-failed' }
     if ($env:ROBOMORI_DEMO_TEST_FAILURE -eq $step) {
         Write-Output ('fixture-' + $step + '-failed')
         # A command that printed a key but then failed must still stop the launcher.
@@ -43,6 +45,10 @@ function global:docker {
         Write-Output 'fixture-account-ready'
     }
 }
+function global:Invoke-WebRequest {
+    if ($env:ROBOMORI_DEMO_TEST_FAILURE -eq 'pds-health') { return @{ StatusCode = 503 } }
+    return @{ StatusCode = 200 }
+}
 function global:Start-Process { throw 'No browser, serial relay or external process may be started by this fixture' }
 & (Join-Path $PSScriptRoot 'core/host/demo.ps1') -NoRelay -NoViewer -Keyboard -NoPsoc
 exit $LASTEXITCODE
@@ -51,6 +57,7 @@ exit $LASTEXITCODE
     $cases = @(
         @{ Name = 'build'; Exit = 1; Events = @('build') },
         @{ Name = 'pds'; Exit = 1; Events = @('build', 'pds') },
+        @{ Name = 'pds-health'; Exit = 1; Events = @('build', 'pds', 'pds-logs') },
         @{ Name = 'migrate'; Exit = 1; Events = @('build', 'pds', 'migrate') },
         @{ Name = 'setup'; Exit = 1; Events = @('build', 'pds', 'migrate', 'setup') },
         @{ Name = 'success'; Exit = 0; Events = @('build', 'pds', 'migrate', 'setup', 'start') }

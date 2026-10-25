@@ -29,6 +29,14 @@ namespace Guardian.UnitySim
         public bool HasSnapshot { get; private set; }
         public bool Silent { get; private set; }
         public bool Connected=>connected;
+        public bool Live=>HasSnapshot && !Silent && Time.realtimeSinceStartup-lastPacket<=SilenceSeconds;
+        public string HeldNames=>sim==null?"":string.Join("・",sim.Robots.Where(r=>r.LinkedStopped).Select(r=>r.RobotId));
+        public bool TryGetState(string id,out string capability,out string trust,out string final)
+        {
+            capability=trust=final=null;
+            if(!latest.TryGetValue(id,out var state))return false;
+            capability=state.capability;trust=state.trust;final=state.final;return true;
+        }
         public bool Receiving=>worker!=null && worker.IsAlive;
         public int RejectedPackets=>rejected+Volatile.Read(ref oversized);
 
