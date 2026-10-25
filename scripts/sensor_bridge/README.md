@@ -73,6 +73,8 @@ py -3 -m venv .venv
 | `--warning-count` / `--limited-count` | `2` / `6` | 異常が何回続いたら注意 / 制限にするか |
 | `--unity-port` | `47610` | Unity が接続してくるポート |
 | `--verbose` | なし | 測定値を 1 件ずつ表示する |
+| `--simulate` | なし | USB シリアルを開かず、段階確認用の測定値と KEY2 イベントを作る |
+| `--loop` | なし | `--simulate` の段階確認を繰り返す |
 
 例: ロボット C を対象に、500 mg 以上が 3 回で注意、8 回で制限にする
 
@@ -103,3 +105,35 @@ Unity を起動せずに通信を確かめるときは、中継を起動した�
 ```bash
 .venv/bin/python scripts/sensor_bridge/fake_unity.py 30
 ```
+
+## 段階の確かめ（StickS3 を揺らさずに 3 段階を確かめる）
+
+StickS3 本体には何もしない。中継が StickS3 と同じ形の行を自分で作り、正常 → 注意 → 制限 → KEY2 で正常 を流す。
+
+この公開版への Unity 受信側 `GuardianNetworkBridge` の追加は別途行う。以下の自動確認は、Unity と実機を使わず、中継が TCP で送る状態を確認する。Unity での目視確認には受信側を備えた構成が必要。
+
+macOS / Linux:
+
+```bash
+python3 scripts/sensor_bridge/check_stages.py
+python3 scripts/sensor_bridge/sensor_bridge.py --simulate --loop
+```
+
+Windows（PowerShell）:
+
+```powershell
+# Unity なしで自動で確かめる（約 10 秒。OK / NG を表示）
+.venv\Scripts\python scripts\sensor_bridge\check_stages.py
+# 模擬入力を繰り返す（Unity の目視確認は受信側を備えた構成で行う。Ctrl+C で止める）
+.venv\Scripts\python scripts\sensor_bridge\sensor_bridge.py --simulate --loop
+# 一括起動の中で両方を行う
+powershell -ExecutionPolicy Bypass -File core\host\demo.ps1 -StageTest
+```
+
+`check_stages.py` は空いているポートと一時ログを使い、約 10 秒で確認して中継を終了する。合格時は終了コード 0、段階の順序が違う・保持になる・接続できない場合は 1 を返す。確認用の KEY2 は模擬イベントであり、実機のボタンを操作しない。
+
+`--loop` を付けない模擬入力は 1 周後も静かな値を送り続け、入力終了だけで保持にならないようにする。中継自体は Ctrl+C で終了する。
+
+一括起動には Docker Desktop と `.venv` が必要。PSoC 6 も使わない場合は `-Keyboard -NoPsoc` を追加する。既存の中継が動いている場合、`-StageTest` は模擬入力へ切り替えずに終了する。
+
+一括起動は毎回 core のイメージを作り直し、ビルド・データベース準備・宛先登録が失敗したら、エラーを表示して停止する。初回のビルドにはインターネット接続が必要。

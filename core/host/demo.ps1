@@ -5,6 +5,8 @@
   powershell -ExecutionPolicy Bypass -File core\host\demo.ps1                     PSoC 6 を使う
   powershell -ExecutionPolicy Bypass -File core\host\demo.ps1 -Keyboard -NoPsoc   PSoC 6 がないとき（Enter で扉 2）
   ... -NoRelay    M5 の中継を起動しない      ... -NoViewer   ビューアを開かない
+  ... -StageTest  段階の確かめ。先に Unity なしで 正常→注意→制限→KEY2で正常 を自動で確かめ、そのあと中継は StickS3 の
+                  代わりに同じ揺れを繰り返し流す（Unity の B が 3 段階を巡るのを目で見る）。StickS3 本体には何もしない
 
 デモ用の宛先の鍵は Logs\.robomori-demo-key.json（Git に入れない）に置き、ビューアには 1 回だけ住所の # の後ろで渡す
 （ビューアは読み込んだらすぐ住所と履歴から消し、取り出せない形でそのブラウザに保存する）。本番では、宛先の人が
@@ -14,7 +16,8 @@ param(
   [switch]$Keyboard,
   [switch]$NoPsoc,
   [switch]$NoRelay,
-  [switch]$NoViewer
+  [switch]$NoViewer,
+  [switch]$StageTest
 )
 
 $Root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
@@ -35,29 +38,47 @@ if (-not ((Test-Path -LiteralPath $EnvFile) -and (Select-String -LiteralPath $En
 
 # 2. 社内 PDS を立ち上げ、デモ用の宛先の鍵を作って「会社だけ（暗号化）」に登録する。
 #    中核そのものは、最後に start.ps1 が 1 回だけ起動する（ここで起動すると、起動ごとの鍵が変わって 2 回作り直すため遅い）
+# 中核のイメージ（robomori-core:local）にはコードが入っている。git pull のあとは作り直さないと古いまま動くので、
+# 毎回作る（変わっていなければ数秒。初めての PC では数分かかり、ネットが要る）
+Say '中核のイメージを最新のコードで作る（変わっていなければ数秒）'
+& docker compose -f $Compose build web
+if ($LASTEXITCODE -ne 0) { Say 'イメージを作れなかった。上のエラーを見る（ネットにつながっているか）'; exit 1 }
 Say '仮想 VPN の社内 PDS を起動し、宛先を登録する'
-& docker compose -f $Compose --profile vpn up -d vpn-pds
+& docker compose -f $Compose --profile vpn up -d --force-recreate vpn-pds
 if ($LASTEXITCODE -ne 0) { Say '起動できなかった。cd core; docker compose build を先に'; exit 1 }
-& docker compose -f $Compose run --rm --no-deps web python manage.py migrate --noinput *> $null
-$output = @(& docker compose -f $Compose run --rm --no-deps web python manage.py demo_setup 2>$null)
+$migrate = @(& docker compose -f $Compose run --rm --no-deps web python manage.py migrate --noinput 2>&1)
+if ($LASTEXITCODE -ne 0) { $migrate | Select-Object -Last 15 | ForEach-Object { Write-Host $_ }; Say 'データベースを準備できなかった（上のエラーを見る）'; exit 1 }
+$output = @(& docker compose -f $Compose run --rm --no-deps web python manage.py demo_setup 2>&1 | ForEach-Object { "$_" })
+$setupExit = $LASTEXITCODE
 $jwk = ($output | Where-Object { $_ -match '^\{"kty"' } | Select-Object -Last 1)
-if (-not $jwk) { Say '宛先の鍵を登録できなかった'; exit 1 }
+if ($setupExit -ne 0 -or -not $jwk) { $output | Where-Object { $_ -notmatch '^\{"kty"' } | Select-Object -Last 15 | ForEach-Object { Write-Host $_ }; Say '宛先の鍵を登録できなかった（上のエラーを見る）'; exit 1 }
 New-Item -ItemType Directory -Force -Path $Logs | Out-Null
 [System.IO.File]::WriteAllText((Join-Path $Logs '.robomori-demo-key.json'), $jwk, (New-Object System.Text.UTF8Encoding $false))
 Say ($output | Where-Object { $_ -notmatch '^\{' } | Select-Object -Last 1)
 
 # 3. M5 の中継を別の窓で（StickS3 を USB でつないでおく）
 $python = Join-Path $Root '.venv\Scripts\python.exe'
+if ($StageTest) {
+  if (-not (Test-Path -LiteralPath $python)) { Say '段階の確かめには .venv が要る（README の「センサー中継」を参照）'; exit 1 }
+  Say '段階の確かめ（Unity なし、約 10 秒）: 正常 → 注意 → 制限 → KEY2 で正常'
+  & $python (Join-Path $Root 'scripts\sensor_bridge\check_stages.py')
+  if ($LASTEXITCODE -ne 0) { Say '段階の確かめに失敗した。上の NG を見る'; exit 1 }
+}
 $relayRunning = $false
 try {   # .NET で直接（Get-NetTCPConnection は数秒かかることがある）
   $relayRunning = @([System.Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().GetActiveTcpListeners() |
     Where-Object { $_.Port -eq 47610 -or $_.Port -eq 18610 }).Count -gt 0
 } catch { }
-if ($relayRunning -and -not $NoRelay) { Say 'M5 の中継はもう動いている（47610 か 18610 を受けている）ので、新しくは起動しない'; $NoRelay = $true }
+if ($relayRunning -and -not $NoRelay) {
+  if ($StageTest) { Say 'M5 の中継がもう動いている。段階の確かめでは作った揺れを流す中継を使うので、その窓を閉じてからもう一度'; exit 1 }
+  Say 'M5 の中継はもう動いている（47610 か 18610 を受けている）ので、新しくは起動しない'; $NoRelay = $true
+}
 if (-not $NoRelay) {
   if (Test-Path -LiteralPath $python) {
-    Start-Process powershell -ArgumentList @('-NoExit', '-Command', "Set-Location -LiteralPath '$Root'; & '$python' scripts\sensor_bridge\sensor_bridge.py")
-    Say 'M5 の中継を別の窓で起動した'
+    $relayArgs = if ($StageTest) { ' --simulate --loop' } else { '' }
+    Start-Process powershell -ArgumentList @('-NoExit', '-Command', "Set-Location -LiteralPath '$Root'; & '$python' scripts\sensor_bridge\sensor_bridge.py$relayArgs")
+    if ($StageTest) { Say '中継を別の窓で起動した（段階の確かめ: 作った揺れを繰り返し流す。Unity の B が 正常→注意→制限→正常 を巡る）' }
+    else { Say 'M5 の中継を別の窓で起動した' }
   } else { Say 'M5 の中継は起動していない（.venv がない。README の「センサー中継」を参照）' }
 }
 

@@ -172,6 +172,39 @@ def read_serial(port_name: str | None, events: queue.Queue, stop: threading.Even
         stop.wait(1.0)
 
 
+# 段階の確かめ（--simulate）: StickS3 と同じ形の行を作って流す。StickS3 本体には何もしない。
+# 静か → 強い揺れが続く（2 回で注意、6 回で制限）→ 静か（上げたら下がらない）→ KEY2（人が戻す）→ 静か
+SIM_STEP_S = 0.5
+SIM_PLAN = (("静か（正常のまま）", 50.0, 6), ("強い揺れ（注意 → 制限）", 600.0, 8), ("静か（制限のまま。下げるのは人）", 50.0, 6),
+            ("KEY2（人が正常に戻す）", None, 1), ("静か（正常）", 50.0, 6))
+
+
+def simulate_serial(events: queue.Queue, stop: threading.Event, loop: bool) -> None:
+    """--simulate のとき read_serial の代わりに動く。"""
+    events.put(("serial_open", "simulated", time.monotonic()))
+    seq = 0
+    while not stop.is_set():
+        for title, mg, count in SIM_PLAN:
+            events.put(("sim_phase", title, time.monotonic()))
+            for _ in range(count):
+                if stop.wait(SIM_STEP_S):
+                    return
+                seq += 1
+                if mg is None:
+                    line = {"type": "event", "event": "button", "btn": "KEY2", "seq": seq}
+                else:
+                    line = {"type": "sample", "vib_rms_g": mg / 1000, "vib_peak_g": mg / 1000 * 1.4,
+                            "win_ms": int(SIM_STEP_S * 1000), "dev": "simulated", "seq": seq}
+                events.put(("line", json.dumps(line), time.monotonic()))
+        events.put(("sim_cycle", None, time.monotonic()))
+        if not loop:
+            while not stop.wait(SIM_STEP_S):   # 終わったあとも、データが途切れて Hold にならないよう静かな値を送り続ける
+                seq += 1
+                line = {"type": "sample", "vib_rms_g": 0.05, "win_ms": int(SIM_STEP_S * 1000), "dev": "simulated", "seq": seq}
+                events.put(("line", json.dumps(line), time.monotonic()))
+            return
+
+
 class UnityServer:
     """GuardianNetworkBridge が 127.0.0.1 に接続してくるのを待ち、状態を送る。"""
 
@@ -252,6 +285,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--send-interval", type=float, default=0.5, help="Unity に送る間隔（秒、既定: 0.5）")
     parser.add_argument("--log-dir", type=Path, default=REPO_ROOT / "Logs" / "sensor_bridge", help="記録の保存先")
     parser.add_argument("--verbose", action="store_true", help="測定値を 1 件ずつ表示する")
+    parser.add_argument("--simulate", action="store_true",
+                        help="StickS3 の代わりに、正常 → 注意 → 制限 → KEY2 で正常 の揺れを作って流す（段階の確かめ用）")
+    parser.add_argument("--loop", action="store_true", help="--simulate を繰り返す")
     return parser.parse_args()
 
 
@@ -280,7 +316,11 @@ def main() -> None:
     log = EventLog(args.log_dir)
     boot = f"sticks3-bridge-{datetime.now():%Y%m%d-%H%M%S}-{uuid.uuid4().hex[:4]}"
     threading.Thread(target=server.accept_forever, name="unity", daemon=True).start()
-    threading.Thread(target=read_serial, args=(args.serial, events, stop), name="serial", daemon=True).start()
+    if args.simulate:
+        threading.Thread(target=simulate_serial, args=(events, stop, args.loop), name="simulate", daemon=True).start()
+        say("段階の確かめ: StickS3 の代わりに作った揺れを流す（正常 → 注意 → 制限 → KEY2 で正常）")
+    else:
+        threading.Thread(target=read_serial, args=(args.serial, events, stop), name="serial", daemon=True).start()
 
     start = time.monotonic()
     log.write("start", start, robot=args.robot, boot=boot, threshold_mg=args.threshold_mg,
@@ -327,9 +367,14 @@ def main() -> None:
                     accepted, reason = judge.on_key2(at)
                     log.write("key2", at, accepted=accepted, reason=reason)
                     say(f"KEY2: {reason}")
+            elif kind == "sim_phase":
+                log.write("sim_phase", at, phase=payload)
+                say(f"[確かめ] {payload}")
+            elif kind == "sim_cycle":
+                say(f"[確かめ] 1 周終わり（いまの {args.robot}: {LEVEL_WORDS[judge.level]}）")
             elif kind == "serial_open":
                 serial_missing_noted = False
-                warmup_left = WARMUP_SAMPLES
+                warmup_left = 0 if payload == "simulated" else WARMUP_SAMPLES
                 log.write("serial_open", at, port=payload)
                 say(f"StickS3 に接続: {payload}")
             elif kind == "serial_lost":
