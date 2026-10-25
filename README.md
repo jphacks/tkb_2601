@@ -272,19 +272,68 @@
 
 このリポジトリには、審査とレビューに必要な Unity シミュレーター、自作素材、検証入口に加え、M5StickS3 の測定値を Unity へ渡す Python 中継と Unity の受信側、M5StickS3 と PSoC 6 のファームウェア、PC 1 台で動く Robomori core（ダッシュボード・ルール AI・会社だけの共有）を収録しています。実ロボットは別構成です。
 
-| 対象 | 収録状況 | 確認先 |
-|---|---|---|
-| 仕事ごとの能力判定と再割り当て | 収録 | [`GuardianCapabilityPolicy.cs`](Assets/Scripts/GuardianCapabilityPolicy.cs) / [`GuardianSimulator.cs`](Assets/Scripts/GuardianSimulator.cs) |
-| 皿の所有権と物理的な引き継ぎ | 収録 | [`GuardianDishInventory.cs`](Assets/Scripts/GuardianDishInventory.cs) |
-| 通路予約と障害物ブレーキ | 収録 | [`GuardianTrafficController.cs`](Assets/Scripts/GuardianTrafficController.cs) |
-| 歩行者安全デモ | オプトインで収録 | [`GuardianLegacyPedestrianSafety.cs`](Assets/Scripts/GuardianLegacyPedestrianSafety.cs) |
-| 日本語の定型操作デモ | オプトインで収録 | [`GuardianInteractionPanel.cs`](Assets/Scripts/GuardianInteractionPanel.cs) / [`GuardianLegacyRuleConversation.cs`](Assets/Scripts/GuardianLegacyRuleConversation.cs) |
-| M5StickS3・Python 中継・Unity の受信側 | 収録 | [接続手順と通信仕様](docs/STICKS3_UNITY_LINK.md) / [`firmware/sticks3_check/`](firmware/sticks3_check/README.md) |
-| PSoC 6 のボタン・ランプ | ファームウェアを収録 | [`firmware/psoc6_share_panel/`](firmware/psoc6_share_panel/README.md) |
-| ルール AI とダッシュボード | 収録 | [`core/guardian/rules.json`](core/guardian/rules.json) / [`core/README.md`](core/README.md) |
-| 監視 AI と扉 1・扉 2 | 収録 | [`scripts/guardian_hub/`](scripts/guardian_hub/README.md) |
-| 会社だけの共有（暗号化・AT プロトコル・仮想 VPN） | 収録（接続設定は `.env`、秘密鍵はローカル管理） | [`scripts/guardian_share/seal.py`](scripts/guardian_share/seal.py) / [`core/viewer/`](core/viewer/index.html) |
-| 実ロボット、権利未確認モデル | 非収録 | [公開範囲と制約](docs/PUBLIC_SCOPE.md) |
+<table role="table">
+<tr>
+<th width="230" nowrap>対象</th>
+<th>収録状況</th>
+<th>確認先</th>
+</tr>
+<tr>
+<td width="230" nowrap>仕事ごとの能力判定と<br>再割り当て</td>
+<td>収録</td>
+<td><a href="Assets/Scripts/GuardianCapabilityPolicy.cs"><code>GuardianCapabilityPolicy.cs</code></a> / <a href="Assets/Scripts/GuardianSimulator.cs"><code>GuardianSimulator.cs</code></a></td>
+</tr>
+<tr>
+<td width="230" nowrap>皿の所有権と<br>物理的な引き継ぎ</td>
+<td>収録</td>
+<td><a href="Assets/Scripts/GuardianDishInventory.cs"><code>GuardianDishInventory.cs</code></a></td>
+</tr>
+<tr>
+<td width="230" nowrap>通路予約と障害物ブレーキ</td>
+<td>収録</td>
+<td><a href="Assets/Scripts/GuardianTrafficController.cs"><code>GuardianTrafficController.cs</code></a></td>
+</tr>
+<tr>
+<td width="230" nowrap>歩行者安全デモ</td>
+<td>オプトインで収録</td>
+<td><a href="Assets/Scripts/GuardianLegacyPedestrianSafety.cs"><code>GuardianLegacyPedestrianSafety.cs</code></a></td>
+</tr>
+<tr>
+<td width="230" nowrap>日本語の定型操作デモ</td>
+<td>オプトインで収録</td>
+<td><a href="Assets/Scripts/GuardianInteractionPanel.cs"><code>GuardianInteractionPanel.cs</code></a> / <a href="Assets/Scripts/GuardianLegacyRuleConversation.cs"><code>GuardianLegacyRuleConversation.cs</code></a></td>
+</tr>
+<tr>
+<td width="230" nowrap>M5StickS3・Python 中継・<br>Unity の受信側</td>
+<td>収録</td>
+<td><a href="docs/STICKS3_UNITY_LINK.md">接続手順と通信仕様</a> / <a href="firmware/sticks3_check/README.md"><code>firmware/sticks3_check/</code></a></td>
+</tr>
+<tr>
+<td width="230" nowrap>PSoC 6 のボタン・ランプ</td>
+<td>ファームウェアを収録</td>
+<td><a href="firmware/psoc6_share_panel/README.md"><code>firmware/psoc6_share_panel/</code></a></td>
+</tr>
+<tr>
+<td width="230" nowrap>ルール AI とダッシュボード</td>
+<td>収録</td>
+<td><a href="core/guardian/rules.json"><code>core/guardian/rules.json</code></a> / <a href="core/README.md"><code>core/README.md</code></a></td>
+</tr>
+<tr>
+<td width="230" nowrap>監視 AI と扉 1・扉 2</td>
+<td>収録</td>
+<td><a href="scripts/guardian_hub/README.md"><code>scripts/guardian_hub/</code></a></td>
+</tr>
+<tr>
+<td width="230" nowrap>会社だけの共有<br>（暗号化・AT プロトコル・<br>仮想 VPN）</td>
+<td>収録（接続設定は <code>.env</code>、秘密鍵はローカル管理）</td>
+<td><a href="scripts/guardian_share/seal.py"><code>scripts/guardian_share/seal.py</code></a> / <a href="core/viewer/index.html"><code>core/viewer/</code></a></td>
+</tr>
+<tr>
+<td width="230" nowrap>実ロボット、権利未確認モデル</td>
+<td>非収録</td>
+<td><a href="docs/PUBLIC_SCOPE.md">公開範囲と制約</a></td>
+</tr>
+</table>
 
 ## 特長
 
@@ -346,14 +395,50 @@ Editor の生成ツールは別シーンを勝手に閉じず、再生成前に�
 
 すべて 1 台の PC の中で動き、ふだんはインターネットを使いません。外部に出る経路は、扉 2 を開けたときの AT プロトコルと Gemini、店の Google Drive への同期の 3 つで、それぞれ守り方が違います（[外部に出る経路](#外部に出る経路)）。ロボットはシミュレーター上で動かし、振動センサーと PSoC 6 は実物を使っています。M5StickS3 がなくても、模擬入力で能力制限、仕事の取り消し、再割り当て、皿の返却、停止と復帰を確認できます。
 
-| 処理 | 部品 | すること | 場所 |
-|---|---|---|---|
-| ① 測る | M5StickS3 | IMU（BMI270）で揺れを測り、重力を除いた揺れの大きさ（RMS）を 1 秒ごとに USB へ送る。KEY2 は人が通常運転に戻すためのボタン | [実機連携ガイド](docs/HARDWARE_ASSEMBLY.md) / [ファームウェア](firmware/sticks3_check/README.md) |
-| ② 判断する | センサー中継（Python） | 揺れが続いた回数から Normal / Warning / Limited、値の途切れから Hold を決め、理由を付けて Unity に送る | [`scripts/sensor_bridge/`](scripts/sensor_bridge/README.md) |
-| ② 見守る | Robomori core（Docker） | ルール AI、監視 AI、ダッシュボード、接続してよい時間帯（時間割）、監査ログ。この PC からだけ見られる | [`core/`](core/README.md)、[`scripts/guardian_hub/`](scripts/guardian_hub/README.md) |
-| ③ 再割り当てする | Unity シミュレーター（C#） | 店内のロボット・客・皿を動かし、仕事の可否を決め、外した仕事を別のロボットに割り当て直す | [`Assets/Scripts/`](Assets/Scripts/) |
-| ④ 人 | 店員 | 状態と理由を確認する、ルール AI に質問する、KEY2 で再開する、STOP で止める、SW2 で記録を外部に共有する | |
-| ⑤ 共有する | PSoC 6・扉 2・PC 側の Drive 同期 | AT 共有と任意の Gemini への通信は SW2（代替は Enter）で開始する。既定の「会社だけ」では AT の記録を暗号化する。Drive はそのときに加え、時間割でも平文を書き出す | [`core/host/`](core/host/)、[`scripts/guardian_share/`](scripts/guardian_share/README.md) |
+<table role="table">
+<tr>
+<th width="175" nowrap>処理</th>
+<th>部品</th>
+<th>すること</th>
+<th>場所</th>
+</tr>
+<tr>
+<td width="175" nowrap>① 測る</td>
+<td>M5StickS3</td>
+<td>IMU（BMI270）で揺れを測り、重力を除いた揺れの大きさ（RMS）を 1 秒ごとに USB へ送る。KEY2 は人が通常運転に戻すためのボタン</td>
+<td><a href="docs/HARDWARE_ASSEMBLY.md">実機連携ガイド</a> / <a href="firmware/sticks3_check/README.md">ファームウェア</a></td>
+</tr>
+<tr>
+<td width="175" nowrap>② 判断する</td>
+<td>センサー中継（Python）</td>
+<td>揺れが続いた回数から Normal / Warning / Limited、値の途切れから Hold を決め、理由を付けて Unity に送る</td>
+<td><a href="scripts/sensor_bridge/README.md"><code>scripts/sensor_bridge/</code></a></td>
+</tr>
+<tr>
+<td width="175" nowrap>② 見守る</td>
+<td>Robomori core（Docker）</td>
+<td>ルール AI、監視 AI、ダッシュボード、接続してよい時間帯（時間割）、監査ログ。この PC からだけ見られる</td>
+<td><a href="core/README.md"><code>core/</code></a>、<a href="scripts/guardian_hub/README.md"><code>scripts/guardian_hub/</code></a></td>
+</tr>
+<tr>
+<td width="175" nowrap>③ 再割り当てする</td>
+<td>Unity シミュレーター（C#）</td>
+<td>店内のロボット・客・皿を動かし、仕事の可否を決め、外した仕事を別のロボットに割り当て直す</td>
+<td><a href="Assets/Scripts/"><code>Assets/Scripts/</code></a></td>
+</tr>
+<tr>
+<td width="175" nowrap>④ 人</td>
+<td>店員</td>
+<td>状態と理由を確認する、ルール AI に質問する、KEY2 で再開する、STOP で止める、SW2 で記録を外部に共有する</td>
+<td></td>
+</tr>
+<tr>
+<td width="175" nowrap>⑤ 共有する</td>
+<td>PSoC 6・扉 2・PC 側の Drive 同期</td>
+<td>AT 共有と任意の Gemini への通信は SW2（代替は Enter）で開始する。既定の「会社だけ」では AT の記録を暗号化する。Drive はそのときに加え、時間割でも平文を書き出す</td>
+<td><a href="core/host/"><code>core/host/</code></a>、<a href="scripts/guardian_share/README.md"><code>scripts/guardian_share/</code></a></td>
+</tr>
+</table>
 
 ### 独自技術
 
@@ -389,11 +474,24 @@ Unity のシミュレーターとは別に、この PC のブラウザで開く�
 
 Unity の代わりに、同じ形のデータを送る模擬プログラム（sim）でデータを流して撮影した画面です。
 
-| 処理 | すること |
-|---|---|
-| 見守る | ルール AI が `rules.json` の数字だけで「安全 / 注意 / 危険」を決め、根拠を付けて答える。監視 AI は場所の問題と機体の問題を見分けて速度を下げ、向かう人を推薦する。外部の AI や API は使わない |
-| 閉じる | 扉 1（ロボットと店内 PC のあいだの通信）は、使えない指示が続くと自動で切る。AT・Gemini に通じる扉 2 のコンテナは、人の操作で起動し、完了後に消す。Drive の書き出しは時間割でも動き、PC 側で同期する |
-| 共有する | AT プロトコルでは「共有しない」「会社だけ（暗号化）」「記録だけ（公開）」「投稿と記録（公開）」を選ぶ。暗号化されるのは「会社だけ」の記録 |
+<table role="table">
+<tr>
+<th width="130" nowrap>処理</th>
+<th>すること</th>
+</tr>
+<tr>
+<td width="130" nowrap>見守る</td>
+<td>ルール AI が <code>rules.json</code> の数字だけで「安全 / 注意 / 危険」を決め、根拠を付けて答える。監視 AI は場所の問題と機体の問題を見分けて速度を下げ、向かう人を推薦する。外部の AI や API は使わない</td>
+</tr>
+<tr>
+<td width="130" nowrap>閉じる</td>
+<td>扉 1（ロボットと店内 PC のあいだの通信）は、使えない指示が続くと自動で切る。AT・Gemini に通じる扉 2 のコンテナは、人の操作で起動し、完了後に消す。Drive の書き出しは時間割でも動き、PC 側で同期する</td>
+</tr>
+<tr>
+<td width="130" nowrap>共有する</td>
+<td>AT プロトコルでは「共有しない」「会社だけ（暗号化）」「記録だけ（公開）」「投稿と記録（公開）」を選ぶ。暗号化されるのは「会社だけ」の記録</td>
+</tr>
+</table>
 
 **[見守りの画面と共有の説明を読む →](docs/dashboard/README.md)**
 
@@ -443,17 +541,48 @@ Unity の代わりに、同じ形のデータを送る模擬プログラム（si
 
 Unity のレストランでは通常 3 台、予備機を含めると 5 台のロボットが、スープ、料理、空いた皿の回収を分担します。
 
-| 場面 | 起きること |
-|---|---|
-| 担当機が Warning になる | 許されなくなったスープを外し、別の機体へ再割り当てする |
-| 担当機が Limited になる | 手動の切り替えでは空いた皿の回収だけを残し、料理を別の機体へ再割り当てする。センサー入力のときは停止して、人の KEY2 を待つ |
-| 運搬中に仕事を外される | 皿を元の受け渡し場所へ戻してから、別の機体が引き継ぐ |
-| 人が STOP を選ぶ | 状態とは関係なく停止し、人が操作するまで再開しない |
-| 歩行者が進路を横切る | 能力・仕事・積載を変えず、危険がなくなるまで移動だけを止める |
-| 日本語で停止を指示する | 対象と操作を確認待ちにし、別入力の「実行」で確定する |
-| 同じ通路でロボットが揺れる（模擬の段差） | 監視 AI がその場所の速度を下げ、理由を画面に出す |
-| ロボットに使えない指示が続けて届く | 3 回で扉 1 が自動で通信を切り、ロボットはネットワークから切り離された状態で動き続ける |
-| PSoC 6 の SW2 を押す | 扉 2 が開き、共有対象の記録があれば店の設定に従って送る。既定の「会社だけ（暗号化）」では、登録した宛先の鍵で開ける記録を PDS に置く。処理後は自動で閉じる |
+<table role="table">
+<tr>
+<th width="245" nowrap>場面</th>
+<th>起きること</th>
+</tr>
+<tr>
+<td width="245" nowrap>担当機が Warning になる</td>
+<td>許されなくなったスープを外し、別の機体へ再割り当てする</td>
+</tr>
+<tr>
+<td width="245" nowrap>担当機が Limited になる</td>
+<td>手動の切り替えでは空いた皿の回収だけを残し、料理を別の機体へ再割り当てする。センサー入力のときは停止して、人の KEY2 を待つ</td>
+</tr>
+<tr>
+<td width="245" nowrap>運搬中に仕事を外される</td>
+<td>皿を元の受け渡し場所へ戻してから、別の機体が引き継ぐ</td>
+</tr>
+<tr>
+<td width="245" nowrap>人が STOP を選ぶ</td>
+<td>状態とは関係なく停止し、人が操作するまで再開しない</td>
+</tr>
+<tr>
+<td width="245" nowrap>歩行者が進路を横切る</td>
+<td>能力・仕事・積載を変えず、危険がなくなるまで移動だけを止める</td>
+</tr>
+<tr>
+<td width="245" nowrap>日本語で停止を指示する</td>
+<td>対象と操作を確認待ちにし、別入力の「実行」で確定する</td>
+</tr>
+<tr>
+<td width="245" nowrap>同じ通路でロボットが揺れる<br>（模擬の段差）</td>
+<td>監視 AI がその場所の速度を下げ、理由を画面に出す</td>
+</tr>
+<tr>
+<td width="245" nowrap>ロボットに使えない指示が<br>続けて届く</td>
+<td>3 回で扉 1 が自動で通信を切り、ロボットはネットワークから切り離された状態で動き続ける</td>
+</tr>
+<tr>
+<td width="245" nowrap>PSoC 6 の SW2 を押す</td>
+<td>扉 2 が開き、共有対象の記録があれば店の設定に従って送る。既定の「会社だけ（暗号化）」では、登録した宛先の鍵で開ける記録を PDS に置く。処理後は自動で閉じる</td>
+</tr>
+</table>
 
 歩行者と日本語操作は明示的に有効化する公開デモです。通常起動時の既存の配膳挙動を無断で変更しません。
 
@@ -517,16 +646,53 @@ cd core && docker compose run --rm --no-deps --entrypoint python web manage.py t
 
 ## 検証と限界
 
-| 対象 | 検証入口 | 実装 |
-|---|---|---|
-| 設定ロードと不正値の拒否 | `GuardianSettingsBatch.Verify` | [`GuardianSettingsBatch.cs`](Assets/Editor/GuardianSettingsBatch.cs) |
-| 歩行者の交差、平行移動、初期重なり | `GuardianPedestrianBatch.Verify` | [`GuardianPedestrianBatch.cs`](Assets/Editor/GuardianPedestrianBatch.cs) |
-| 日本語入力、確認期限、状態競合 | `GuardianInteractionBatch.Verify` | [`GuardianInteractionBatch.cs`](Assets/Editor/GuardianInteractionBatch.cs) |
-| シーン生成、バックアップ、Build Settings 保持 | `GuardianSceneBatch.Verify` | [`GuardianSceneBatch.cs`](Assets/Editor/GuardianSceneBatch.cs) |
-| 上記の公開版統合 | `GuardianIntegrationBatch.Verify` | [`GuardianIntegrationBatch.cs`](Assets/Editor/GuardianIntegrationBatch.cs) |
-| 続いた回数、Hold、KEY2、送るデータの形 | Python の単体テスト | [`test_sensor_bridge.py`](scripts/sensor_bridge/test_sensor_bridge.py) |
-| ルール AI、ワンタイムパスワード、時間割、扉 2 を開けたときに記録を書く条件、共有先の選択 | Django のテスト | [`core/guardian/tests.py`](core/guardian/tests.py) |
-| 監視 AI の判断、推薦の経路、扉 1 の訓練 | Python の単体テスト | [`test_hub.py`](scripts/guardian_hub/test_hub.py) |
+<table role="table">
+<tr>
+<th width="235" nowrap>対象</th>
+<th>検証入口</th>
+<th>実装</th>
+</tr>
+<tr>
+<td width="235" nowrap>設定ロードと<br>不正値の拒否</td>
+<td><code>GuardianSettingsBatch.Verify</code></td>
+<td><a href="Assets/Editor/GuardianSettingsBatch.cs"><code>GuardianSettingsBatch.cs</code></a></td>
+</tr>
+<tr>
+<td width="235" nowrap>歩行者の交差、<br>平行移動、初期重なり</td>
+<td><code>GuardianPedestrianBatch.Verify</code></td>
+<td><a href="Assets/Editor/GuardianPedestrianBatch.cs"><code>GuardianPedestrianBatch.cs</code></a></td>
+</tr>
+<tr>
+<td width="235" nowrap>日本語入力、<br>確認期限、状態競合</td>
+<td><code>GuardianInteractionBatch.Verify</code></td>
+<td><a href="Assets/Editor/GuardianInteractionBatch.cs"><code>GuardianInteractionBatch.cs</code></a></td>
+</tr>
+<tr>
+<td width="235" nowrap>シーン生成、バックアップ、<br>Build Settings 保持</td>
+<td><code>GuardianSceneBatch.Verify</code></td>
+<td><a href="Assets/Editor/GuardianSceneBatch.cs"><code>GuardianSceneBatch.cs</code></a></td>
+</tr>
+<tr>
+<td width="235" nowrap>上記の公開版統合</td>
+<td><code>GuardianIntegrationBatch.Verify</code></td>
+<td><a href="Assets/Editor/GuardianIntegrationBatch.cs"><code>GuardianIntegrationBatch.cs</code></a></td>
+</tr>
+<tr>
+<td width="235" nowrap>続いた回数、Hold、KEY2、<br>送るデータの形</td>
+<td>Python の単体テスト</td>
+<td><a href="scripts/sensor_bridge/test_sensor_bridge.py"><code>test_sensor_bridge.py</code></a></td>
+</tr>
+<tr>
+<td width="235" nowrap>ルール AI、<br>ワンタイムパスワード、<br>時間割、<br>扉 2 を開けたときに<br>記録を書く条件、<br>共有先の選択</td>
+<td>Django のテスト</td>
+<td><a href="core/guardian/tests.py"><code>core/guardian/tests.py</code></a></td>
+</tr>
+<tr>
+<td width="235" nowrap>監視 AI の判断、推薦の経路、<br>扉 1 の訓練</td>
+<td>Python の単体テスト</td>
+<td><a href="scripts/guardian_hub/test_hub.py"><code>test_hub.py</code></a></td>
+</tr>
+</table>
 
 GitHub Actions は、C# の境界、設定、素材、起動スクリプト、検証入口の接続を静的に確認します。クラウド CI では Unity Editor を起動しないため、チェック成功を Play Mode、描画、実クリック、実センサーの成功とは表現しません。
 
@@ -552,18 +718,63 @@ GitHub Actions は、C# の境界、設定、素材、起動スクリプト、�
 
 故障の検知と、複数ロボットへの仕事の再割り当ては、それぞれ既存の研究があります。ロボもりが研究として取り組みたいのは、その間をつなぐ部分、つまり不確かな故障の情報を、安全上の制約を満たす「作業の許可」に変換する方法です。近い先行研究は次のとおりです。
 
-| 文献 | 内容 | ロボもりとの関係 |
-|---|---|---|
-| [Parker (1998)](https://doi.org/10.1109/70.681242) | ALLIANCE：能力の違うロボットが状態を見て仕事を選び、故障した機体の仕事をほかが引き継ぐ | 「故障したら引き継ぐ」発想そのものは古くからある。ロボもりはその先で差を示す必要がある |
-| [Notomista ほか (2022)](https://doi.org/10.1109/TRO.2021.3102379) | ロボットの装置（feature）と、それでできる能力（capability）を分けて表し、能力が使えなくなっても割り当てを保つ | 今の固定の許可の表を「部品 → 能力 → 仕事の条件」に広げる手本 |
-| [Medico ほか (2026)](https://doi.org/10.1109/AIM65483.2026.11658331) | トレーに載せた液体の容器を、液面の揺れに上限を保証しながら運ぶ制御 | 揺れの大きさと「スープを安全に運べるか」を結びつけるための、物理的な手がかり |
-| [Yan ほか (2026)](https://doi.org/10.1007/s44443-026-01192-6) | 能力が落ちていく複数ロボット系で、仕事の割り当てと修理の方針を合わせて最適化する | 最も近い。Warning・Limited の先の「いつ修理に回すか」へ広げる手がかり |
-| [Zhou ほか (2024)](https://doi.org/10.1016/j.jmsy.2023.11.010) | 性能の劣化と回復を考えた動的スケジューリング（マルチエージェント強化学習） | ルールベースのロボもりと、最適化・学習の方式を比べる相手 |
-| [Mayya ほか (2021)](https://doi.org/10.1109/LRA.2021.3057559) | 落ちた能力を見積もり、それに合わせてロボットを配り直す | ロボもりは仕事を許すかどうかで分け、外付けのセンサーで測る |
-| [Cline ほか (2026)](https://arxiv.org/abs/2603.14622) | 仕事の進み具合から故障を見つけ、健全度に応じて割り当てを変える | 「続いた回数で段階を上げる」判定と「許されない仕事だけ外す」配り直しの比較相手 |
-| [Gerkey & Matarić (2004)](https://doi.org/10.1177/0278364904045564) | 仕事の割り当て（MRTA）の形式的な分類 | 能力・仕事の種類・割り当て直しを、既存の問題として位置づける出発点 |
-| [Mehta ほか (2026)](https://doi.org/10.1002/rob.70288) | 1 つの仕事に、品質の違う複数の実行モードを持たせて順番とモードを決める | 「スープは不可、空いた皿は可」を、品質やリスクの数値で一般化するときの参考 |
-| [Rivera ほか (1996)](https://www.sei.cmu.edu/library/an-architectural-description-of-the-simplex-architecture/) | Simplex：高性能な制御と安全を守る制御を分けて切り替える | 「自動で制限し、戻すのは人」を実行時の安全保証として整理する基礎 |
+<table role="table">
+<tr>
+<th width="165" nowrap>文献</th>
+<th>内容</th>
+<th>ロボもりとの関係</th>
+</tr>
+<tr>
+<td width="165" nowrap><a href="https://doi.org/10.1109/70.681242">Parker<br>(1998)</a></td>
+<td>ALLIANCE：能力の違うロボットが状態を見て仕事を選び、故障した機体の仕事をほかが引き継ぐ</td>
+<td>「故障したら引き継ぐ」発想そのものは古くからある。ロボもりはその先で差を示す必要がある</td>
+</tr>
+<tr>
+<td width="165" nowrap><a href="https://doi.org/10.1109/TRO.2021.3102379">Notomista ほか<br>(2022)</a></td>
+<td>ロボットの装置（feature）と、それでできる能力（capability）を分けて表し、能力が使えなくなっても割り当てを保つ</td>
+<td>今の固定の許可の表を「部品 → 能力 → 仕事の条件」に広げる手本</td>
+</tr>
+<tr>
+<td width="165" nowrap><a href="https://doi.org/10.1109/AIM65483.2026.11658331">Medico ほか<br>(2026)</a></td>
+<td>トレーに載せた液体の容器を、液面の揺れに上限を保証しながら運ぶ制御</td>
+<td>揺れの大きさと「スープを安全に運べるか」を結びつけるための、物理的な手がかり</td>
+</tr>
+<tr>
+<td width="165" nowrap><a href="https://doi.org/10.1007/s44443-026-01192-6">Yan ほか<br>(2026)</a></td>
+<td>能力が落ちていく複数ロボット系で、仕事の割り当てと修理の方針を合わせて最適化する</td>
+<td>最も近い。Warning・Limited の先の「いつ修理に回すか」へ広げる手がかり</td>
+</tr>
+<tr>
+<td width="165" nowrap><a href="https://doi.org/10.1016/j.jmsy.2023.11.010">Zhou ほか<br>(2024)</a></td>
+<td>性能の劣化と回復を考えた動的スケジューリング（マルチエージェント強化学習）</td>
+<td>ルールベースのロボもりと、最適化・学習の方式を比べる相手</td>
+</tr>
+<tr>
+<td width="165" nowrap><a href="https://doi.org/10.1109/LRA.2021.3057559">Mayya ほか<br>(2021)</a></td>
+<td>落ちた能力を見積もり、それに合わせてロボットを配り直す</td>
+<td>ロボもりは仕事を許すかどうかで分け、外付けのセンサーで測る</td>
+</tr>
+<tr>
+<td width="165" nowrap><a href="https://arxiv.org/abs/2603.14622">Cline ほか<br>(2026)</a></td>
+<td>仕事の進み具合から故障を見つけ、健全度に応じて割り当てを変える</td>
+<td>「続いた回数で段階を上げる」判定と「許されない仕事だけ外す」配り直しの比較相手</td>
+</tr>
+<tr>
+<td width="165" nowrap><a href="https://doi.org/10.1177/0278364904045564">Gerkey &amp; Matarić<br>(2004)</a></td>
+<td>仕事の割り当て（MRTA）の形式的な分類</td>
+<td>能力・仕事の種類・割り当て直しを、既存の問題として位置づける出発点</td>
+</tr>
+<tr>
+<td width="165" nowrap><a href="https://doi.org/10.1002/rob.70288">Mehta ほか<br>(2026)</a></td>
+<td>1 つの仕事に、品質の違う複数の実行モードを持たせて順番とモードを決める</td>
+<td>「スープは不可、空いた皿は可」を、品質やリスクの数値で一般化するときの参考</td>
+</tr>
+<tr>
+<td width="165" nowrap><a href="https://www.sei.cmu.edu/library/an-architectural-description-of-the-simplex-architecture/">Rivera ほか<br>(1996)</a></td>
+<td>Simplex：高性能な制御と安全を守る制御を分けて切り替える</td>
+<td>「自動で制限し、戻すのは人」を実行時の安全保証として整理する基礎</td>
+</tr>
+</table>
 
 故障したロボットの仕事を引き継ぐこと（Parker 1998）、能力の劣化を考えた割り当て（Mayya ほか 2021、Notomista ほか 2022）、故障の検知と割り当て直しの組み合わせ（Cline ほか 2026 ほか）は、すでに研究されています。また今の許可の表は作業の名前で決めた固定の表で、「0.3 g 以上の揺れが続いた」から「皿の回収なら安全」とは、まだ言えません。研究として目指すのは、外付けの計測から、運ぶ物の物理的な安全を満たす仕事を見積もり、その範囲で再割り当てできることを、実機の実験で示すことです。これは今の時点では新しさの仮説で、網羅的な先行研究の調査で確かめます。
 
@@ -584,12 +795,28 @@ Hack Day 2 日目に、インフィニオン テクノロジーズ（Infineon Te
 
 ### 作るもの
 
-| 段階 | すること |
-|---|---|
-| 1. 調べる | ネコ型配膳ロボットなどが、どんなセンサーを、どこに、何のために載せているかを調べる（周りを測るもの、自分の動きを測るもの、ぶつかったことを知るものなど） |
-| 2. 再現する | 調べた構成に近いセンサーを載せたハードを作り、配膳ロボットに近い環境を再現する。M5Stack と Infineon のセンサーを使う（候補は [docs/REAL_SENSOR_OPTIONS.md](docs/REAL_SENSOR_OPTIONS.md)） |
-| 3. つなぐ | ハードの測定値を、今と同じ JSON Lines でセンサー中継と Unity に送る。Unity の受け口は変えず、センサーの出所だけを差し替える |
-| 4. 確かめる | 床の段差、載せる皿、速度を変えて動かし、測った値でしきい値を合わせ直す（測る指標の案は [docs/RELATED_WORK.md](docs/RELATED_WORK.md#8-実機の実験と測る指標)） |
+<table role="table">
+<tr>
+<th width="130" nowrap>段階</th>
+<th>すること</th>
+</tr>
+<tr>
+<td width="130" nowrap>1. 調べる</td>
+<td>ネコ型配膳ロボットなどが、どんなセンサーを、どこに、何のために載せているかを調べる（周りを測るもの、自分の動きを測るもの、ぶつかったことを知るものなど）</td>
+</tr>
+<tr>
+<td width="130" nowrap>2. 再現する</td>
+<td>調べた構成に近いセンサーを載せたハードを作り、配膳ロボットに近い環境を再現する。M5Stack と Infineon のセンサーを使う（候補は <a href="docs/REAL_SENSOR_OPTIONS.md">docs/REAL_SENSOR_OPTIONS.md</a>）</td>
+</tr>
+<tr>
+<td width="130" nowrap>3. つなぐ</td>
+<td>ハードの測定値を、今と同じ JSON Lines でセンサー中継と Unity に送る。Unity の受け口は変えず、センサーの出所だけを差し替える</td>
+</tr>
+<tr>
+<td width="130" nowrap>4. 確かめる</td>
+<td>床の段差、載せる皿、速度を変えて動かし、測った値でしきい値を合わせ直す（測る指標の案は <a href="docs/RELATED_WORK.md#8-%E5%AE%9F%E6%A9%9F%E3%81%AE%E5%AE%9F%E9%A8%93%E3%81%A8%E6%B8%AC%E3%82%8B%E6%8C%87%E6%A8%99">docs/RELATED_WORK.md</a>）</td>
+</tr>
+</table>
 
 これで、手で揺らした値で動いていた判断を、配膳ロボットに近い環境で測った値で動かせるようになります。
 
