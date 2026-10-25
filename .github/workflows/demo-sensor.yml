@@ -62,6 +62,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Install the core's sealed-sharing dependency
+        run: python -m pip install 'cryptography>=44,<46'
       - name: Verify hub, local sharing key, egress and local viewer HTTP
         run: |
           python -m unittest discover -s scripts/guardian_hub -v
