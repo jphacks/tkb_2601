@@ -31,6 +31,7 @@
 - [本アプローチ](#本アプローチ)
 - [この公開リポジトリで確認できる範囲](#この公開リポジトリで確認できる範囲)
 - [特長](#特長)
+- [用語集](#用語集)
 - [技術](#技術)
 - [デモで確認できること](#デモで確認できること)
 - [すぐに試す](#すぐに試す)
@@ -58,8 +59,8 @@
 |---|---|
 | **誰のため** | 配膳ロボットといっしょに働く飲食店のホール責任者と、そのロボットを受け持つ保守会社の担当者 |
 | **何に困っているか** | ロボットが不調になると「全部止める」か「そのまま動かす」しかない。つながったロボットが乗っ取られても、店では気づけない |
-| **ロボもりの答え** | ロボットの外から揺れを測り、危ない仕事だけを外して、できる仕事は続けてもらう。厳しくするのは自動、戻すのも外へ出すのも人 |
-| **どう作ったか** | M5StickS3 → Python のセンサー中継 → Unity シミュレーター。判断は Docker の Robomori core のルール AI。外への共有は PSoC 6 のボタンと、AT プロトコルの暗号化した記録 |
+| **ロボもりの答え** | ロボットの外から揺れを測り、危ない仕事だけを外して、できる仕事は続けてもらう。制限を強める判断は自動、通常運転に戻す判断と外部へ共有する判断は人 |
+| **どう作ったか** | M5StickS3 → Python のセンサー中継 → Unity シミュレーター。判断は Docker の Robomori core のルール AI。外部への共有は PSoC 6 のボタンと、AT プロトコルの暗号化した記録 |
 
 | 状態 | 任せる仕事 | 動き |
 |---|---|---|
@@ -102,7 +103,7 @@
 1. **不調になると、全部止める。** 今のロボットは、異常を見つけると安全のために全部を止める作りが多くあります。揺れが大きくなった配膳ロボットでも、空いた皿の回収ならできるのに、その能力まで失います。かといってそのまま続ければ、状態に合わない仕事を任せ続けます。
 2. **判断が現場の人に残る。** どの仕事を外し、誰に回すかを決めるのは、結局その場の人です。ロボットに詳しくない人には、何が起きて、なぜそうなったのかが見えません。
 3. **つながるロボットは、攻撃の入口になる。** ネット越しの指示でロボットが動くなら、お客さんの横を走る機械を他人が操れることになります。しかも「正常です」と偽られたら、誰も気づけません。
-4. **記録を外へ出せない。** 保守会社に見せたい記録ほど、店や会社の外へ出すのが不安です。公開の場に置けば、誰でも読めてしまいます。
+4. **記録を外部に出せない。** 保守会社に見せたい記録ほど、店や会社の外に出すのが不安です。公開の場に置けば、誰でも読めてしまいます。
 
 ![乗っ取られたら、最悪こうなる](docs/images/hijack.png)
 
@@ -122,12 +123,12 @@
 
 | 困りごと | ロボもりの提案 |
 |---|---|
-| 不調になると、全部止める | **仕事ごとに任せるかを決める。** 状態を「任せてよい仕事」の表に置き換え、許されなくなった仕事だけを外して別のロボットに任せ直す。できる仕事は止めずに続ける |
+| 不調になると、全部止める | **仕事ごとに任せるかを決める。** 状態を「任せてよい仕事」の表に置き換え、許されなくなった仕事だけを外して、別のロボットに再割り当てする。できる仕事は止めずに続ける |
 | 判断が現場の人に残る | **理由まで見せて、人の問いに答える。** 状態、任せている仕事、変わった理由を同じ画面に出す。「いま危ない？」「B は？」には、ルール AI が数字の根拠を付けて答える |
-| つながるロボットは攻撃の入口 | **ロボットの外から測り、つなぐ前に閉じる。** ロボットの自己申告ではなく、後付けのセンサーで外から測る。ネットから届く指示で効くのは「速度を下げる」だけ。おかしな指示が続けば、扉が自動で閉じる |
-| 記録を外へ出せない | **外へ出すのは人、開けられるのは選んだ相手だけ。** 人がボタンを押したときだけ、暗号化した要約を会社の置き場に出す。開けられるのは、会社と、会社が選んだ保守会社の鍵だけ |
+| つながるロボットは攻撃の入口 | **ロボットの外から測り、つなぐ前に閉じる。** ロボットの自己申告ではなく、後付けのセンサーで外から測る。ネットから届く指示で効くのは「速度を下げる」だけ。おかしな指示が続けば、ロボットとの通信を自動で切る（扉 1） |
+| 記録を外部に出せない | **外部に出すのは人、読めるのは選んだ相手だけ。** 人がボタンを押したときだけ、暗号化した要約を会社の置き場に出す。開けられるのは、会社と、会社が選んだ保守会社の鍵だけ |
 
-全体を通した決まりは 1 つです。**厳しくするのは自動。戻すのも、外へ出すのも人。**
+全体を通した決まりは 1 つです。**厳しくするのは自動。戻すのも、外へ出すのも人。** 制限を強める判断はシステムが自動で行い、制限を解いて通常運転に戻す判断と、記録を外部に共有する判断は人が行う、という意味です。
 
 ![Normal、Warning、Limited で任せる仕事を段階的に変えるユースケース](docs/images/pitch-usecase.png)
 
@@ -135,12 +136,12 @@
 
 | 場面 | これまで | ロボもりがあると |
 |---|---|---|
-| 昼のピークに B が揺れ始める | 異常で B が止まり、B の分を人が運ぶ | B は Warning。スープだけ別のロボットに回り、B は料理と皿の回収を続ける |
+| 昼のピークに、センサーを付けたロボット B が揺れ始める | 異常で B が止まり、B の分を人が運ぶ | B は Warning。スープだけ別のロボットに回り、B は料理と皿の回収を続ける |
 | 揺れがおさまらない | 止めたまま。原因は分からない | B は Limited。空いた皿の回収だけを続け、料理も別のロボットへ |
 | 何が起きているか知りたい | 保守会社に電話して説明する | 画面で段階と理由を見る。「B は？」と聞くと、ルール AI が根拠の数字を付けて答える |
 | 同じ場所で何台も揺れる | 気づけない | 監視 AI が「場所の問題」と見て、その場所を通るときだけ速度を下げる |
-| 直ったので戻したい | 再起動して様子を見る | 人が StickS3 の KEY2 を押して戻す。自動では戻らない |
-| 閉店後、記録を保守会社へ | 口頭やメールで伝える | PSoC 6 の SW2 を押すと、暗号化した要約が会社の PDS に置かれる。保守会社は自分の鍵で開き、会社ごとに数える |
+| 直ったので戻したい | 再起動して様子を見る | 人が M5StickS3 のボタン（KEY2）を押して戻す。自動では戻らない |
+| 閉店後、記録を保守会社へ | 口頭やメールで伝える | 共有ボタン（PSoC 6 の SW2）を押すと、暗号化した要約が会社のデータ置き場（PDS）に置かれる。保守会社は自分の鍵で開き、会社ごとに数える |
 
 ## この公開リポジトリで確認できる範囲
 
@@ -191,42 +192,62 @@ Editor の生成ツールは別シーンを勝手に閉じず、再生成前に�
 
 実装: [`GuardianSceneSetup.cs`](Assets/Editor/GuardianSceneSetup.cs) / [`GuardianSceneTools.cs`](Assets/Editor/GuardianSceneTools.cs) / [シーン検証](Assets/Editor/GuardianSceneBatch.cs)
 
+## 用語集
+
+この README で使う言葉のうち、ロボもり独自のものと、分野の外の人には分かりにくいものです。
+
+| 言葉 | 意味 |
+|---|---|
+| ロボット B | デモで振動センサー（M5StickS3）の値を受け取るロボット。ロボットはすべてシミュレーターの中にあり、B だけが実物のセンサーの値で状態が変わる |
+| mg（ミリ g） | 揺れ（加速度）の大きさの単位。1 g は重力加速度（約 9.8 m/s²）で、300 mg は 0.3 g。重さのミリグラムではない |
+| Normal / Warning / Limited / Hold | ロボットの状態。Normal（正常）、Warning（注意：スープだけ外す）、Limited（制限）、Hold（停止：センサーの値が途切れたとき）。詳しくは[本アプローチ](#本アプローチ)の表 |
+| 再割り当て | 状態に合わなくなった仕事を、ほかのロボットに付け替えること |
+| KEY1 / KEY2 | M5StickS3 本体のボタン。KEY1 はふだんの揺れを基準として記録し、KEY2 は人が Normal に戻すときに押す |
+| SW2 | PSoC 6（Infineon のマイコンボード）にあるボタン。人が押したときだけ、記録を外部に共有する |
+| ルール AI | `rules.json` に書いたしきい値だけで「安全・注意・危険」を判定する、ルールベースの仕組み。学習済みのモデルは使わない |
+| 監視 AI | 全ロボットの揺れを比べ、ふだんの値（指数移動平均）からのずれで、床の問題か機体の問題かを見分ける統計の仕組み。学習済みのモデルは使わない |
+| Robomori core | ルール AI・監視 AI・ダッシュボードをまとめた、PC 1 台で動くサーバー（Docker） |
+| 扉 1 | ロボットと店内 PC のあいだの通信を、切ったりつないだりする仕組み。おかしな指示が続くと自動で切る |
+| 扉 2 | 店内 PC からインターネットに出る、ただ 1 つの通り道。人が SW2 を押したときだけ開く |
+| 時間割 | どの時間帯に、どこまで接続してよいかを、人が前もって決めた表 |
+| AT プロトコル / PDS / DID | Bluesky が使っている分散型 SNS の仕組みが AT プロトコル。PDS はデータを置くサーバー、DID はアカウントの ID |
+
 ## 技術
 
 ### 全体の構成
 
-[![システムモデル：M5StickS3 で測り、センサー中継が判断し、Unity が任せ直す。Robomori core がルール AI で見守り、人が PSoC 6 の SW2 を押したときだけ暗号化して共有する。](docs/images/system-model.png)](docs/images/system-model.png)
+[![システムモデル：M5StickS3 で測り、センサー中継が判断し、Unity が再割り当てする。Robomori core がルール AI で見守り、人が PSoC 6 の SW2 を押したときだけ暗号化して共有する。](docs/images/system-model.png)](docs/images/system-model.png)
 
-すべて 1 台の PC の中で動き、ふだんはインターネットを使いません。外へ出るのは、人が扉 2 を開けたときの要約だけです。ロボットはシミュレーターの中、振動センサーと PSoC 6 は実物です。M5StickS3 がなくても、模擬入力で能力制限、仕事の取り消し、再割り当て、皿の返却、停止と復帰を確認できます。
+すべて 1 台の PC の中で動き、ふだんはインターネットを使いません。外部に出るのは、人が扉 2（インターネットへの出口）を開けたときの要約だけです。ロボットはシミュレーターの中、振動センサーと PSoC 6 は実物です。M5StickS3 がなくても、模擬入力で能力制限、仕事の取り消し、再割り当て、皿の返却、停止と復帰を確認できます。
 
-| 段 | 部品 | すること | 場所 |
+| 処理 | 部品 | すること | 場所 |
 |---|---|---|---|
 | ① 測る | M5StickS3 | IMU（BMI270）で揺れを測り、重力を除いた揺れの大きさ（RMS）を 1 秒ごとに USB へ送る。KEY2 は人が戻すボタン | [実機連携ガイド](docs/HARDWARE_ASSEMBLY.md)（ファームウェアは非収録） |
 | ② 判断する | センサー中継（Python） | 揺れが続いた回数から Normal / Warning / Limited、値の途切れから Hold を決め、理由を付けて Unity に送る | [`scripts/sensor_bridge/`](scripts/sensor_bridge/README.md) |
-| ③ 任せ直す | Unity シミュレーター（C#） | 店内のロボット・客・皿を動かし、仕事の可否を決め、外した仕事を別のロボットに割り当て直す | [`Assets/Scripts/`](Assets/Scripts/) |
-| 見守る | Robomori core（Docker） | ルール AI、監視 AI、画面、時間割、監査ログ。この PC からだけ見られる | [`core/`](core/README.md)、[`scripts/guardian_hub/`](scripts/guardian_hub/README.md) |
-| ④ 人 | 店員 | 段階と理由を見る、ルール AI に聞く、KEY2 で戻す、STOP で止める、SW2 で外へ出す | |
+| ② 見守る | Robomori core（Docker） | ルール AI、監視 AI、ダッシュボード、接続してよい時間帯（時間割）、監査ログ。この PC からだけ見られる | [`core/`](core/README.md)、[`scripts/guardian_hub/`](scripts/guardian_hub/README.md) |
+| ③ 再割り当てする | Unity シミュレーター（C#） | 店内のロボット・客・皿を動かし、仕事の可否を決め、外した仕事を別のロボットに割り当て直す | [`Assets/Scripts/`](Assets/Scripts/) |
+| ④ 人 | 店員 | 段階と理由を見る、ルール AI に聞く、KEY2 で戻す、STOP で止める、SW2 で外部に共有する | |
 | ⑤ 共有する | PSoC 6 と扉 2 | SW2 を押したときだけ、暗号化した要約を AT プロトコルで会社の PDS に置き、Google Drive にも書き出す | [`core/host/`](core/host/)、[`scripts/guardian_share/`](scripts/guardian_share/README.md) |
 
 ### 独自技術
 
-ロボもりの中心は、状態を仕事ごとの許可へ変換し、許されない仕事だけを、物を見失わずに任せ直すことです。そのまわりを、外から測る仕組み、理由を示すルール AI、つなぐ前に閉じる扉、会社の鍵でしか開けない共有が支えます。
+ロボもりの中心は、状態を仕事ごとの許可へ変換し、許されない仕事だけを、物を見失わずに別のロボットへ再割り当てすることです。そのまわりを、外から測る仕組み、理由を示すルール AI、つなぐ前に閉じる扉、会社の鍵でしか開けない共有が支えます。
 
 #### 測る：ロボットの外から、後付けで
 
-ロボット自身の報告には頼りません。背面の磁石で後付けできる M5StickS3 を載せ、ロボットの外から揺れを測ります。乗っ取られたロボットが「正常です」と報告しても、判断に使うのは外から測った揺れです。KEY1 でふだんの揺れと姿勢の基準を取り、KEY2 で人が Normal に戻します。
+ロボット自身の報告には頼りません。背面の磁石で後付けできる M5StickS3 を載せ、ロボットの外から揺れを測ります。乗っ取られたロボットが「正常です」と報告しても、判断に使うのは外から測った揺れです。本体のボタン KEY1 でふだんの揺れと姿勢の基準を取り、KEY2 で人が Normal に戻します。
 
 #### 判断する：一瞬の揺れでは状態を変えない
 
 [`sensor_bridge.py`](scripts/sensor_bridge/sensor_bridge.py) は、揺れの強さごとにしきい値を並べるのではなく、しきい値を超えた揺れが何回続いたかで判定します。
 
-- 300 mg 以上の揺れが 2 回続いたら Warning、6 回続いたら Limited にします。1 回でも下回ったら数え直します。
+- 1 秒ごとに測る揺れが 0.3 g（300 mg）以上の状態が 2 回（約 2 秒）続いたら Warning、6 回（約 6 秒）続いたら Limited にします。1 回でも下回ったら数え直します。
 - センサーの値が約 3 秒途切れたら Hold にして止めます。
 - 状態を厳しくするのは自動です。Normal に戻せるのは、値が届いているときの KEY2 だけです。
 - Warning と Limited は能力の制限として扱い、許された仕事は止めません。
 - 測った値、状態とその理由、KEY2 の操作、通信の途切れを、すべてファイルに記録します。
 
-#### 任せ直す：許されない仕事だけ取り消し、物を見失わずに引き継ぐ
+#### 再割り当てする：許されない仕事だけ取り消し、物を見失わずに引き継ぐ
 
 **仕事の表と、許されない仕事だけの取り消し。** [`GuardianCapabilityPolicy.cs`](Assets/Scripts/GuardianCapabilityPolicy.cs) の許可表を唯一の判定元にし、状態変更時は現在の仕事を再評価します。許可がなくなった仕事だけを取り消すため、Warning や Limited を全停止と同一視しません。
 
@@ -238,11 +259,11 @@ Editor の生成ツールは別シーンを勝手に閉じず、再生成前に�
 
 Unity のシミュレーターとは別に、この PC のブラウザで開く見守りのダッシュボード（Robomori core）と、記録を読むビューアがあります。画面の中身とコードの説明は、別のページにまとめています。
 
-| 段 | すること |
+| 処理 | すること |
 |---|---|
 | 見守る | ルール AI が `rules.json` の数字だけで「安全 / 注意 / 危険」を決め、根拠を付けて答える。監視 AI は場所の問題と機体の問題を見分けて速度を下げ、向かう人を推薦する。外部の AI や API は使わない |
-| 閉じる | 扉 1（ロボット ⇄ 店内の PC）は、使えない指示が続くと自動で閉じる。扉 2（店内の PC ⇄ インターネット）は、人が PSoC 6 の SW2 を押したときだけ開く |
-| 共有する | 扉 2 を開けたときだけ、会社と保守会社の鍵でしか開けない記録を AT プロトコルで置く |
+| 閉じる | 扉 1（ロボットと店内 PC のあいだの通信）は、使えない指示が続くと自動で切る。扉 2（店内 PC からインターネットへの出口）は、人が PSoC 6 のボタン（SW2）を押したときだけ開く |
+| 共有する | 扉 2 を開けたときだけ、会社と保守会社の鍵でしか開けない暗号化した記録を、AT プロトコルのデータ置き場（PDS）に置く |
 
 **[見守りの画面と共有の説明を読む →](docs/dashboard/README.md)**
 
@@ -253,20 +274,20 @@ Unity のシミュレーターとは別に、この PC のブラウザで開く�
 | ![Unity](https://img.shields.io/badge/Unity-222222?style=flat&logo=unity&logoColor=white) ![C#](https://img.shields.io/badge/C%23-512BD4?style=flat) | Unity 6000.3.12f1。3D 店内、仕事の割り当て、操作画面、Editor 検証。Rigidbody / BoxCast で移動・停止・障害物を扱い、IMGUI / TextMesh で状態と理由を表示する |
 | ![M5StickS3](https://img.shields.io/badge/M5StickS3-222222?style=flat) ![Arduino](https://img.shields.io/badge/Arduino-00878F?style=flat&logo=arduino&logoColor=white) | 揺れを測る端末。内蔵の ESP32-S3-PICO-1-N8R8 と BMI270 を M5Unified で扱い、振動を USB シリアルで Python 中継へ送る |
 | ![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white) ![pySerial](https://img.shields.io/badge/pySerial-3776AB?style=flat) | センサー中継、監視 AI、共有の部品、単体テスト（Python 3.10 以上） |
-| ![PSoC 6](https://img.shields.io/badge/PSoC%206-0A6EB4?style=flat&logo=infineon&logoColor=white) ![MicroPython](https://img.shields.io/badge/MicroPython-2B2728?style=flat&logo=micropython&logoColor=white) | 人の鍵（扉 2）。CY8CPROTO-062-4343W の SW2 を押したときだけ扉 2 を開け、外へ出す候補をランプで知らせる |
-| ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white) ![Django](https://img.shields.io/badge/Django-092E20?style=flat&logo=django&logoColor=white) ![nginx](https://img.shields.io/badge/nginx-009639?style=flat&logo=nginx&logoColor=white) ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat&logo=sqlite&logoColor=white) | Robomori core。PC 1 台で動く画面、ルール AI（`rules.json`）、ワンタイムパスワード、時間割、監査ログ、扉 2、出口の中継 |
-| ![Bluesky](https://img.shields.io/badge/Bluesky-0285FF?style=flat&logo=bluesky&logoColor=white) ![AT Protocol](https://img.shields.io/badge/AT%20Protocol-555555?style=flat) | 会社ごとの障害記録の共有。独自 Lexicon（`internal.robomori.report`）の記録を、社内 VPN の PDS または bsky.social に置く |
+| ![PSoC 6](https://img.shields.io/badge/PSoC%206-0A6EB4?style=flat&logo=infineon&logoColor=white) ![MicroPython](https://img.shields.io/badge/MicroPython-2B2728?style=flat&logo=micropython&logoColor=white) | 外部への共有を人が承認する物理ボタン。CY8CPROTO-062-4343W の SW2 を押したときだけ扉 2（インターネットへの出口）を開け、共有を待つ記録があることをランプで知らせる |
+| ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white) ![Django](https://img.shields.io/badge/Django-092E20?style=flat&logo=django&logoColor=white) ![nginx](https://img.shields.io/badge/nginx-009639?style=flat&logo=nginx&logoColor=white) ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat&logo=sqlite&logoColor=white) | Robomori core。PC 1 台で動く画面、ルール AI（`rules.json`）、ワンタイムパスワード、時間割、監査ログ、扉 2、インターネットへの出口を絞る中継 |
+| ![Bluesky](https://img.shields.io/badge/Bluesky-0285FF?style=flat&logo=bluesky&logoColor=white) ![AT Protocol](https://img.shields.io/badge/AT%20Protocol-555555?style=flat) | 会社ごとの障害記録の共有。独自に定義した記録の形（Lexicon `internal.robomori.report`）で、社内 VPN の PDS（データを置くサーバー）または bsky.social に置く |
 | ![Web Crypto](https://img.shields.io/badge/Web%20Crypto-F7DF1E?style=flat&logo=javascript&logoColor=black) ![cryptography](https://img.shields.io/badge/cryptography-3776AB?style=flat&logo=python&logoColor=white) | 記録の暗号化（ECDH P-256 + HKDF-SHA256 + AES-256-GCM）。会社と保守会社の鍵でしか開けず、鍵はブラウザの外に出ない |
 | ![Google Drive](https://img.shields.io/badge/Google%20Drive-4285F4?style=flat&logo=googledrive&logoColor=white) | 社内向けの要約の書き出し先 |
-| ![Gemini](https://img.shields.io/badge/Gemini-8E75B2?style=flat&logo=googlegemini&logoColor=white) | 任意。扉 2 を開けたとき、店が選べば要約への見立てを聞く（提案として出すだけ） |
+| ![Gemini](https://img.shields.io/badge/Gemini-8E75B2?style=flat&logo=googlegemini&logoColor=white) | 任意。扉 2 を開けたとき、店が選べば要約への意見を聞く（提案として出すだけ） |
 | ![JSON](https://img.shields.io/badge/JSON-555555?style=flat&logo=json&logoColor=white) | シミュレーターの設定と、センサー中継・監視 AI とのやりとり（JSON Lines）。人が読んで確かめられる形で残す |
 | ![Blender](https://img.shields.io/badge/Blender-E87D0D?style=flat&logo=blender&logoColor=white) ![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white) | 家具・料理・人物の 3D 素材を生成し、追加モデルなしで店内デモを再現する |
 | ![Claude Code](https://img.shields.io/badge/Claude%20Code-D97757?style=flat&logo=claude&logoColor=white) ![Codex](https://img.shields.io/badge/Codex-000000?style=flat&logo=openai&logoColor=white) | 実装の支援（コーディングエージェント）。設計と判断は人が行い、生成したコードはテストと人の確認を通してから取り込む。製品の判断には使わない（ロボもりの判断はルール AI だけ） |
 | ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=flat&logo=githubactions&logoColor=white) | Unity Editor がない環境でも、素材・コードの境界・検証入口を静的に確認する |
 
-判断に外部 API や生成 AI は使いません。通常のデモはインターネット接続なしで動作します。外へ出るのは、人が扉 2（PSoC 6 の SW2）を開けたときの暗号化した要約だけで、送り先は社内 VPN の PDS（または bsky.social）に限ります。アカウントやパスワードはすべて `.env` に置き、リポジトリには含めません。
+判断に外部 API や生成 AI は使いません。通常のデモはインターネット接続なしで動作します。外部に出るのは、人が扉 2（インターネットへの出口）を PSoC 6 の SW2 で開けたときの暗号化した要約だけで、送り先は社内 VPN の PDS（または bsky.social）に限ります。アカウントやパスワードはすべて `.env` に置き、リポジトリには含めません。
 
-実機連携で使用するハードウェアは、揺れを測る M5StickS3 と、人が記録を外へ出すときに押すスイッチとして使う PSoC 6（CY8CPROTO-062-4343W）の 2 つです。連携構成と使用機能は [実機連携ガイド](docs/HARDWARE_ASSEMBLY.md) にまとめています。
+実機連携で使用するハードウェアは、揺れを測る M5StickS3 と、人が記録を外部に共有するときに押すボタンとして使う PSoC 6（CY8CPROTO-062-4343W）の 2 つです。連携構成と使用機能は [実機連携ガイド](docs/HARDWARE_ASSEMBLY.md) にまとめています。
 
 #### 使用した機材
 
@@ -276,21 +297,21 @@ Unity のシミュレーターとは別に、この PC のブラウザで開く�
 
 ## デモで確認できること
 
-![配膳ロボットの状態変化と仕事の任せ直しを示すデモ](docs/images/pitch-demo.png)
+![配膳ロボットの状態変化と仕事の再割り当てを示すデモ](docs/images/pitch-demo.png)
 
 Unity のレストランでは通常 3 台、予備機を含めると 5 台のロボットが、スープ、料理、空いた皿の回収を分担します。
 
 | 場面 | 起きること |
 |---|---|
-| 担当機が Warning になる | 許されなくなったスープを外し、別の機体へ任せ直す |
-| 担当機が Limited になる | 空いた皿の回収だけを残し、料理を別の機体へ任せ直す |
+| 担当機が Warning になる | 許されなくなったスープを外し、別の機体へ再割り当てする |
+| 担当機が Limited になる | 空いた皿の回収だけを残し、料理を別の機体へ再割り当てする |
 | 運搬中に仕事を外される | 皿を元の受け渡し場所へ戻してから、別の機体が引き継ぐ |
 | 人が STOP を選ぶ | 状態の色とは別に停止し、人の操作でのみ再開する |
 | 歩行者が進路を横切る | 能力・仕事・積載を変えず、危険がなくなるまで移動だけを止める |
 | 日本語で停止を指示する | 対象と操作を確認待ちにし、別入力の「実行」で確定する |
 | 同じ通路でロボットが揺れる（模擬の段差） | 監視 AI がその場所の速度を下げ、理由を画面に出す |
-| 扉 1 に使えない指示が続けて届く | 3 回で扉 1 が自動で閉じ、ロボットは単独で動き続ける |
-| PSoC 6 の SW2 を押す | 扉 2 が開き、暗号化した記録が会社の PDS に置かれ、閉じる。ビューアで開いて読める |
+| ロボットに使えない指示が続けて届く | 3 回で扉 1 が自動で通信を切り、ロボットはネットワークから切り離された状態で動き続ける |
+| PSoC 6 の SW2 を押す | 扉 2 が開き、暗号化した記録が会社の PDS（データ置き場）に置かれ、扉 2 は自動で閉じる。ビューアで開いて読める |
 
 歩行者と日本語操作は明示的に有効化する公開デモです。通常起動時の既存の配膳挙動を無断で変更しません。
 
@@ -307,17 +328,17 @@ Unity のレストランでは通常 3 台、予備機を含めると 5 台の�
 
 ### Robomori core（Docker）
 
-Windows では、中核は Docker Desktop と PowerShell だけで動きます。M5StickS3 のセンサー中継も一緒に立ち上げるときは、[`scripts/sensor_bridge/`](scripts/sensor_bridge/README.md) の `.venv` を先に作っておきます。
+Windows では、Robomori core は Docker Desktop と PowerShell だけで動きます。M5StickS3 のセンサー中継も一緒に立ち上げるときは、[`scripts/sensor_bridge/`](scripts/sensor_bridge/README.md) の `.venv` を先に作っておきます。
 
 ```powershell
 cd core
 docker compose build          # 初回だけ。ネットがあるところで
 docker compose pull gateway
 cd ..
-powershell -ExecutionPolicy Bypass -File core\host\demo.ps1 -Keyboard -NoPsoc   # PSoC 6 がないとき（Enter で扉 2）
+powershell -ExecutionPolicy Bypass -File core\host\demo.ps1 -Keyboard -NoPsoc   # PSoC 6 がないとき（Enter キーで扉 2 を開ける）
 ```
 
-`demo.ps1` は、中核と社内 PDS の起動、デモ用の宛先の鍵の登録、センサー中継、ビューア、画面を順に立ち上げます。扉 2 を開けるのは人（SW2 か Enter）のままで、Unity の Play も自分で押します。Mac / Linux は `./core/start.sh` を使います。詳しくは [core/README.md](core/README.md) にあります。
+`demo.ps1` は、Robomori core と社内 PDS の起動、デモ用の宛先の鍵の登録、センサー中継、ビューア、画面を順に立ち上げます。扉 2 を開けるのは人（SW2 か Enter）のままで、Unity の Play も自分で押します。Mac / Linux は `./core/start.sh` を使います。詳しくは [core/README.md](core/README.md) にあります。
 
 ### 統合検証
 
@@ -335,7 +356,7 @@ macOS / Linux:
 scripts/verify-guardian-unity.sh
 ```
 
-### Python と中核のテスト
+### Python と Robomori core のテスト
 
 ```bash
 python -m unittest discover -s scripts/sensor_bridge    # センサー中継（18 件）
@@ -343,7 +364,7 @@ python -m unittest discover -s scripts/guardian_hub     # 監視 AI、扉 1・�
 python -m unittest discover -s scripts/guardian_share   # Bluesky の部品と暗号化（33 件）
 python -m unittest discover -s core/host                # PSoC 6 の鍵と Drive へ写す処理（18 件）
 python -m unittest discover -s core/egress              # 扉 2 の出口の中継（8 件）
-cd core && docker compose run --rm --no-deps --entrypoint python web manage.py test guardian   # 中核（62 件）
+cd core && docker compose run --rm --no-deps --entrypoint python web manage.py test guardian   # Robomori core（62 件）
 ```
 
 `scripts/guardian_share` のうち 3 件は PSoC 6 のファームウェア（`firmware/psoc6_share_panel/main.py`）を読むテストで、ファームウェアを収録していないこのリポジトリでは失敗します。残りの 30 件と、ほかのテストはすべて通ります。
@@ -363,7 +384,7 @@ cd core && docker compose run --rm --no-deps --entrypoint python web manage.py t
 
 GitHub Actions は、C# の境界、設定、素材、起動スクリプト、検証入口の接続を静的に確認します。クラウド CI では Unity Editor を起動しないため、チェック成功を Play Mode、描画、実クリック、実センサーの成功とは表現しません。
 
-- 300 mg・2 回・6 回は試作のための値で、実機の安全基準ではありません。手で持って揺らして決めた値で、配膳ロボットに付けて測った値ではありません。実機へ適用する場合は、機体、荷物、床、速度に合わせた校正と安全評価が必要です。
+- 0.3 g（300 mg）・2 回・6 回は試作のための値で、実機の安全基準ではありません。手で持って揺らして決めた値で、配膳ロボットに付けて測った値ではありません。実機へ適用する場合は、機体、荷物、床、速度に合わせた校正と安全評価が必要です。
 - シミュレーターは現場での安全性や効果を保証するものではありません。
 - 歩行者デモの観測値は Unity 内の真値で、実カメラや実センサーの性能を再現しません。
 - 実物センサーとの接続結果は、この公開版だけの Unity 実行結果と混同しません。
@@ -396,7 +417,7 @@ GitHub Actions は、C# の境界、設定、素材、起動スクリプト、�
 | [Mehta ほか (2026)](https://doi.org/10.1002/rob.70288) | 1 つの仕事に、品質の違う複数の実行モードを持たせて順番とモードを決める | 「スープは不可、空いた皿は可」を、品質やリスクの数値で一般化するときの参考 |
 | [Rivera ほか (1996)](https://www.sei.cmu.edu/library/an-architectural-description-of-the-simplex-architecture/) | Simplex：高性能な制御と安全を守る制御を分けて切り替える | 「自動で制限し、戻すのは人」を実行時の安全保証として整理する基礎 |
 
-故障したロボットの仕事を引き継ぐこと（Parker 1998）、能力の劣化を考えた割り当て（Mayya ほか 2021、Notomista ほか 2022）、故障の検知と割り当て直しの組み合わせ（Cline ほか 2026 ほか）は、すでに研究されています。また今の許可の表は作業の名前で決めた固定の表で、「300 mg 以上の揺れが続いた」から「皿の回収なら安全」とは、まだ言えません。研究として目指すのは、外付けの計測から、運ぶ物の物理的な安全を満たす仕事を見積もり、その範囲で配り直せることを、実機の実験で示すことです。これは今の時点では新しさの仮説で、網羅的な先行研究の調査で確かめます。
+故障したロボットの仕事を引き継ぐこと（Parker 1998）、能力の劣化を考えた割り当て（Mayya ほか 2021、Notomista ほか 2022）、故障の検知と割り当て直しの組み合わせ（Cline ほか 2026 ほか）は、すでに研究されています。また今の許可の表は作業の名前で決めた固定の表で、「0.3 g 以上の揺れが続いた」から「皿の回収なら安全」とは、まだ言えません。研究として目指すのは、外付けの計測から、運ぶ物の物理的な安全を満たす仕事を見積もり、その範囲で配り直せることを、実機の実験で示すことです。これは今の時点では新しさの仮説で、網羅的な先行研究の調査で確かめます。
 
 > **研究の問い**：ロボットの状態が不確かで、能力が部分的に落ちているとき、物理的な安全を満たす仕事をどう判定し、複数のロボットにどう配り直せばよいか。
 
@@ -411,7 +432,7 @@ Hack Day 2 日目に、インフィニオン テクノロジーズ（Infineon Te
 ### 今の限界
 
 - ロボットはシミュレーターの中にあり、実物は揺れを測る M5StickS3 だけです。
-- しきい値（300 mg・2 回・6 回）は、M5StickS3 を手で持って揺らして決めた値です。配膳ロボットに載せたときの揺れは、まだ測っていません。
+- しきい値（0.3 g・2 回・6 回）は、M5StickS3 を手で持って揺らして決めた値です。配膳ロボットに載せたときの揺れは、まだ測っていません。
 
 ### 作るもの
 
