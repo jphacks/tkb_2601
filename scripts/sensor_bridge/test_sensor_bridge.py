@@ -1,7 +1,11 @@
 """センサー中継の判定のテスト。実行: python -m unittest scripts/sensor_bridge/test_sensor_bridge.py"""
 import unittest
+import json
+import queue
+import threading
 from unittest import mock
 
+import sensor_bridge as bridge
 from sensor_bridge import Judge, JudgeConfig
 
 
@@ -182,6 +186,45 @@ class UnityPortTest(unittest.TestCase):
                     bridge.open_unity_server(taken, events, stop)          # 指定された番号は、ずらさない
         finally:
             holder.close()
+
+
+class StageCheckTest(unittest.TestCase):
+    def test_simulated_relay_goes_through_three_stages(self):
+        import check_stages
+        self.assertEqual(check_stages.main(), 0)
+
+
+class SimulationTest(unittest.TestCase):
+    def run_simulation(self, loop, check):
+        events, stop = queue.Queue(), threading.Event()
+        with mock.patch.object(bridge, "SIM_STEP_S", 0.001):
+            worker = threading.Thread(target=bridge.simulate_serial, args=(events, stop, loop), daemon=True)
+            worker.start()
+            try:
+                check(events)
+            finally:
+                stop.set()
+                worker.join(timeout=2)
+            self.assertFalse(worker.is_alive(), "Simulation did not stop when requested")
+
+    def test_loop_repeats_the_simulation(self):
+        def check(events):
+            for _ in range(2):
+                while events.get(timeout=2)[0] != "sim_cycle":
+                    pass
+        self.run_simulation(True, check)
+
+    def test_single_cycle_keeps_sending_quiet_samples(self):
+        def check(events):
+            while events.get(timeout=2)[0] != "sim_cycle":
+                pass
+            for _ in range(3):
+                kind, payload, _ = events.get(timeout=2)
+                self.assertEqual(kind, "line")
+                sample = json.loads(payload)
+                self.assertEqual(sample["type"], "sample")
+                self.assertLess(sample["vib_rms_g"] * 1000, JudgeConfig().threshold_mg)
+        self.run_simulation(False, check)
 
 
 if __name__ == "__main__":
