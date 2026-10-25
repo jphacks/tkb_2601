@@ -181,6 +181,7 @@ GitHub Actions は、C# の境界、設定、素材、起動スクリプト、�
 | ![Bluesky](https://img.shields.io/badge/Bluesky-0285FF?style=flat&logo=bluesky&logoColor=white) ![AT Protocol](https://img.shields.io/badge/AT%20Protocol-555555?style=flat) | 会社ごとの障害記録の共有。独自 Lexicon（`internal.robomori.report`）の記録を、社内 VPN の PDS または bsky.social に置きます。 |
 | ![Web Crypto](https://img.shields.io/badge/Web%20Crypto-F7DF1E?style=flat&logo=javascript&logoColor=black) | 記録の暗号化（ECDH P-256 + HKDF-SHA256 + AES-256-GCM）。会社と保守会社の鍵でしか開けず、鍵はブラウザの外に出ません。 |
 | ![Google Drive](https://img.shields.io/badge/Google%20Drive-4285F4?style=flat&logo=googledrive&logoColor=white) | 社内向けの記録の書き出し先。 |
+| ![Claude Code](https://img.shields.io/badge/Claude%20Code-D97757?style=flat&logo=claude&logoColor=white) ![Codex](https://img.shields.io/badge/Codex-000000?style=flat&logo=openai&logoColor=white) | 実装の支援（コーディングエージェント）。設計と判断は人が行い、生成したコードはテストと人の確認を通してから取り込みます。製品の判断には使いません（ロボもりの判断はルール AI だけ）。 |
 | ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=flat&logo=githubactions&logoColor=white) | Unity Editor がない環境でも、素材・コードの境界・検証入口を静的に確認します。 |
 
 判断に外部 API や生成 AI は使いません。通常のデモはインターネット接続なしで動作します。外へ出るのは、人が扉 2（PSoC 6 の SW2）を開けたときの暗号化した要約だけで、送り先は社内 VPN の PDS（または bsky.social）に限ります。アカウントやパスワードはすべて `.env` に置き、リポジトリには含めません。
