@@ -275,62 +275,62 @@
 <table role="table">
 <tr>
 <th width="230" nowrap>対象</th>
-<th>収録状況</th>
+<th width="185" nowrap>収録状況</th>
 <th>確認先</th>
 </tr>
 <tr>
 <td width="230" nowrap>仕事ごとの能力判定と<br>再割り当て</td>
-<td>収録</td>
+<td width="185" nowrap>収録</td>
 <td><a href="Assets/Scripts/GuardianCapabilityPolicy.cs"><code>GuardianCapabilityPolicy.cs</code></a> / <a href="Assets/Scripts/GuardianSimulator.cs"><code>GuardianSimulator.cs</code></a></td>
 </tr>
 <tr>
 <td width="230" nowrap>皿の所有権と<br>物理的な引き継ぎ</td>
-<td>収録</td>
+<td width="185" nowrap>収録</td>
 <td><a href="Assets/Scripts/GuardianDishInventory.cs"><code>GuardianDishInventory.cs</code></a></td>
 </tr>
 <tr>
 <td width="230" nowrap>通路予約と障害物ブレーキ</td>
-<td>収録</td>
+<td width="185" nowrap>収録</td>
 <td><a href="Assets/Scripts/GuardianTrafficController.cs"><code>GuardianTrafficController.cs</code></a></td>
 </tr>
 <tr>
 <td width="230" nowrap>歩行者安全デモ</td>
-<td>オプトインで収録</td>
+<td width="185" nowrap>オプトインで収録</td>
 <td><a href="Assets/Scripts/GuardianLegacyPedestrianSafety.cs"><code>GuardianLegacyPedestrianSafety.cs</code></a></td>
 </tr>
 <tr>
 <td width="230" nowrap>日本語の定型操作デモ</td>
-<td>オプトインで収録</td>
+<td width="185" nowrap>オプトインで収録</td>
 <td><a href="Assets/Scripts/GuardianInteractionPanel.cs"><code>GuardianInteractionPanel.cs</code></a> / <a href="Assets/Scripts/GuardianLegacyRuleConversation.cs"><code>GuardianLegacyRuleConversation.cs</code></a></td>
 </tr>
 <tr>
 <td width="230" nowrap>M5StickS3・Python 中継・<br>Unity の受信側</td>
-<td>収録</td>
+<td width="185" nowrap>収録</td>
 <td><a href="docs/STICKS3_UNITY_LINK.md">接続手順と通信仕様</a> / <a href="firmware/sticks3_check/README.md"><code>firmware/sticks3_check/</code></a></td>
 </tr>
 <tr>
 <td width="230" nowrap>PSoC 6 のボタン・ランプ</td>
-<td>ファームウェアを収録</td>
+<td width="185" nowrap>ファームウェアを収録</td>
 <td><a href="firmware/psoc6_share_panel/README.md"><code>firmware/psoc6_share_panel/</code></a></td>
 </tr>
 <tr>
 <td width="230" nowrap>ルール AI とダッシュボード</td>
-<td>収録</td>
+<td width="185" nowrap>収録</td>
 <td><a href="core/guardian/rules.json"><code>core/guardian/rules.json</code></a> / <a href="core/README.md"><code>core/README.md</code></a></td>
 </tr>
 <tr>
 <td width="230" nowrap>監視 AI と扉 1・扉 2</td>
-<td>収録</td>
+<td width="185" nowrap>収録</td>
 <td><a href="scripts/guardian_hub/README.md"><code>scripts/guardian_hub/</code></a></td>
 </tr>
 <tr>
 <td width="230" nowrap>会社だけの共有<br>（暗号化・AT プロトコル・<br>仮想 VPN）</td>
-<td>収録（接続設定は <code>.env</code>、秘密鍵はローカル管理）</td>
+<td width="185" nowrap>収録（接続設定は <code>.env</code>、<br>秘密鍵はローカル管理）</td>
 <td><a href="scripts/guardian_share/seal.py"><code>scripts/guardian_share/seal.py</code></a> / <a href="core/viewer/index.html"><code>core/viewer/</code></a></td>
 </tr>
 <tr>
 <td width="230" nowrap>実ロボット、権利未確認モデル</td>
-<td>非収録</td>
+<td width="185" nowrap>非収録</td>
 <td><a href="docs/PUBLIC_SCOPE.md">公開範囲と制約</a></td>
 </tr>
 </table>
@@ -403,40 +403,40 @@ Editor の生成ツールは別シーンを勝手に閉じず、再生成前に�
 <th>場所</th>
 </tr>
 <tr>
-<td width="175" nowrap>① 測る</td>
-<td>M5StickS3</td>
-<td>IMU（BMI270）で揺れを測り、重力を除いた揺れの大きさ（RMS）を 1 秒ごとに USB へ送る。KEY2 は人が通常運転に戻すためのボタン</td>
-<td><a href="docs/HARDWARE_ASSEMBLY.md">実機連携ガイド</a> / <a href="firmware/sticks3_check/README.md">ファームウェア</a></td>
+<td nowrap>① 測る</td>
+<td nowrap>M5StickS3</td>
+<td nowrap>IMU（BMI270）で揺れを測り、<br>重力を除いた揺れの大きさ（RMS）を<br>1 秒ごとに USB へ送る。<br>KEY2 は人が通常運転に戻すためのボタン</td>
+<td nowrap><a href="docs/HARDWARE_ASSEMBLY.md">実機連携ガイド</a> / <a href="firmware/sticks3_check/README.md">ファームウェア</a></td>
 </tr>
 <tr>
-<td width="175" nowrap>② 判断する</td>
-<td>センサー中継（Python）</td>
-<td>揺れが続いた回数から Normal / Warning / Limited、値の途切れから Hold を決め、理由を付けて Unity に送る</td>
-<td><a href="scripts/sensor_bridge/README.md"><code>scripts/sensor_bridge/</code></a></td>
+<td nowrap>② 判断する</td>
+<td nowrap>センサー中継<br>（Python）</td>
+<td nowrap>揺れが続いた回数から<br>Normal / Warning / Limited、<br>値の途切れから Hold を決め、<br>理由を付けて Unity に送る</td>
+<td nowrap><a href="scripts/sensor_bridge/README.md"><code>scripts/sensor_bridge/</code></a></td>
 </tr>
 <tr>
-<td width="175" nowrap>② 見守る</td>
-<td>Robomori core（Docker）</td>
-<td>ルール AI、監視 AI、ダッシュボード、接続してよい時間帯（時間割）、監査ログ。この PC からだけ見られる</td>
-<td><a href="core/README.md"><code>core/</code></a>、<a href="scripts/guardian_hub/README.md"><code>scripts/guardian_hub/</code></a></td>
+<td nowrap>② 見守る</td>
+<td nowrap>Robomori core<br>（Docker）</td>
+<td nowrap>ルール AI、監視 AI、ダッシュボード、<br>接続してよい時間帯（時間割）、監査ログ。<br>この PC からだけ見られる</td>
+<td nowrap><a href="core/README.md"><code>core/</code></a>、<a href="scripts/guardian_hub/README.md"><code>scripts/guardian_hub/</code></a></td>
 </tr>
 <tr>
-<td width="175" nowrap>③ 再割り当てする</td>
-<td>Unity シミュレーター（C#）</td>
-<td>店内のロボット・客・皿を動かし、仕事の可否を決め、外した仕事を別のロボットに割り当て直す</td>
-<td><a href="Assets/Scripts/"><code>Assets/Scripts/</code></a></td>
+<td nowrap>③ 再割り当てする</td>
+<td nowrap>Unity シミュレーター<br>（C#）</td>
+<td nowrap>店内のロボット・客・皿を動かし、<br>仕事の可否を決め、<br>外した仕事を別のロボットに割り当て直す</td>
+<td nowrap><a href="Assets/Scripts/"><code>Assets/Scripts/</code></a></td>
 </tr>
 <tr>
-<td width="175" nowrap>④ 人</td>
-<td>店員</td>
-<td>状態と理由を確認する、ルール AI に質問する、KEY2 で再開する、STOP で止める、SW2 で記録を外部に共有する</td>
-<td></td>
+<td nowrap>④ 人</td>
+<td nowrap>店員</td>
+<td nowrap>状態と理由を確認する、<br>ルール AI に質問する、KEY2 で再開する、<br>STOP で止める、<br>SW2 で記録を外部に共有する</td>
+<td nowrap></td>
 </tr>
 <tr>
-<td width="175" nowrap>⑤ 共有する</td>
-<td>PSoC 6・扉 2・PC 側の Drive 同期</td>
-<td>AT 共有と任意の Gemini への通信は SW2（代替は Enter）で開始する。既定の「会社だけ」では AT の記録を暗号化する。Drive はそのときに加え、時間割でも平文を書き出す</td>
-<td><a href="core/host/"><code>core/host/</code></a>、<a href="scripts/guardian_share/README.md"><code>scripts/guardian_share/</code></a></td>
+<td nowrap>⑤ 共有する</td>
+<td nowrap>PSoC 6・扉 2・<br>PC 側の Drive 同期</td>
+<td nowrap>AT 共有と任意の Gemini への通信は<br>SW2（代替は Enter）で開始する。<br>既定の「会社だけ」では AT の記録を暗号化する。<br>Drive はそのときに加え、<br>時間割でも平文を書き出す</td>
+<td nowrap><a href="core/host/"><code>core/host/</code></a>、<a href="scripts/guardian_share/README.md"><code>scripts/guardian_share/</code></a></td>
 </tr>
 </table>
 
