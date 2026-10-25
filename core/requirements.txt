@@ -1,0 +1,7 @@
+# 中核（Docker）の Python パッケージ。ビルドのときにだけ取ってくる（会場ではネット不要）
+Django>=5.2.18,<5.3
+gunicorn>=26.2,<27
+whitenoise>=6.12,<7
+tzdata>=2025.2
+# 会社だけに見せる記録の暗号化（ECDH P-256・HKDF・AES-GCM）
+cryptography>=44,<46

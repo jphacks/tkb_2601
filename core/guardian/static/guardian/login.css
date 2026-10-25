@@ -1,0 +1,21 @@
+:root { --floor: #cdb494; --panel: rgba(15, 23, 42, .94); --ink: #f8fafc; --sub: #cbd5e1; --line: #334155;
+         --accent: #2b7a57; --warn: #f2b33d; --bad: #fca5a5; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 16px; background: var(--floor);
+       font-family: "Noto Sans JP", "Yu Gothic UI", "Hiragino Sans", "Meiryo", system-ui, sans-serif; color: var(--ink); }
+.card { width: min(440px, 100%); padding: 28px 28px 22px; border-radius: 14px; background: var(--panel); box-shadow: 0 12px 40px rgba(0, 0, 0, .25); }
+h1 { margin: 0 0 6px; font-size: 26px; }
+h1 span { font-size: 15px; font-weight: 500; color: var(--sub); }
+.lead { margin: 0 0 18px; color: var(--sub); line-height: 1.6; }
+.lead b { color: var(--ink); }
+label { display: block; margin-bottom: 6px; font-size: 13px; color: var(--sub); }
+input[type=text] { width: 100%; height: 56px; padding: 0 14px; border: 2px solid var(--line); border-radius: 10px; background: #0b1220;
+                   color: var(--ink); font: 700 26px/1 ui-monospace, "Cascadia Mono", Consolas, monospace; letter-spacing: .18em; text-transform: uppercase; }
+input[type=text]:focus { outline: 3px solid #93c5fd; outline-offset: 2px; border-color: #93c5fd; }
+.error { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: rgba(252, 165, 165, .14); color: var(--bad); font-size: 14px; }
+button { width: 100%; height: 48px; margin-top: 14px; border: 0; border-radius: 10px; background: var(--accent); color: #fff;
+         font: inherit; font-size: 17px; font-weight: 700; cursor: pointer; }
+button:hover { background: #24694a; }
+button:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+.help { margin: 18px 0 0; padding: 14px 0 0 18px; border-top: 1px solid var(--line); color: var(--sub); font-size: 13px; line-height: 1.7; }
+code { padding: 0 4px; border-radius: 4px; background: #1e293b; color: var(--ink); font-size: 12px; }

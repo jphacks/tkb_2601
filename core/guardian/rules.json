@@ -1,0 +1,42 @@
+{
+  "about": "ロボもりのルール AI の判断の基準。外部の AI や API は使わず、ここの数字だけで判断する。書き換えると、次の質問から使われる（中核を作り直さなくてよい）。caution は注意、danger は危険になる値（その値以上）。null はその段階を使わない。window_minutes は数える時間の幅（分）。",
+  "levels": {"safe": "安全", "caution": "注意", "danger": "危険"},
+  "robot_rules": [
+    {"id": "stops", "metric": "stops", "label": "止まった回数", "unit": "回", "window_minutes": 30, "caution": 2, "danger": 4,
+     "why": "短い間に何度も止まるのは、故障か、通路の障害が続いているしるし",
+     "advice": {"caution": "止まった場所と理由を、Unity の記録で確かめる", "danger": "このロボットの仕事を止め、人が本体と通路を点検する"}},
+    {"id": "degraded", "metric": "degraded", "label": "注意・制限になった回数", "unit": "回", "window_minutes": 30, "caution": 2, "danger": 4,
+     "why": "段階が何度も下がるのは、揺れや不調が一時的ではないしるし",
+     "advice": {"caution": "スープなど、こぼれやすい仕事をほかのロボットに回す", "danger": "このロボットは皿の回収だけにして、点検の時間を取る"}},
+    {"id": "stopped_for", "metric": "stopped_seconds", "label": "止まったままの時間", "unit": "秒", "window_minutes": null, "caution": 60, "danger": 180,
+     "why": "長く止まったままだと、料理が冷め、通路もふさぐ",
+     "advice": {"caution": "近くの店員が様子を見に行く", "danger": "人が手で料理を運び、ロボットを通路からどける"}},
+    {"id": "limited_now", "metric": "limited_now", "label": "いまの段階が制限", "unit": "", "window_minutes": null, "caution": 1, "danger": null,
+     "why": "制限の間は、空いたお皿の回収しかできない",
+     "advice": {"caution": "料理とスープは、ほかのロボットか人が運ぶ"}},
+    {"id": "m5_raised", "metric": "m5_raised", "label": "M5 の実測で注意以上になった回数", "unit": "回", "window_minutes": 30, "caution": 1, "danger": 3,
+     "why": "実機のセンサー（M5StickS3）が、しきい値を超える揺れを続けて測った",
+     "advice": {"caution": "揺れた場所の床と、ロボットの車輪を確かめる", "danger": "実機の揺れが繰り返している。走らせる前に、人が点検する"}},
+    {"id": "m5_key2", "metric": "m5_key2", "label": "KEY2 で人が戻した回数", "unit": "回", "window_minutes": 30, "caution": 2, "danger": 3,
+     "why": "人が戻しても、またすぐ段階が上がっている",
+     "advice": {"caution": "戻す前に、揺れの原因を確かめる", "danger": "戻すのをやめ、原因が分かるまで止めておく"}},
+    {"id": "m5_gaps", "metric": "m5_gaps", "label": "センサーの途切れ", "unit": "回", "window_minutes": 30, "caution": 1, "danger": 3,
+     "why": "測定値が届かない間は、揺れを見張れていない",
+     "advice": {"caution": "StickS3 の USB と電池を確かめる", "danger": "センサーが当てにならない。人が見張る"}},
+    {"id": "m5_peak", "metric": "m5_peak_mg", "label": "揺れの最大", "unit": "mg", "window_minutes": 10, "caution": 300, "danger": 1500,
+     "why": "大きな揺れは、料理をこぼすか、部品がゆるむおそれがある",
+     "advice": {"caution": "速度を落として様子を見る", "danger": "強い衝撃。走らせる前に、人が本体を点検する"}}
+  ],
+  "store_rules": [
+    {"id": "robots_stopped", "metric": "robots_stopped", "label": "いま止まっているロボット", "unit": "台", "window_minutes": null, "caution": 1, "danger": 2,
+     "why": "止まっている台数が多いと、配膳が回らない",
+     "advice": {"caution": "残りのロボットに仕事を寄せる", "danger": "人が配膳に入る。新しいお客さんの案内を少し待つ"}},
+    {"id": "store_stops", "metric": "store_stops", "label": "店全体で止まった回数", "unit": "回", "window_minutes": 30, "caution": 3, "danger": 6,
+     "why": "店全体で止まることが多いのは、床や混み方など、店の側に原因があるしるし",
+     "advice": {"caution": "混んでいる通路と、床の段差を確かめる", "danger": "ロボットの台数を減らし、人を増やす"}},
+    {"id": "robots_in_danger", "metric": "robots_in_danger", "label": "危険と判断したロボット", "unit": "台", "window_minutes": null, "caution": 1, "danger": 2,
+     "why": "危険なロボットがいる間は、店として注意して動かす",
+     "advice": {"caution": "危険なロボットの点検を先にする", "danger": "ロボットでの配膳を止め、人で回す"}}
+  ],
+  "combine": {"cautions_make_danger": 3, "why": "注意が 3 つ以上重なったら、1 つずつは小さくても危険とみなす"}
+}

@@ -1,0 +1,33 @@
+{% load static %}<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>ロボもり 中核に入る</title>
+<link rel="stylesheet" href="{% static 'guardian/login.css' %}">
+</head>
+<body>
+<main class="card">
+  <h1>ロボもり <span>中核</span></h1>
+  <p class="lead">この PC の画面に出ている <b>ワンタイムパスワード</b>（8 文字）を入れてください。</p>
+  <p id="auto" class="auto" role="status" hidden>この PC が出したパスワードで、自動で入っています…</p>
+  <form method="post" action="/login" autocomplete="off">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <label for="code">ワンタイムパスワード</label>
+    <input id="code" name="code" type="text" inputmode="text" autocomplete="one-time-code" autocapitalize="characters"
+           spellcheck="false" maxlength="16" required autofocus placeholder="XXXX-XXXX" aria-describedby="help{% if error %} error{% endif %}">
+    {% if error %}<p id="error" class="error" role="alert">{{ error }}</p>{% endif %}
+    <button type="submit">入る</button>
+  </form>
+  <ul id="help" class="help">
+    <li><code>core\start.ps1</code> を動かすと、ブラウザが開いて自動で入ります。パスワードは同じ画面（ターミナル）にも出ます。</li>
+    <li>あとから開き直すときは <code>core\open-screen.cmd</code> をダブルクリック（新しいパスワードで、自動で入る）。</li>
+    <li>1 回使うと使えません。{{ minutes }} 分たつか、5 回続けて間違えても使えなくなります。</li>
+    <li>入ったあとは、ブラウザを閉じると入り直しです。この画面は、この PC からだけ開けます。</li>
+  </ul>
+</main>
+<script src="{% static 'guardian/login.js' %}"></script>
+</body>
+</html>
