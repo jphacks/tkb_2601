@@ -12,7 +12,7 @@
 
 ## 目次
 
-- [動画リンク](#動画リンク)
+- [公開資料リンク](#公開リンク)
 - [概要](#概要)
 - [この公開リポジトリで確認できる範囲](#この公開リポジトリで確認できる範囲)
 - [仕組み](#仕組み)
@@ -23,12 +23,16 @@
 - [開発技術](#開発技術)
 - [素材・ライセンス・構成](#素材とライセンス)
 
-## 動画リンク
 
-- デモ動画：[![YouTube](https://img.shields.io/badge/YouTube-デモ動画-FF0000?style=for-the-badge&logo=youtube&logoColor=white)]([https://youtu.be/VIDEO_ID](https://www.youtube.com/watch?v=WcRn2Qti8B8))
-- 発表スライド（90 秒ピッチ）：[ロボもり｜90 秒ピッチ](https://docs.google.com/presentation/d/1q2pgb6V9POOfRLsT5mzcMe8IJzqaaZ57/edit?usp=sharing&ouid=109700156691244901586&rtpof=true&sd=true)
-- 補足資料（背景・事業・市場と売上の見込み）：[ロボもり｜補足資料](https://docs.google.com/presentation/d/1Fd_nJmBFcWzg-3xrGk1wrq9fqDtnbcEbSC7ygMG9M_Q/edit?usp=sharing)
-- 文章でまとめたものは [docs/BUSINESS.md](docs/BUSINESS.md) にあります。
+## 公開資料リンク
+
+| 資料 | リンク |
+|---|---|
+| デモ動画 | [![YouTube](https://img.shields.io/badge/YouTube-デモ動画-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/watch?v=WcRn2Qti8B8) |
+| 発表スライド（90秒ピッチ） | [![Google Slides](https://img.shields.io/badge/Google_Slides-90秒ピッチ-FBBC04?style=for-the-badge&logo=googleslides&logoColor=black)](https://docs.google.com/presentation/d/1q2pgb6V9POOfRLsT5mzcMe8IJzqaaZ57/edit?usp=sharing&ouid=109700156691244901586&rtpof=true&sd=true) |
+| 補足資料（背景・事業・市場と売上の見込み） | [![Google Slides](https://img.shields.io/badge/Google_Slides-補足資料-FBBC04?style=for-the-badge&logo=googleslides&logoColor=black)](https://docs.google.com/presentation/d/1Fd_nJmBFcWzg-3xrGk1wrq9fqDtnbcEbSC7ygMG9M_Q/edit?usp=sharing) |
+| 事業計画・詳細ドキュメント | [![Markdown](https://img.shields.io/badge/Markdown-BUSINESS.md-24292F?style=for-the-badge&logo=markdown&logoColor=white)](docs/BUSINESS.md) |
+
 
 ## 概要
 
