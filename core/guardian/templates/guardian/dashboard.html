@@ -1,0 +1,186 @@
+{% load static %}<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token }}">
+<meta name="robots" content="noindex, nofollow">
+<title>ロボもり 中核</title>
+<link rel="stylesheet" href="{% static 'guardian/dashboard.css' %}">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1>ロボもり</h1>
+    <p id="headline" class="headline">Unity の様子を待っています</p>
+  </div>
+  <ol class="steps" aria-label="ロボもりの 3 段">
+    <li id="step-measure" class="step measure">① 測る</li>
+    <li class="arrow" aria-hidden="true">→</li>
+    <li id="step-judge" class="step judge">② 判断する</li>
+    <li class="arrow" aria-hidden="true">→</li>
+    <li id="step-improve" class="step improve">③ 改善する</li>
+  </ol>
+  <div class="mode" role="group" aria-label="いまの接続">
+    <span class="mode-label">接続</span>
+    <span id="mode-standalone" class="seg">単独</span><span id="mode-store" class="seg">店内</span><span id="mode-external" class="seg">外部</span>
+  </div>
+  <div class="tools">
+    <button id="drive-open" type="button" class="drive-button" aria-controls="drive" aria-expanded="false">
+      Google Drive の記録 <span id="drive-badge" class="badge" hidden></span>
+    </button>
+    <span class="clock">更新 <time id="now">—</time></span>
+    <form method="post" action="/logout" class="logout">{% csrf_token %}<button type="submit">ログアウト</button></form>
+  </div>
+</header>
+<p id="alert" class="alert" role="status" hidden></p>
+
+<main class="grid">
+  <div class="col left">
+    <section class="panel" aria-labelledby="measure-title">
+      <h2 id="measure-title"><span class="chip measure">① 測る</span>センサーの声</h2>
+      <p class="sub">Unity とセンサー中継から受け取った値（読むだけ）</p>
+      <div id="sensors"></div>
+    </section>
+    <section class="panel" aria-labelledby="gate-title">
+      <h2 id="gate-title"><span class="chip gate">接続ゲート</span><span id="gate-now">—</span></h2>
+      <ul id="gate-rows" class="gate-rows"></ul>
+      <p id="schedule" class="sub"></p>
+      <ol id="gate-log" class="mini-log"></ol>
+      <p class="rule">閉じるのは自動、開けるのは人</p>
+    </section>
+  </div>
+
+  <section class="center" aria-label="店内">
+    <ul id="banners" class="banners"></ul>
+    <div class="floor">
+      <svg id="map" viewBox="0 0 1052 652" role="img" aria-label="店内の地図（Unity から読んだ配置と、いまの位置）"></svg>
+    </div>
+    <p id="map-caption" class="caption">—</p>
+    <ul class="legend" aria-label="地図の見方">
+      <li><span class="key robot"></span>ロボット（縁の色が状態）</li>
+      <li><span class="key guest"></span>お客さん</li>
+      <li><span class="key staff"></span>店員</li>
+      <li><span class="key zone"></span>監視AI が速度を下げた場所</li>
+      <li><span class="key route"></span>対応のおすすめ</li>
+    </ul>
+  </section>
+
+  <div class="col right">
+    <section class="panel" aria-labelledby="judge-title">
+      <h2 id="judge-title"><span class="chip judge">② 判断する</span>任せている仕事</h2>
+      <table id="jobs" class="jobs">
+        <thead><tr><th scope="col"><span class="sr">ロボット</span></th><th scope="col">状態</th><th scope="col">スープ</th><th scope="col">料理</th><th scope="col">皿</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <ul id="says" class="says" aria-label="ロボット自身の説明"></ul>
+      <p class="sub">止めずに、できる仕事だけ任せ続ける</p>
+    </section>
+    <section class="panel" aria-labelledby="improve-title">
+      <h2 id="improve-title"><span class="chip improve">③ 改善する</span>監視AI</h2>
+      <p id="ai-state" class="sub">—</p>
+      <h3 class="tight good">自動で反映した（厳しくする側）</h3>
+      <ul id="slowdowns" class="items"></ul>
+      <h3 class="tight warn">人の承認を待つ（緩める側）</h3>
+      <ul id="proposals" class="items"></ul>
+      <h3 class="tight">対応のおすすめ</h3>
+      <ul id="dispatch" class="items"></ul>
+      <p class="rule">厳しくするのは AI、緩めるのは人</p>
+    </section>
+  </div>
+</main>
+
+<section class="lower">
+  <section class="panel ruleai" aria-labelledby="ruleai-title">
+    <h2 id="ruleai-title"><span class="chip judge">ルール AI</span>状況の判断と相談</h2>
+    <p class="sub">止まった回数・段階・M5 の実測を、rules.json の数字だけで判断する（外部の AI・API は使わない）</p>
+    <ul id="rule-levels" class="rule-levels" aria-label="いまの判断"></ul>
+    <p id="rule-problem" class="sub warn" hidden></p>
+    <ol id="rule-chat" class="talk rule-chat" aria-live="polite"></ol>
+    <div class="quick" role="group" aria-label="よく聞くこと">
+      <button type="button" class="ghost" data-q="いま危ない？">いま危ない？</button>
+      <button type="button" class="ghost" data-q="止まった回数は？">止まった回数</button>
+      <button type="button" class="ghost" data-q="M5 の揺れは？">M5 の揺れ</button>
+      <button type="button" class="ghost" data-q="どうすればいい？">どうすれば？</button>
+      <button type="button" class="ghost" data-q="判断の基準は？">判断の基準</button>
+    </div>
+    <form id="rule-form" class="rule-form" autocomplete="off">
+      <label class="sr" for="rule-q">ルール AI に聞く</label>
+      <input id="rule-q" name="q" maxlength="200" placeholder="例: B は大丈夫？">
+      <button type="submit" class="ghost">聞く</button>
+    </form>
+  </section>
+  <section class="panel" aria-labelledby="talk-title">
+    <h2 id="talk-title"><span class="chip talk">会話</span>ロボットとのやり取り</h2>
+    <p class="sub">Unity でロボットに聞いたこと（クリック・声・スマホ）と、ロボット自身の答え</p>
+    <ol id="talk" class="talk"></ol>
+  </section>
+  <section class="panel share" aria-labelledby="share-title">
+    <h2 id="share-title"><span class="chip outside">外部</span>外への共有（AT プロトコル）</h2>
+    <p class="sub">扉 2 を開けたときに何を出し、誰の返信を受け取るかを店が選ぶ。開けるのは PSoC 6 の SW2 だけ</p>
+    <form id="share-form" class="share-form" novalidate>
+      <fieldset>
+        <legend>出すもの</legend>
+        <label><input type="radio" name="share" value="off"> 共有しない <small>投稿も記録も書かない</small></label>
+        <label><input type="radio" name="share" value="sealed"> 会社だけ（暗号化） <small>宛先の人の鍵でしか開けない記録を残す。投稿はしない。Bluesky や PDS にも中身は読めない</small></label>
+        <label><input type="radio" name="share" value="record"> 記録だけ（公開） <small>タイムラインに流さず、店のリポジトリに記録を残す。誰でも読める</small></label>
+        <label><input type="radio" name="share" value="post"> 投稿と記録（公開） <small>Bluesky に投稿し、同じ要約を記録にも残す。誰でも読める</small></label>
+        <label id="recipients-box" class="stack">宛先（会社の人。1 行に 1 人「名前 鍵」。鍵は各自がビューアで作る）
+          <textarea name="recipients" rows="3" spellcheck="false" placeholder="店長 robomori-key:1:..."></textarea></label>
+        <label class="check"><input type="checkbox" name="gemini"> 要約を Gemini に送り、見立てを聞く</label>
+      </fieldset>
+      <fieldset>
+        <legend>返信を受け取る相手</legend>
+        <label><input type="radio" name="accept" value="following"> 店がフォローしている人</label>
+        <label><input type="radio" name="accept" value="listed"> 指定した人</label>
+        <label><input type="radio" name="accept" value="anyone"> だれでも</label>
+        <label id="allow-box" class="stack">指定した人（DID かハンドル。1 行に 1 人）
+          <textarea name="allow" rows="3" spellcheck="false" placeholder="alice.bsky.social&#10;did:plc:..."></textarea></label>
+        <label class="inline">投稿から <input type="number" name="window_days" min="1" max="30" step="1" inputmode="numeric"> 日までの返信</label>
+      </fieldset>
+      <p class="actions"><button type="submit" class="ghost">この設定にする</button> <span id="share-note" class="sub" role="status"></span></p>
+    </form>
+    <h3 class="tight">次に SW2 で扉 2 を開けたら</h3>
+    <p id="share-plan" class="sub">—</p>
+    <pre id="share-preview" class="preview" hidden></pre>
+    <details id="share-record-box" class="record-box" hidden><summary>記録の中身（公開される）</summary><pre id="share-record" class="preview"></pre></details>
+    <h3 class="tight">店の記録（店のアカウントのリポジトリ）</h3>
+    <ul id="share-records" class="items"></ul>
+    <p id="share-viewer" class="sub"></p>
+  </section>
+  <section class="panel" aria-labelledby="outside-title">
+    <h2 id="outside-title"><span class="chip outside">外部</span>外からの意見</h2>
+    <p class="sub">扉 2 を開けたときにだけ届く。提案であり、ロボットは変えない</p>
+    <ul id="opinions" class="items"></ul>
+  </section>
+  <section class="panel" aria-labelledby="log-title">
+    <h2 id="log-title"><span class="chip gate">記録</span>監査ログ</h2>
+    <p class="actions"><button id="drill" type="button" class="ghost">扉 1 の訓練（模擬）</button> <span id="drill-note" class="sub"></span></p>
+    <ol id="events" class="log"></ol>
+  </section>
+</section>
+<footer>扉 2 はこの画面からは開けません。開けるのは PC に挿した PSoC 6 の SW2 だけです。この画面は、この PC からだけ開けます。</footer>
+
+<aside id="drive" class="drawer" aria-labelledby="drive-title" hidden>
+  <div class="drawer-head">
+    <h2 id="drive-title" tabindex="-1">Google Drive の記録</h2>
+    <button id="drive-close" type="button" class="close" aria-label="閉じる">×</button>
+  </div>
+  <p id="drive-status" class="drive-status">—</p>
+  <div class="mailbox">
+    <nav class="folders" aria-label="フォルダ">
+      <ul id="drive-folders"></ul>
+      <h3 class="tight">ディレクトリ</h3>
+      <ul id="drive-dirs" class="dirs"></ul>
+    </nav>
+    <section class="list" aria-label="記録の一覧">
+      <ul id="drive-list" class="messages"></ul>
+    </section>
+    <article id="drive-read" class="reading" aria-live="polite">
+      <p class="sub">左の一覧から選ぶと、中身がここに出ます。</p>
+    </article>
+  </div>
+</aside>
+<script src="{% static 'guardian/dashboard.js' %}"></script>
+</body>
+</html>

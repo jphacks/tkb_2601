@@ -1,0 +1,10 @@
+# ビルドに渡すのは、中核と、その部品だけ（Unity のプロジェクトは渡さない）
+*
+!core/
+!scripts/guardian_hub/
+!scripts/guardian_share/
+**/__pycache__/
+core/data/
+core/staticfiles/
+core/.env
+core/host/

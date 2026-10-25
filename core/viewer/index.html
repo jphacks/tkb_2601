@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- 読むだけのページ。外から読み込むのは AT プロトコルの公開の窓口（https）だけで、画像もフォームの送信先も持たない -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https: http:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>ロボもり 店の記録</title>
+<style>
+:root {
+  --bg: #f6f3ee; --card: #ffffff; --ink: #1f2933; --sub: #52606d; --line: #e4ded4; --accent: #2b6f7a; --accent-soft: #e3f1f2;
+  --good: #1f7a4d; --good-soft: #e3f4ea; --warn: #8a5a00; --warn-soft: #fdf1d6; --bad: #a12a2a; --bad-soft: #fbe5e5; --code: #f1ede6;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12161c; --card: #1b2129; --ink: #e8edf2; --sub: #a3b0bd; --line: #2c3540; --accent: #6cc3cf; --accent-soft: #173238;
+    --good: #7dd3a3; --good-soft: #163325; --warn: #f2c86b; --warn-soft: #3a2e12; --bad: #f19a9a; --bad-soft: #3a1b1b; --code: #232a33;
+  }
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.65 "Noto Sans JP", "Yu Gothic UI", "Hiragino Sans", "Meiryo", system-ui, sans-serif; }
+main { max-width: 920px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { margin: 0 0 4px; font-size: 24px; line-height: 1.3; }
+h2 { margin: 28px 0 10px; font-size: 17px; }
+h3 { margin: 14px 0 6px; font-size: 14px; color: var(--sub); }
+p { margin: 6px 0; }
+.lead { color: var(--sub); }
+form.find { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 6px; }
+form.find input { flex: 1 1 260px; min-width: 0; height: 42px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); font: inherit; }
+button { height: 42px; padding: 0 18px; border: 0; border-radius: 8px; background: var(--accent); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+button.quiet { height: 34px; padding: 0 12px; border: 1px solid var(--line); background: transparent; color: var(--ink); font-weight: 400; }
+button:disabled { opacity: .6; cursor: default; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.hint { color: var(--sub); font-size: 13px; }
+ol.steps { margin: 12px 0 0; padding: 0; list-style: none; counter-reset: step; }
+ol.steps li { position: relative; padding: 6px 0 6px 34px; border-bottom: 1px dashed var(--line); font-size: 14px; overflow-wrap: anywhere; }
+ol.steps li::before { counter-increment: step; content: counter(step); position: absolute; left: 0; top: 7px; width: 24px; height: 24px; border-radius: 12px;
+                      background: var(--accent-soft); color: var(--accent); font-size: 13px; font-weight: 700; text-align: center; line-height: 24px; }
+ol.steps li.bad::before { background: var(--bad-soft); color: var(--bad); }
+.mono { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 12.5px; overflow-wrap: anywhere; }
+.card { margin: 14px 0; padding: 16px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+.card:target { outline: 3px solid var(--accent); }
+.card header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.card header strong { font-size: 16px; }
+.tag { display: inline-block; padding: 1px 8px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 700; }
+.tag.good { background: var(--good-soft); color: var(--good); }
+.tag.warn { background: var(--warn-soft); color: var(--warn); }
+.tag.bad { background: var(--bad-soft); color: var(--bad); }
+.summary { margin: 10px 0; padding: 10px 12px; border-radius: 8px; background: var(--code); white-space: pre-wrap; overflow-wrap: anywhere; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+th { color: var(--sub); font-weight: 700; font-size: 12px; }
+td.num { text-align: right; white-space: nowrap; }
+ul.plain { margin: 4px 0; padding: 0; list-style: none; }
+ul.plain li { padding: 6px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+ul.plain li:last-child { border-bottom: 0; }
+.opinion-text { display: block; margin: 4px 0; white-space: pre-wrap; }
+.meta { display: block; color: var(--sub); font-size: 12.5px; }
+details { margin-top: 10px; }
+summary { cursor: pointer; color: var(--sub); font-size: 13px; }
+pre { margin: 6px 0 0; padding: 10px; max-height: 320px; overflow: auto; border-radius: 8px; background: var(--code); font: 12px/1.5 ui-monospace, "Cascadia Mono", Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+a { color: var(--accent); }
+.problems { margin: 8px 0; padding: 8px 12px; border-radius: 8px; background: var(--bad-soft); color: var(--bad); font-size: 13px; }
+.status { margin: 14px 0; padding: 10px 12px; border-radius: 8px; background: var(--warn-soft); color: var(--warn); }
+footer { margin-top: 36px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--sub); font-size: 13px; }
+.scroll { overflow-x: auto; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ロボもり 店の記録</h1>
+  <p class="lead">店のアカウントのリポジトリにある記録（<span class="mono" id="nsid"></span>）を、AT プロトコルの公開の窓口から直接読みます。ロボもりの中核（サーバー・API・データベース）は使いません。</p>
+
+  <form class="find" id="find" autocomplete="off">
+    <label class="hint" for="actor" style="flex-basis:100%">会社（店）のハンドルか DID。保守会社として複数の会社を並べるときは、空白で区切る</label>
+    <input id="actor" name="actor" placeholder="robomori-demo.bsky.social または did:plc:…" spellcheck="false" inputmode="url">
+    <button type="submit" id="go">読む</button>
+    <label class="hint" for="pds" style="flex-basis:100%">社内 PDS の住所（VPN の中で読むとき。入れると、公開の窓口は使わずにこの PDS だけを読む）</label>
+    <input id="pds" name="pds" placeholder="例: https://pds.robomori.internal" spellcheck="false" inputmode="url">
+  </form>
+  <p class="hint">記録を書いたのはロボもりですが、記録は店のアカウントのものです。PDS を移しても同じ DID でここから読めます。</p>
+
+  <section aria-labelledby="me-title">
+    <h2 id="me-title">会社の人の鍵（暗号化した記録を開く）</h2>
+    <p class="hint">「会社だけ」の記録は、宛先の人の鍵でしか開けません。鍵はこのブラウザの中だけに作られ、秘密の部分はどこにも送られません（取り出すこともできません）。下の「公開の鍵」を店の人に渡すと、宛先に加えてもらえます。</p>
+    <p><button type="button" id="make-key">鍵を作る</button> <span id="key-state" class="hint"></span></p>
+    <p id="pub-box" hidden><span class="mono" id="pub"></span> <button type="button" class="quiet" id="copy-pub">公開の鍵をコピー</button></p>
+  </section>
+
+  <section aria-labelledby="route-title">
+    <h2 id="route-title">どこから読んだか</h2>
+    <ol class="steps" id="steps"><li>まだ読んでいません。</li></ol>
+  </section>
+
+  <section aria-labelledby="fleet-title" id="fleet" hidden>
+    <h2 id="fleet-title">会社ごとの障害（保守会社向け）</h2>
+    <p class="hint">あなたの鍵で開けた記録だけを数えます。宛先に入っていない会社の中身は、ここでも読めません。</p>
+    <div class="scroll"><table id="fleet-table"></table></div>
+    <p class="hint" id="fleet-rule"></p>
+  </section>
+
+  <section aria-labelledby="records-title">
+    <h2 id="records-title">記録</h2>
+    <div id="status" class="status" role="status" hidden></div>
+    <div id="records"></div>
+    <p><button type="button" class="quiet" id="more" hidden>もっと古い記録を読む</button></p>
+  </section>
+
+  <footer>
+    <p>このページがつなぐ先: ハンドルの解決（<span class="mono">public.api.bsky.app</span>）、DID 文書（<span class="mono">plc.directory</span>、または did:web の住所）、店の PDS、意見を書いた人それぞれの PDS。どれも読むだけで、ログインもしません。</p>
+    <p>意見（返信）は、店の記録にはコピーされていません。書いた人のリポジトリにある投稿を指しているだけなので、その人が消せばここにも出ません。</p>
+    <p>記録の形の定義: <span class="mono">core/lexicons/</span>（公開の名前空間で使うときは、住所に <span class="mono">?collection=</span> を付ける）</p>
+  </footer>
+</main>
+<script>
+"use strict";
+(() => {
+  // 記録の種類（NSID）。名前の入らない既定。公開の名前空間で書いた記録は、住所に ?collection=<NSID> を付けて読む
+  const NSID = (() => {
+    const wanted = new URLSearchParams(location.search).get("collection") || "";
+    return /^[a-z][a-z0-9-]{0,62}(\.[a-z0-9][a-z0-9-]{0,62}){2,}$/.test(wanted) ? wanted : "internal.robomori.report";
+  })();
+  const POST = "app.bsky.feed.post";
+  const RESOLVER = "https://public.api.bsky.app";
+  const PLC = "https://plc.directory";
+  const PAGE = 25;
+  const DID = /^did:(plc:[a-z2-7]{24}|web:[a-zA-Z0-9.%-]{1,253})$/;
+  const HANDLE = /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/;
+  const RKEY = /^[A-Za-z0-9._:~-]{1,512}$/;
+  const CID = /^[a-zA-Z0-9]{8,128}$/;
+  const SHARE = { post: "投稿と記録", record: "記録だけ（タイムラインには流していない）", sealed: "会社だけ（暗号化）" };
+  const ACCEPT = { following: "店がフォローしている人の返信だけ", listed: "店が指定した人の返信だけ", anyone: "だれの返信でも" };
+  const KIND = { area: "場所", robot: "ロボット" };
+  const JUDGE = { safe: "安全", caution: "注意", danger: "危険" };
+  const $ = (id) => document.getElementById(id);
+  const docs = new Map();      // DID → DID 文書の読み取り（Promise）
+  const SEAL_AAD = new TextEncoder().encode("robomori-report-sealed-v1");
+  const WRAP_INFO = new TextEncoder().encode("robomori-wrap-v1");
+  const me = { key: null, pub: "", kid: "" };
+  const view = { did: "", pds: "", cursor: "", cids: new Map() };
+
+  function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined && text !== null) node.textContent = String(text);
+    return node;
+  }
+
+  function link(href, text) {
+    const a = el("a", "", text);
+    a.href = href;
+    a.rel = "noopener noreferrer";
+    a.target = "_blank";
+    return a;
+  }
+
+  async function getJson(url) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+    try {
+      const response = await fetch(url, { signal: controller.signal, credentials: "omit", cache: "no-store", headers: { Accept: "application/json" } });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const error = new Error(body.message || body.error || `HTTP ${response.status}`);
+        error.code = body.error || String(response.status);
+        throw error;
+      }
+      return body;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  // ---- AT URI・DID 文書 ----
+  function parseUri(uri) {
+    const parts = typeof uri === "string" && uri.startsWith("at://") ? uri.slice(5).split("/") : [];
+    if (parts.length !== 3 || !DID.test(parts[0]) || !RKEY.test(parts[2]) || !/^[a-zA-Z0-9.-]{3,317}$/.test(parts[1])) return null;
+    return { did: parts[0], collection: parts[1], rkey: parts[2] };
+  }
+
+  function docUrl(did) {
+    if (did.startsWith("did:plc:")) return `${PLC}/${did}`;
+    const host = decodeURIComponent(did.slice("did:web:".length));
+    if (!/^[a-zA-Z0-9.-]+(:[0-9]{1,5})?$/.test(host)) throw new Error("did:web の住所の形ではない");
+    return `https://${host}/.well-known/did.json`;
+  }
+
+  function identity(did) {
+    if (!docs.has(did)) {
+      docs.set(did, (async () => {
+        const doc = await getJson(docUrl(did));
+        if (doc.id !== did) throw new Error("DID 文書の id が合わない");
+        const service = (doc.service || []).find((s) => s && typeof s.id === "string" && s.id.endsWith("#atproto_pds") && s.type === "AtprotoPersonalDataServer");
+        let pds = "";
+        try {
+          const url = new URL(service && service.serviceEndpoint);
+          if (url.protocol === "https:" && !url.username && !url.password) pds = url.origin;
+        } catch (error) { /* PDS がない */ }
+        if (!pds) throw new Error("DID 文書に PDS（https）が書かれていない");
+        const handle = ((doc.alsoKnownAs || []).find((a) => typeof a === "string" && a.startsWith("at://")) || "").slice(5);
+        return { did, pds, handle: HANDLE.test(handle) ? handle.toLowerCase() : "" };
+      })());
+    }
+    return docs.get(did);
+  }
+
+  function getRecord(pds, ref) {
+    const query = new URLSearchParams({ repo: ref.did, collection: ref.collection, rkey: ref.rkey });
+    return getJson(`${pds}/xrpc/com.atproto.repo.getRecord?${query}`);
+  }
+
+  // ---- 記録の形を確かめる（lexicon と同じ決まり。知らない項目は読み飛ばす） ----
+  const bytes = (text) => new TextEncoder().encode(text).length;
+  const graphemes = (text) => (typeof Intl !== "undefined" && Intl.Segmenter ? [...new Intl.Segmenter("ja", { granularity: "grapheme" }).segment(text)].length : [...text].length);
+  const isText = (value, maxBytes, maxGraphemes) => typeof value === "string" && bytes(value) <= maxBytes && (!maxGraphemes || graphemes(value) <= maxGraphemes);
+  const isInt = (value, min, max) => Number.isInteger(value) && (min === undefined || value >= min) && (max === undefined || value <= max);
+  const isRef = (value) => value && typeof value === "object" && parseUri(value.uri) && typeof value.cid === "string" && CID.test(value.cid);
+
+  function problems(value) {
+    const found = [];
+    const need = (ok, what) => { if (!ok) found.push(what); };
+    const floats = (v) => (typeof v === "number" ? !Number.isInteger(v) : v && typeof v === "object" ? Object.values(v).some(floats) : false);
+    need(value && typeof value === "object" && !Array.isArray(value), "記録がオブジェクトではない");
+    if (!found.length) {
+      need(value.$type === NSID, "$type が違う");
+      need(typeof value.createdAt === "string" && !Number.isNaN(Date.parse(value.createdAt)), "createdAt が日時ではない");
+      need(isText(value.summary, 3000, 300), "summary がない、または長すぎる");
+      need(value.store === undefined || isText(value.store, 256, 64), "store が長すぎる");
+      need(value.slowdowns === undefined || (Array.isArray(value.slowdowns) && value.slowdowns.length <= 10 && value.slowdowns.every((s) =>
+        s && isText(s.kind, 64) && isText(s.place, 64) && isInt(s.speedPercent, 30, 100) && (s.reason === undefined || isText(s.reason, 600)))), "slowdowns の形が違う");
+      need(value.responders === undefined || (Array.isArray(value.responders) && value.responders.length <= 5 && value.responders.every((r) =>
+        r && isText(r.robot, 8) && isText(r.person, 64) && (r.situation === undefined || isText(r.situation, 64)) && (r.etaSeconds === undefined || isInt(r.etaSeconds, 0)))), "responders の形が違う");
+      need(value.stopped === undefined || (Array.isArray(value.stopped) && value.stopped.length <= 10 && value.stopped.every((s) => isText(s, 8))), "stopped の形が違う");
+      need(value.post === undefined || isRef(value.post), "post が strongRef ではない");
+      need(value.previous === undefined || isRef(value.previous), "previous が strongRef ではない");
+      need(value.opinions === undefined || (Array.isArray(value.opinions) && value.opinions.length <= 20 && value.opinions.every((o) => o && DID.test(o.author) && isRef(o.post))), "opinions の形が違う");
+      need(value.share === undefined || isText(value.share, 64), "share が文字ではない");
+      need(value.accept === undefined || isText(value.accept, 64), "accept が文字ではない");
+      need(value.judgement === undefined || (value.judgement && isText(value.judgement.rulesVersion, 64) && isText(value.judgement.store, 16)
+        && (value.judgement.windowMinutes === undefined || isInt(value.judgement.windowMinutes, 0))
+        && (value.judgement.robots === undefined || (Array.isArray(value.judgement.robots) && value.judgement.robots.length <= 10
+          && value.judgement.robots.every((r) => r && isText(r.robot, 8) && isText(r.level, 16)
+            && (r.stops === undefined || isInt(r.stops, 0)) && (r.degraded === undefined || isInt(r.degraded, 0)))))), "judgement の形が違う");
+      need(value.sensor === undefined || (value.sensor && isText(value.sensor.device, 64) && isText(value.sensor.robot, 8)
+        && typeof value.sensor.measured === "boolean"
+        && ["thresholdMg", "peakMg", "raised", "humanRecoveries", "gaps"].every((k) => value.sensor[k] === undefined || isInt(value.sensor[k], 0))), "sensor の形が違う");
+      need(!floats(value), "小数が入っている（AT プロトコルのレコードには入れられない）");
+    }
+    return found;
+  }
+
+  // ---- 会社の人の鍵（ECDH P-256。秘密の鍵は取り出せない形で、このブラウザの IndexedDB にだけ置く） ----
+  const unb64u = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
+  async function kidOf(xy) {
+    const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(xy)));
+    return [...digest].map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
+  }
+  function keyStore(mode, action) {
+    return new Promise((resolve, reject) => {
+      const open = indexedDB.open("robomori-keys", 1);
+      open.onupgradeneeded = () => open.result.createObjectStore("keys");
+      open.onerror = () => reject(open.error);
+      open.onsuccess = () => {
+        const tx = open.result.transaction("keys", mode);
+        const request = action(tx.objectStore("keys"));
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      };
+    });
+  }
+  async function showKey() {
+    $("key-state").textContent = me.key ? `このブラウザに鍵があります（ID ${me.kid}）` : "まだ鍵がありません";
+    $("pub-box").hidden = !me.key;
+    $("pub").textContent = me.pub;
+  }
+  async function loadKey() {
+    try {
+      const saved = await keyStore("readonly", (s) => s.get("me"));
+      if (saved && saved.key && saved.pub) Object.assign(me, saved);
+    } catch (error) { /* 保存できないブラウザでは、開いている間だけ */ }
+    showKey();
+  }
+  async function makeKey() {
+    if (me.key && !confirm("いまの鍵を作り直すと、これまでの記録はこのブラウザでは開けなくなります。作り直しますか？")) return;
+    const pair = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, false, ["deriveBits"]);
+    const jwk = await crypto.subtle.exportKey("jwk", pair.publicKey);
+    const xy = `${jwk.x}.${jwk.y}`;
+    Object.assign(me, { key: pair.privateKey, pub: `robomori-key:1:${xy}`, kid: await kidOf(xy) });
+    try { await keyStore("readwrite", (s) => s.put({ key: me.key, pub: me.pub, kid: me.kid }, "me")); }
+    catch (error) { $("key-state").textContent = "このブラウザには保存できなかった（開いている間だけ使える）"; }
+    showKey();
+  }
+  async function openSealed(sealed) {
+    if (!me.key) throw new Error("このブラウザに鍵がない");
+    const entry = (sealed.recipients || []).find((r) => r.kid === me.kid);
+    if (!entry) throw new Error("あなたの鍵は宛先に入っていない");
+    const [x, y] = String(sealed.epk).split(".");
+    const epk = await crypto.subtle.importKey("jwk", { kty: "EC", crv: "P-256", x, y }, { name: "ECDH", namedCurve: "P-256" }, false, []);
+    const shared = await crypto.subtle.deriveBits({ name: "ECDH", public: epk }, me.key, 256);
+    const hkdf = await crypto.subtle.importKey("raw", shared, "HKDF", false, ["deriveKey"]);
+    const kek = await crypto.subtle.deriveKey({ name: "HKDF", hash: "SHA-256", salt: new Uint8Array(0), info: WRAP_INFO }, hkdf,
+                                              { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+    const cekRaw = await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64u(entry.iv), additionalData: new TextEncoder().encode(entry.kid) }, kek, unb64u(entry.key));
+    const cek = await crypto.subtle.importKey("raw", cekRaw, "AES-GCM", false, ["decrypt"]);
+    const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64u(sealed.iv), additionalData: SEAL_AAD }, cek, unb64u(sealed.ciphertext));
+    return JSON.parse(new TextDecoder().decode(plain));
+  }
+
+  function sealedCard(item) {
+    // 暗号化した記録: 宛先なら手元で開いて、いつもの記録として出す。開けなければ、外から見える分だけ出す
+    const holder = el("article", "card");
+    const sealed = item.value.sealed;
+    holder.append(el("header", "", ""), el("p", "", `会社だけの記録（暗号化）。宛先 ${(sealed.recipients || []).length} 人。開いています…`));
+    openSealed(sealed).then((content) => {
+      const opened = card({ uri: item.uri, cid: item.cid, value: { ...content, $type: NSID, share: "sealed" } });
+      opened.querySelector("header").append(el("span", "tag good", "あなたの鍵で開いた（中身はこのブラウザの中だけ）"));
+      holder.replaceWith(opened);
+    }).catch((error) => {
+      holder.replaceChildren(el("header", "", ""), el("p", "", `会社だけの記録（暗号化）。宛先 ${(sealed.recipients || []).length} 人。${when(item.value.createdAt)}`),
+        el("p", "tag warn", `開けない: ${error.message}`), el("p", "mono", item.uri));
+    });
+    return holder;
+  }
+
+  // ---- 表示 ----
+  function step(text, mono, bad) {
+    const li = el("li", bad ? "bad" : "", text);
+    if (mono) li.append(" ", el("span", "mono", mono));
+    $("steps").append(li);
+    return li;
+  }
+
+  function status(text) {
+    $("status").hidden = !text;
+    $("status").textContent = text || "";
+  }
+
+  const when = (iso) => {
+    const date = new Date(iso);
+    return Number.isNaN(date.getTime()) ? String(iso) : date.toLocaleString("ja-JP", { dateStyle: "medium", timeStyle: "short" });
+  };
+  const postUrl = (ref, handle) => `https://bsky.app/profile/${encodeURIComponent(handle || ref.did)}/post/${encodeURIComponent(ref.rkey)}`;
+
+  async function checkRef(target, ref, label) {
+    // strongRef の CID と、いま PDS にある記録の CID を比べる（書き換えられていないか）
+    const parsed = parseUri(ref.uri);
+    let who = null;
+    try {
+      who = await identity(parsed.did);
+      const found = await getRecord(who.pds, parsed);
+      const same = found.cid === ref.cid;
+      target.replaceChildren(el("span", same ? "tag good" : "tag warn", same ? `${label}: 指したときのまま` : `${label}: 指したあとに書き換わった`));
+      return { record: found.value, who };
+    } catch (error) {
+      const gone = error.code === "RecordNotFound" || error.code === "400";
+      target.replaceChildren(el("span", "tag bad", gone ? `${label}: 消されている` : `${label}: 読めなかった（${error.message}）`));
+      return who ? { record: null, who } : null;
+    }
+  }
+
+  function slowdownTable(items) {
+    const wrap = el("div", "scroll");
+    const table = el("table");
+    const head = el("tr");
+    for (const name of ["どこ", "速度の上限", "理由"]) head.append(el("th", "", name));
+    table.append(head);
+    for (const s of items) {
+      const row = el("tr");
+      row.append(el("td", "", `${KIND[s.kind] || s.kind} ${s.place}`), el("td", "num", `${s.speedPercent}%`), el("td", "", s.reason || "—"));
+      table.append(row);
+    }
+    wrap.append(table);
+    return wrap;
+  }
+
+  function opinionItem(opinion) {
+    const li = el("li");
+    const ref = parseUri(opinion.post.uri);
+    const head = el("span", "meta", `${opinion.author} の意見を読んでいます…`);
+    const check = el("span");
+    li.append(head);
+    if (!ref || ref.did !== opinion.author || ref.collection !== POST) {
+      head.textContent = "書いた人と投稿の持ち主が合わない、または投稿ではない（読まない）";
+      return li;
+    }
+    checkRef(check, opinion.post, "意見").then((found) => {
+      const handle = found ? found.who.handle : "";
+      head.replaceChildren(document.createTextNode(handle ? `@${handle}` : opinion.author), document.createTextNode(" のリポジトリにある返信　"));
+      if (found && found.record && typeof found.record.text === "string") {
+        const text = [...found.record.text].slice(0, 400).join("");
+        li.append(el("span", "opinion-text", text));
+        li.append(el("span", "meta", `${when(found.record.createdAt)}　`));
+        li.lastChild.append(link(postUrl(ref, handle), "Bluesky で見る"));
+      }
+      li.append(check);
+    });
+    return li;
+  }
+
+  function card(item) {
+    const value = item.value || {};
+    const ref = parseUri(item.uri);
+    const section = el("article", "card");
+    if (ref) section.id = `rec-${ref.rkey}`;
+    const header = el("header");
+    header.append(el("strong", "", value.store || "（店の名前なし）"), el("span", "meta", when(value.createdAt)));
+    if (SHARE[value.share]) header.append(el("span", "tag", SHARE[value.share]));
+    if (ACCEPT[value.accept]) header.append(el("span", "tag", ACCEPT[value.accept]));
+    section.append(header);
+
+    const found = problems(value);
+    if (found.length) {
+      const box = el("div", "problems", `形が lexicon と合わないので、中身は出しません: ${found.join(" / ")}`);
+      section.append(box, el("p", "mono", item.uri));
+      return section;
+    }
+
+    section.append(el("div", "summary", value.summary));
+    if (value.slowdowns && value.slowdowns.length) section.append(el("h3", "", "監視AI が速度を下げたところ"), slowdownTable(value.slowdowns));
+    if (value.responders && value.responders.length) {
+      section.append(el("h3", "", "向かうとよい人（推薦）"));
+      const list = el("ul", "plain");
+      for (const r of value.responders) list.append(el("li", "", `ロボット ${r.robot}${r.situation ? `（${r.situation}）` : ""} → ${r.person}${r.etaSeconds !== undefined ? `　約 ${r.etaSeconds} 秒` : ""}`));
+      section.append(list);
+    }
+    if (value.stopped && value.stopped.length) section.append(el("p", "", `止まっていたロボット: ${value.stopped.join("、")}`));
+    if (value.judgement) {
+      const j = value.judgement;
+      const word = (l) => JUDGE[l] || l;
+      section.append(el("h3", "", `ルール AI の判断（店全体: ${word(j.store)}。外部の AI は使わず、店の基準の数字だけで判断）`));
+      const list = el("ul", "plain");
+      for (const r of j.robots || []) {
+        const li = el("li");
+        li.append(el("span", `tag ${r.level === "danger" ? "bad" : r.level === "caution" ? "warn" : "good"}`, `ロボット ${r.robot}: ${word(r.level)}`),
+          document.createTextNode(`　${j.windowMinutes || "?"} 分で停止 ${r.stops ?? 0} 回・注意/制限 ${r.degraded ?? 0} 回`));
+        list.append(li);
+      }
+      section.append(list, el("p", "meta", `判断に使った基準の版: ${j.rulesVersion}`));
+    }
+    if (value.sensor) {
+      const s = value.sensor;
+      section.append(el("h3", "", `実機のセンサー（${s.device}${s.measured ? "・実測" : ""}）`),
+        el("p", "", `ロボット ${s.robot}: 揺れの最大 ${s.peakMg ?? 0} mg（しきい値 ${s.thresholdMg ?? "?"} mg）・注意以上 ${s.raised ?? 0} 回・人が KEY2 で戻した ${s.humanRecoveries ?? 0} 回・途切れ ${s.gaps ?? 0} 回`));
+    }
+
+    const links = el("p");
+    if (value.post) {
+      const postRef = parseUri(value.post.uri);
+      const check = el("span");
+      if (postRef) links.append(link(postUrl(postRef, view.handle), "Bluesky の投稿"), " ", check);
+      checkRef(check, value.post, "投稿");
+    }
+    if (value.previous) {
+      const prevRef = parseUri(value.previous.uri);
+      const known = view.cids.get(value.previous.uri);
+      if (links.childNodes.length) links.append("　");
+      const a = el("a", "", "1 つ前の記録");
+      if (prevRef && prevRef.did === view.did) a.href = `#rec-${prevRef.rkey}`;
+      links.append(a, " ");
+      if (known !== undefined) links.append(el("span", known === value.previous.cid ? "tag good" : "tag warn", known === value.previous.cid ? "つながっている" : "前の記録が書き換わった"));
+      else {
+        const check = el("span");
+        links.append(check);
+        checkRef(check, value.previous, "前の記録");
+      }
+    }
+    if (links.childNodes.length) section.append(links);
+
+    if (value.opinions && value.opinions.length) {
+      section.append(el("h3", "", `この記録が参照した意見（${value.opinions.length} 件。書いた人のリポジトリから読む）`));
+      const list = el("ul", "plain");
+      for (const opinion of value.opinions) list.append(opinionItem(opinion));
+      section.append(list);
+    }
+
+    const details = el("details");
+    details.append(el("summary", "", "記録そのもの（JSON）"), el("p", "mono", `${item.uri}　CID ${item.cid}`), el("pre", "", JSON.stringify(value, null, 2)));
+    section.append(details);
+    return section;
+  }
+
+  // ---- 読む ----
+  async function load(more) {
+    const button = $("more");
+    button.disabled = true;
+    try {
+      const query = new URLSearchParams({ repo: view.did, collection: NSID, limit: String(PAGE) });
+      if (more && view.cursor) query.set("cursor", view.cursor);
+      const page = await getJson(`${view.pds}/xrpc/com.atproto.repo.listRecords?${query}`);
+      const items = Array.isArray(page.records) ? page.records.filter((r) => r && typeof r.uri === "string" && typeof r.cid === "string") : [];
+      for (const item of items) view.cids.set(item.uri, item.cid);
+      if (!more) step(`記録を ${items.length} 件読んだ（listRecords）`, `${view.pds}/xrpc/com.atproto.repo.listRecords?collection=${NSID}`);
+      for (const item of items) {
+        const sealed = item.value && item.value.sealed;
+        const ok = sealed && typeof sealed.ciphertext === "string" && sealed.ciphertext.length <= 400000 && Array.isArray(sealed.recipients)
+          && sealed.recipients.length <= 20 && typeof sealed.epk === "string" && typeof sealed.iv === "string";
+        $("records").append(ok ? sealedCard(item) : card(item));
+      }
+      view.cursor = typeof page.cursor === "string" && items.length === PAGE ? page.cursor : "";
+      button.hidden = !view.cursor;
+      if (!more && !items.length) status("このアカウントには、まだロボもりの店の記録がありません。");
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  // ---- 社内 PDS（VPN の中）: 公開の窓口は使わず、入れた PDS だけを読む ----
+  function internalPds() {
+    const text = $("pds").value.trim();
+    if (!text) return "";
+    const url = new URL(text);
+    if (!["https:", "http:"].includes(url.protocol) || url.username || url.password) throw new Error("社内 PDS の住所は https:// か http:// で始める");
+    return url.origin;
+  }
+
+  async function resolveInternal(pds, text) {
+    let did = text.replace(/^@/, "");
+    if (!DID.test(did)) {
+      if (!HANDLE.test(did)) throw new Error(`${did} はハンドルでも DID でもない`);
+      const answer = await getJson(`${pds}/xrpc/com.atproto.identity.resolveHandle?${new URLSearchParams({ handle: did.toLowerCase() })}`);
+      if (!DID.test(answer.did || "")) throw new Error("社内 PDS がハンドルから DID を返さなかった");
+      did = answer.did;
+    }
+    docs.set(did, Promise.resolve({ did, pds, handle: DID.test(text) ? "" : text.toLowerCase() }));
+    return did;
+  }
+
+  // ---- 保守会社向け: 会社ごとに、開けた記録から障害を数える ----
+  const FLEET_RULE = { repair: { danger: 1, records: 2 }, replace: { danger: 3, records: 5 } };
+  async function allRecords(pds, did) {
+    const found = [];
+    let cursor = "";
+    for (let i = 0; i < 8; i++) {
+      const query = new URLSearchParams({ repo: did, collection: NSID, limit: "100" });
+      if (cursor) query.set("cursor", cursor);
+      const page = await getJson(`${pds}/xrpc/com.atproto.repo.listRecords?${query}`);
+      found.push(...(page.records || []).filter((r) => r && r.value));
+      cursor = page.cursor || "";
+      if (!cursor || !(page.records || []).length) break;
+    }
+    return found;
+  }
+
+  async function fleet(actors) {
+    const pds = internalPds();
+    const rows = [];
+    for (const actor of actors) {
+      const row = { actor, store: "", records: 0, opened: 0, locked: 0, danger: 0, caution: 0, peak: 0, recoveries: 0, last: "", problem: "" };
+      try {
+        let did = actor, where = pds;
+        if (pds) did = await resolveInternal(pds, actor);
+        else {
+          if (!DID.test(actor)) {
+            const answer = await getJson(`${RESOLVER}/xrpc/com.atproto.identity.resolveHandle?${new URLSearchParams({ handle: actor.replace(/^@/, "") })}`);
+            did = answer.did;
+          }
+          where = (await identity(did)).pds;
+        }
+        for (const item of await allRecords(where, did)) {
+          row.records++;
+          let value = item.value;
+          if (value.sealed) {
+            try { value = await openSealed(value.sealed); row.opened++; } catch (error) { row.locked++; continue; }
+          } else row.opened++;
+          if (problems({ ...value, $type: NSID }).length) continue;
+          row.store = row.store || value.store || "";
+          row.last = value.createdAt > row.last ? value.createdAt : row.last;
+          const robots = (value.judgement && value.judgement.robots) || [];
+          if (robots.some((r) => r.level === "danger")) row.danger++;
+          else if (robots.some((r) => r.level === "caution")) row.caution++;
+          if (value.sensor) { row.peak = Math.max(row.peak, value.sensor.peakMg || 0); row.recoveries += value.sensor.humanRecoveries || 0; }
+        }
+      } catch (error) { row.problem = error.message; }
+      rows.push(row);
+    }
+    const verdict = (r) => r.problem ? "読めなかった" : r.opened === 0 ? "鍵がない（中身は見られない）"
+      : r.danger >= FLEET_RULE.replace.danger || r.opened >= FLEET_RULE.replace.records ? "入れ替え・買い替えの提案"
+      : r.danger >= FLEET_RULE.repair.danger || r.opened >= FLEET_RULE.repair.records ? "修理の相談" : "様子を見る";
+    rows.sort((a, b) => b.danger - a.danger || b.opened - a.opened);
+    const table = $("fleet-table");
+    table.replaceChildren();
+    const head = el("tr");
+    for (const name of ["会社", "記録", "開けた", "危険", "注意", "揺れの最大", "KEY2 で戻した", "最後", "提案"]) head.append(el("th", "", name));
+    table.append(head);
+    for (const r of rows) {
+      const tr = el("tr");
+      tr.append(el("td", "", r.store ? `${r.store}（${r.actor}）` : r.actor), el("td", "num", r.records), el("td", "num", `${r.opened}${r.locked ? `（開けない ${r.locked}）` : ""}`),
+        el("td", "num", r.danger), el("td", "num", r.caution), el("td", "num", r.peak ? `${r.peak} mg` : "—"), el("td", "num", r.recoveries),
+        el("td", "", r.last ? when(r.last) : "—"), el("td", "", r.problem ? `${verdict(r)}: ${r.problem}` : verdict(r)));
+      table.append(tr);
+    }
+    $("fleet-rule").textContent = `提案の目安: 危険が ${FLEET_RULE.repair.danger} 件以上か記録が ${FLEET_RULE.repair.records} 件以上で修理の相談、危険が ${FLEET_RULE.replace.danger} 件以上か記録が ${FLEET_RULE.replace.records} 件以上で入れ替え・買い替えの提案。`;
+    $("fleet").hidden = false;
+    step(`${rows.length} 社の記録を読んだ` + (pds ? `（社内 PDS ${pds} だけ）` : ""), "");
+  }
+
+  async function open(input) {
+    const text = input.trim().replace(/^@/, "");
+    const actors = text.split(/[\s,、]+/).filter(Boolean);
+    $("fleet").hidden = true;
+    if (actors.length > 1) {
+      $("steps").replaceChildren();
+      $("records").replaceChildren();
+      $("more").hidden = true;
+      status("");
+      docs.clear();
+      try { await fleet(actors.slice(0, 50)); } catch (error) { step(`読めなかった: ${error.message}`, "", true); }
+      return;
+    }
+    $("steps").replaceChildren();
+    $("records").replaceChildren();
+    $("more").hidden = true;
+    status("");
+    docs.clear();
+    view.cids.clear();
+    try {
+      const pds = internalPds();
+      if (pds) {
+        const did = await resolveInternal(pds, text);
+        step("社内 PDS を直接読む（公開の窓口は使わない）", pds);
+        Object.assign(view, { did, pds, handle: DID.test(text) ? "" : text.toLowerCase(), cursor: "" });
+        await load(false);
+        return;
+      }
+      let did = text;
+      let handle = "";
+      if (!DID.test(text)) {
+        if (!HANDLE.test(text)) throw new Error("ハンドル（例: robomori-demo.bsky.social）か DID（did:plc:…）を入れてください");
+        handle = text.toLowerCase();
+        const answer = await getJson(`${RESOLVER}/xrpc/com.atproto.identity.resolveHandle?${new URLSearchParams({ handle })}`);
+        if (!DID.test(answer.did || "")) throw new Error("ハンドルから DID が返らなかった");
+        did = answer.did;
+        step(`@${handle} を DID にした`, did);
+      } else {
+        step("DID をそのまま使う", did);
+      }
+      const who = await identity(did);
+      step(`DID 文書を読んだ（${did.startsWith("did:plc:") ? "plc.directory" : "did:web"}）`, docUrl(did));
+      if (handle) {
+        const both = who.handle === handle;
+        step(both ? "DID 文書の側からも、このハンドルを名乗っている（双方向で確認）" : `DID 文書のハンドルは @${who.handle || "（なし）"}。入れたハンドルと合わない`, "", !both);
+      }
+      step("この店のデータがある PDS", who.pds);
+      Object.assign(view, { did, pds: who.pds, handle: who.handle || handle, cursor: "" });
+      history.replaceState(null, "", `#${encodeURIComponent(handle || did)}`);
+      await load(false);
+    } catch (error) {
+      step(`読めなかった: ${error.message}`, "", true);
+      status("読めませんでした。ハンドルか DID と、ネットワークを確かめてください。");
+    }
+  }
+
+  $("find").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const button = $("go");
+    button.disabled = true;
+    open($("actor").value).finally(() => { button.disabled = false; });
+  });
+  $("make-key").addEventListener("click", () => makeKey().catch((error) => { $("key-state").textContent = `作れなかった: ${error.message}`; }));
+  $("copy-pub").addEventListener("click", () => navigator.clipboard.writeText(me.pub).then(() => { $("key-state").textContent = "公開の鍵をコピーした"; }, () => {}));
+  if (!location.hash.startsWith("#key=")) loadKey();
+  $("more").addEventListener("click", () => load(true).catch((error) => status(`続きを読めなかった: ${error.message}`)));
+
+  async function importDemoKey() {
+    // core\host\demo.ps1 が 1 回だけ「#key=<JWK>」で渡すデモ用の鍵。読み込んだら、住所と履歴からすぐ消す
+    const match = /^#key=([A-Za-z0-9_-]+)$/.exec(location.hash);
+    if (!match) return;
+    history.replaceState(null, "", location.pathname + location.search);
+    try {
+      const jwk = JSON.parse(new TextDecoder().decode(unb64u(match[1])));
+      const key = await crypto.subtle.importKey("jwk", { kty: "EC", crv: "P-256", x: jwk.x, y: jwk.y, d: jwk.d, ext: false },
+                                                { name: "ECDH", namedCurve: "P-256" }, false, ["deriveBits"]);
+      const xy = `${jwk.x}.${jwk.y}`;
+      Object.assign(me, { key, pub: `robomori-key:1:${xy}`, kid: await kidOf(xy) });
+      try { await keyStore("readwrite", (s) => s.put({ key: me.key, pub: me.pub, kid: me.kid }, "me")); } catch (error) { /* 開いている間だけ */ }
+      showKey();
+      $("key-state").textContent += "（デモ用の鍵を読み込んだ）";
+    } catch (error) { $("key-state").textContent = `デモ用の鍵を読み込めなかった: ${error.message}`; }
+  }
+
+  $("nsid").textContent = NSID;
+  const params = new URLSearchParams(location.search);
+  if (params.get("pds")) $("pds").value = params.get("pds");
+  importDemoKey().finally(() => {
+    const start = (location.hash.startsWith("#key=") ? "" : decodeURIComponent(location.hash.slice(1))) || params.get("actor") || "";
+    if (start) {
+      $("actor").value = start;
+      $("find").requestSubmit();
+      if (params.get("watch") === "1") setInterval(() => { if (!$("go").disabled) $("find").requestSubmit(); }, 10000);
+    }
+  });
+})();
+</script>
+</body>
+</html>

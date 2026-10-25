@@ -1,0 +1,173 @@
+# ロボもり 中核（Robomori core）。システムモデルの「別管理」の箱にあたる。
+#
+#   本線（StickS3 → センサー中継 47610 → Unity）には入らない。データを受け取るだけの別系統。
+#   - Unity の GuardianHubLink → 127.0.0.1:47612 → 門番 → hub（監視 AI・推薦）
+#   - センサー中継の記録 Logs/sensor_bridge/ → 読み取り専用で hub へ（中継は変えない）
+#   - 画面 → 127.0.0.1:8000 → 門番 → web（Django）
+#   - 扉 2 → PC 側の PSoC 6 中継が `docker compose run --rm door2` で、そのときだけ立ち上げる
+#   - Google Drive 行き → 書き出しフォルダ（EXPORT_FOLDER）に置くだけ。Drive へ写すのは PC 側（psoc6_key.py --drive-folder）
+#
+# ネットワーク: core と door2net は外への道がない（internal）。外へ出られるのは出口の中継（egress）だけで、
+# それも許可した 3 つの宛先の HTTPS だけ。door2 は door2net にいて、この中継を通してしか外へ出られない。
+# 起動: docker compose up -d     代役も: docker compose --profile sim up -d     画面: http://127.0.0.1:8000
+name: robomori-core
+
+x-hardening: &hardening
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  tmpfs: ["/tmp:size=16m"]
+  pids_limit: 200
+  mem_limit: 512m
+  init: true
+
+x-app: &app
+  <<: *hardening
+  image: robomori-core:local
+  build:
+    context: ..
+    dockerfile: core/Dockerfile
+  volumes:
+    - core-data:/data
+  networks: [core]
+
+services:
+  migrate:
+    <<: *app
+    command: ["python", "manage.py", "migrate", "--noinput", "--verbosity", "0"]
+    restart: "no"
+
+  web:
+    <<: *app
+    restart: unless-stopped
+    environment:
+      # PC 側の鍵（psoc6_key）だけが知る値。start.ps1 が起動ごとに作る（空なら /api/key は使えない）
+      ROBOMORI_HOST_KEY: ${ROBOMORI_HOST_KEY:-}
+      # この PC の IPv4。PC 側の host-only の中継がこの住所で受け、この PC からの接続だけを通す（start.ps1 が渡す）
+      ROBOMORI_HOST_IP: ${ROBOMORI_HOST_IP:-}
+      ROBOMORI_HOST_PORT: ${ROBOMORI_HOST_PORT:-8000}
+      ROBOMORI_PASS_MINUTES: ${ROBOMORI_PASS_MINUTES:-10}
+      REPORT_COLLECTION: ${REPORT_COLLECTION:-}   # 記録の種類（NSID）。空なら internal.robomori.report
+      EXPORT_DIR: /export
+    volumes:
+      - core-data:/data
+      - ${EXPORT_FOLDER:-../Logs/drive_out}:/export:ro   # 画面の「Google Drive の記録」用に読むだけ
+      - ./guardian/rules.json:/app/core/guardian/rules.json:ro   # ルール AI の基準。書き換えると、作り直さずに次の質問から使う
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  hub:
+    <<: *app
+    command: ["python", "manage.py", "runhub"]
+    restart: unless-stopped
+    environment:
+      HUB_BIND: 0.0.0.0
+      HUB_LEARN_SECONDS: ${HUB_LEARN_SECONDS:-20}
+      HUB_RELAX_AFTER: ${HUB_RELAX_AFTER:-120}
+      HUB_SIMULATE_BUMP: ${HUB_SIMULATE_BUMP:-}
+      RELAY_LOG_DIR: /relay
+      EXPORT_DIR: /export
+      STORE_NAME: ${STORE_NAME:-ロボもり デモ店}
+    volumes:
+      - core-data:/data
+      - ${SENSOR_LOG_DIR:-../Logs/sensor_bridge}:/relay:ro
+      - ${EXPORT_FOLDER:-../Logs/drive_out}:/export   # 時間割の「書き出し」で要約を置く（ネットではなくフォルダ）
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  gateway:
+    <<: *hardening
+    image: nginxinc/nginx-unprivileged:1.27-alpine
+    entrypoint: ["nginx", "-g", "daemon off;"]
+    restart: unless-stopped
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "127.0.0.1:8000:8000"     # 画面。この PC からだけ
+      - "127.0.0.1:47612:47612"   # Unity の GuardianHubLink。この PC からだけ
+    networks: [edge, core]
+    depends_on: [web, hub]
+
+  sim:
+    <<: *app
+    profiles: [sim]
+    command: ["python", "manage.py", "simrobots"]
+    restart: unless-stopped
+    environment:
+      HUB_HOST: hub
+    depends_on: [hub]
+
+  door2:
+    <<: *app
+    profiles: [door2]
+    command: ["python", "manage.py", "door2"]
+    restart: "no"
+    # Linux で書き出しフォルダに書けないときは、DOOR2_USER に「id -u」:「id -g」を入れる（Docker Desktop では要らない）
+    user: "${DOOR2_USER:-10001:10001}"
+    environment:
+      EXPORT_DIR: /export
+      HTTPS_PROXY: http://egress:3128   # 外へはこの中継を通してだけ（door2net には外への道がない）
+      OPENED_BY: ${OPENED_BY:-人が開けた}
+      STORE_NAME: ${STORE_NAME:-ロボもり デモ店}
+      DOOR2_DRY_RUN: ${DOOR2_DRY_RUN:-0}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.8-flash}
+      BLUESKY_HANDLE: ${BLUESKY_HANDLE:-}
+      BLUESKY_APP_PASSWORD: ${BLUESKY_APP_PASSWORD:-}
+      BLUESKY_SERVICE: ${BLUESKY_SERVICE:-https://bsky.social}   # 書き込む先の PDS（社内の PDS を立てたら、その住所）
+      BLUESKY_APPVIEW: ${BLUESKY_APPVIEW:-https://public.api.bsky.app}   # 返信を読む先（仮想 VPN では社内 PDS）
+      NO_PROXY: vpn-pds   # 仮想 VPN の社内 PDS へは、出口の中継を通さずに vpn ネットワークで直接
+      BLUESKY_HASHTAGS: ${BLUESKY_HASHTAGS:-ロボもり,JPHACKS}
+      REPORT_COLLECTION: ${REPORT_COLLECTION:-}   # 記録の種類（NSID）。空なら internal.robomori.report
+    volumes:
+      - core-data:/data
+      - ${EXPORT_FOLDER:-../Logs/drive_out}:/export
+    networks: [door2net, vpn]
+    depends_on: [egress]
+
+  egress:
+    # 扉 2 の出口。許可した宛先の HTTPS（CONNECT 443）だけを通す。中身は読まない。30 秒使われなければ自分で終わる
+    <<: *hardening
+    image: robomori-core:local
+    profiles: [door2]
+    command: ["python", "/app/core/egress/egress_proxy.py"]
+    restart: "no"
+    environment:
+      EGRESS_ALLOW: ${EGRESS_ALLOW:-generativelanguage.googleapis.com,bsky.social,public.api.bsky.app}
+      EGRESS_INTERNAL: ${EGRESS_INTERNAL:-}   # 社内（VPN）の PDS の名前。社内の住所につないでよいのは、ここに書いた名前だけ
+      EGRESS_IDLE_EXIT: ${EGRESS_IDLE_EXIT:-30}
+    networks: [door2net, egress]
+
+  vpn-pds:
+    # 仮想 VPN の中の社内 PDS の代わり（core/vpnpds/pds.py）。door2 とは vpn ネットワーク（外への道なし）でだけつながる。
+    # ブラウザ（core/viewer）からは、この PC の 127.0.0.1:2583 からだけ届く
+    <<: *hardening
+    image: robomori-core:local
+    profiles: [vpn]
+    command: ["python", "/app/core/vpnpds/pds.py"]
+    restart: unless-stopped
+    environment:
+      VPN_PDS_ACCOUNTS: ${VPN_PDS_ACCOUNTS:-}   # 会社のアカウント。bluesky_setup.ps1 -Vpn がランダムなパスワードで .env に書く（既定はない）
+      VPN_PDS_DATA: /data/vpn-pds.json
+    volumes:
+      - vpn-pds-data:/data
+    ports:
+      - "127.0.0.1:2583:2583"
+    networks: [vpn, vpnedge]
+
+networks:
+  edge: {}                  # 門番が 127.0.0.1 のポートを受けるためだけのネットワーク
+  core: { internal: true }  # 外への道がない。web・hub・sim はここだけ
+  door2net: { internal: true }  # 外への道がない。door2 と出口の中継だけ
+  egress: {}                # 出口の中継だけ。扉 2 が開いている間しか、このネットワークにコンテナはいない
+  vpn: { internal: true }   # 仮想 VPN。外への道がない。door2 と社内 PDS（vpn-pds）だけ
+  vpnedge: {}               # 社内 PDS を 127.0.0.1:2583 で受けるためだけ（この PC からだけ届く）
+
+volumes:
+  core-data: {}
+  vpn-pds-data: {}

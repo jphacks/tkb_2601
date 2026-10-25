@@ -1,0 +1,302 @@
+{
+  "lexicon": 1,
+  "id": "internal.robomori.report",
+  "description": "ロボもりの店の記録。人が扉2 を開けたとき、店が選んだ出し方で、店のアカウントのリポジトリに構造化して残す。アカウントを別の PDS に移しても記録はついていき、ロボもりの画面や API を使わずに、ほかのアプリからも読める。返信した人の意見は文をコピーせず、その人のリポジトリにある投稿を参照する。 公開の名前空間（自分のドメインを逆にした NSID）で使うときは、core/.env の REPORT_COLLECTION にその名前を書く。",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": [
+          "createdAt",
+          "summary"
+        ],
+        "properties": {
+          "createdAt": {
+            "type": "string",
+            "format": "datetime"
+          },
+          "store": {
+            "type": "string",
+            "maxLength": 256,
+            "maxGraphemes": 64,
+            "description": "店の名前"
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 3000,
+            "maxGraphemes": 300,
+            "description": "Bluesky に共有した要約と同じ文"
+          },
+          "slowdowns": {
+            "type": "array",
+            "maxLength": 10,
+            "items": {
+              "type": "ref",
+              "ref": "#slowdown"
+            }
+          },
+          "responders": {
+            "type": "array",
+            "maxLength": 5,
+            "items": {
+              "type": "ref",
+              "ref": "#responder"
+            }
+          },
+          "stopped": {
+            "type": "array",
+            "maxLength": 10,
+            "items": {
+              "type": "string",
+              "maxLength": 8
+            },
+            "description": "止まっていたロボット"
+          },
+          "post": {
+            "type": "ref",
+            "ref": "com.atproto.repo.strongRef",
+            "description": "同じ内容を共有した Bluesky の投稿"
+          },
+          "share": {
+            "type": "string",
+            "knownValues": [
+              "post",
+              "record"
+            ],
+            "description": "店が選んだ出し方。post: Bluesky に投稿し、同じ要約をこの記録にも残した。record: タイムラインには流さず、この記録だけを残した（記録そのものは公開される）"
+          },
+          "accept": {
+            "type": "string",
+            "knownValues": [
+              "following",
+              "listed",
+              "anyone"
+            ],
+            "description": "店が誰の返信を受け取ると決めていたか。following: 店がフォローしている人、listed: 店が指定した人、anyone: だれでも"
+          },
+          "previous": {
+            "type": "ref",
+            "ref": "com.atproto.repo.strongRef",
+            "description": "この店の 1 つ前の記録（記録を順にたどれる）"
+          },
+          "opinions": {
+            "type": "array",
+            "maxLength": 20,
+            "items": {
+              "type": "ref",
+              "ref": "#opinion"
+            },
+            "description": "前の共有への返信のうち、店が受け取ると決めた相手から、受付期限の中に届いたもの"
+          },
+          "judgement": {
+            "type": "ref",
+            "ref": "#judgement",
+            "description": "ルール AI（外部の AI を使わず、店が決めた基準の数字だけで判断）の判断"
+          },
+          "sensor": {
+            "type": "ref",
+            "ref": "#sensor",
+            "description": "実機のセンサー（M5StickS3）で測ったこと。値はすべて実測"
+          }
+        }
+      }
+    },
+    "slowdown": {
+      "type": "object",
+      "description": "監視AI が速度を下げたところ。座標は入れない",
+      "required": [
+        "kind",
+        "place",
+        "speedPercent"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "knownValues": [
+            "area",
+            "robot"
+          ]
+        },
+        "place": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "場所の名前か、ロボットの記号"
+        },
+        "speedPercent": {
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 100,
+          "description": "速度上限（もとの何 %）"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 600
+        }
+      }
+    },
+    "responder": {
+      "type": "object",
+      "description": "故障したロボットに向かうとよい人の推薦",
+      "required": [
+        "robot",
+        "person"
+      ],
+      "properties": {
+        "robot": {
+          "type": "string",
+          "maxLength": 8
+        },
+        "situation": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "person": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "etaSeconds": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "opinion": {
+      "type": "object",
+      "description": "返信した人の意見。文はコピーせず、その人のリポジトリにある投稿を指す（消せば、ここからも読めなくなる）",
+      "required": [
+        "author",
+        "post"
+      ],
+      "properties": {
+        "author": {
+          "type": "string",
+          "format": "did",
+          "description": "返信した人の DID"
+        },
+        "post": {
+          "type": "ref",
+          "ref": "com.atproto.repo.strongRef",
+          "description": "返信の投稿"
+        }
+      }
+    },
+    "judgement": {
+      "type": "object",
+      "required": [
+        "rulesVersion",
+        "store"
+      ],
+      "description": "どの基準で、店全体とロボットごとにどう判断したか",
+      "properties": {
+        "rulesVersion": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "判断に使った基準（rules.json）の版。中身が同じなら同じ値"
+        },
+        "windowMinutes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "回数を数えた時間の幅（分）"
+        },
+        "store": {
+          "type": "string",
+          "knownValues": [
+            "safe",
+            "caution",
+            "danger"
+          ],
+          "maxLength": 16,
+          "description": "店全体の判断"
+        },
+        "robots": {
+          "type": "array",
+          "maxLength": 10,
+          "items": {
+            "type": "ref",
+            "ref": "#robotJudgement"
+          }
+        }
+      }
+    },
+    "robotJudgement": {
+      "type": "object",
+      "required": [
+        "robot",
+        "level"
+      ],
+      "properties": {
+        "robot": {
+          "type": "string",
+          "maxLength": 8
+        },
+        "level": {
+          "type": "string",
+          "knownValues": [
+            "safe",
+            "caution",
+            "danger"
+          ],
+          "maxLength": 16
+        },
+        "stops": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "止まった回数"
+        },
+        "degraded": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "注意・制限になった回数"
+        }
+      }
+    },
+    "sensor": {
+      "type": "object",
+      "required": [
+        "device",
+        "robot",
+        "measured"
+      ],
+      "properties": {
+        "device": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "robot": {
+          "type": "string",
+          "maxLength": 8
+        },
+        "measured": {
+          "type": "boolean",
+          "description": "実機で測った値（模擬ではない）"
+        },
+        "thresholdMg": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "peakMg": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "揺れの最大（mg）"
+        },
+        "raised": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "実測で注意以上になった回数"
+        },
+        "humanRecoveries": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "人が KEY2 で戻した回数"
+        },
+        "gaps": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "測定値が途切れた回数"
+        }
+      }
+    }
+  }
+}

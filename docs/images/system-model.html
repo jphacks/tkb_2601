@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<!-- Source of docs/images/system-model.png. Open in a browser at 1920x1080 and save a screenshot
+     (for example with Playwright: page.setViewportSize 1920x1080, then page.screenshot). -->
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@800&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --gold:#C08A3E; --gold-bg:#FBF4EA; --navy:#2E5B7A; --navy-bg:#EEF3F7; --dark:#1F3447; --dark-bg:#EDF0F4;
+  --green:#22A86B; --green-bg:#EAF7F0; --ink:#1B232C; --sub:#4A5663;
+  --ok:#22A86B; --warn:#E8A33A; --lim:#E5603B; --hold:#D93A3F;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1920px;height:1080px;background:#fff;font-family:'Noto Sans JP',sans-serif;color:var(--ink);position:relative;overflow:hidden}
+.abs{position:absolute}
+.box{position:absolute;border-radius:34px;border:4px solid;z-index:1}
+.hdr{position:absolute;left:-4px;top:-4px;height:88px;border-radius:34px 0 34px 0;display:flex;align-items:center;padding:0 30px;color:#fff;font-family:'M PLUS Rounded 1c';font-size:42px;white-space:nowrap}
+.title{position:absolute;font-family:'M PLUS Rounded 1c';font-size:38px;display:flex;align-items:center;gap:14px;white-space:nowrap}
+.t{position:absolute;font-size:25px;line-height:1.5;color:var(--sub);white-space:nowrap}
+.t b{color:var(--ink);font-weight:700}
+.row{position:absolute;display:flex;align-items:center;gap:10px;white-space:nowrap;font-size:25px;color:var(--sub)}
+.pill{display:inline-flex;align-items:center;justify-content:center;background:#fff;border-radius:999px;font-family:'M PLUS Rounded 1c';font-size:26px;padding:9px 22px;white-space:nowrap;box-shadow:0 3px 0 rgba(0,0,0,.06)}
+.ar{display:inline-block;width:30px;height:4px;background:var(--ink);position:relative;margin:0 10px 0 2px}
+.ar:after{content:"";position:absolute;right:-6px;top:-8px;border-left:13px solid var(--ink);border-top:10px solid transparent;border-bottom:10px solid transparent}
+.code{position:absolute;font-family:'Noto Sans JP';font-weight:700;font-size:22px;background:#fff;border:2px solid #CBD5DE;border-radius:12px;padding:5px 14px;color:#33414E;white-space:nowrap}
+.lbl{position:absolute;font-family:'M PLUS Rounded 1c';font-size:28px;color:var(--ink);white-space:nowrap}
+.st{display:inline-flex;align-items:center;justify-content:center;border-radius:12px;color:#fff;font-family:'M PLUS Rounded 1c';font-size:23px;padding:7px 12px}
+.n{font-family:'M PLUS Rounded 1c';font-size:22px;color:var(--ink)}
+</style></head>
+<body>
+
+<svg class="abs" width="1920" height="1080" style="left:0;top:0;z-index:0">
+  <defs>
+    <marker id="h" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1B232C"/></marker>
+    <marker id="hg" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#22A86B"/></marker>
+    <marker id="hp" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#7B4FC9"/></marker>
+  </defs>
+  <g fill="none" stroke="#C08A3E" stroke-opacity=".16">
+    <circle cx="250" cy="300" r="250" stroke-width="10"/><circle cx="250" cy="300" r="278" stroke-width="6"/><circle cx="250" cy="300" r="300" stroke-width="4"/>
+  </g>
+  <!-- USB -->
+  <path d="M500 230 H 592" stroke="#1B232C" stroke-width="9" marker-end="url(#h)"/>
+  <!-- relay -> Unity (TCP) -->
+  <path d="M1130 230 H 1242" stroke="#1B232C" stroke-width="9" marker-end="url(#h)"/>
+  <!-- Unity <-> core (47612) -->
+  <path d="M1242 560 H 1140" stroke="#1B232C" stroke-width="7" marker-end="url(#h)"/>
+  <path d="M1140 600 H 1242" stroke="#1B232C" stroke-width="7" marker-end="url(#h)"/>
+  <!-- relay log -> core (read only) -->
+  <path d="M865 420 V 452" stroke="#8A97A5" stroke-width="6" stroke-dasharray="10 7" marker-end="url(#h)"/>
+  <!-- core -> share (summary, only when door 2 is opened) -->
+  <path d="M865 690 V 770" stroke="#7B4FC9" stroke-width="8" stroke-dasharray="16 10" marker-end="url(#hp)"/>
+  <!-- KEY2 -->
+  <path d="M262 735 V 595" stroke="#22A86B" stroke-width="7" stroke-dasharray="18 12" fill="none" marker-end="url(#hg)"/>
+  <!-- SW2: person opens door 2 -->
+  <path d="M532 850 H 588" stroke="#22A86B" stroke-width="7" stroke-dasharray="14 10" fill="none" marker-end="url(#hg)"/>
+</svg>
+
+<!-- PC boundary -->
+<div class="abs" style="left:560px;top:30px;width:1332px;height:690px;border:4px dashed #2E5B7A;border-radius:40px;z-index:0"></div>
+<div class="abs" style="left:600px;top:10px;background:#fff;padding:0 14px;font-family:'M PLUS Rounded 1c';font-size:29px;color:#2E5B7A;display:flex;align-items:center;gap:10px;z-index:2">
+  <svg width="40" height="34" viewBox="0 0 40 34"><g fill="none" stroke="#2E5B7A" stroke-width="4" stroke-linecap="round"><path d="M4 12 Q20 -1 36 12"/><path d="M10 19 Q20 10 30 19"/><path d="M16 26 Q20 22 24 26"/><path d="M6 31 L34 3" stroke="#D93A3F"/></g></svg>
+  1 台の PC（ふだんはインターネット不要。外へ出るのは人が扉 2 を開けたときだけ）
+</div>
+
+<!-- ① measure -->
+<div class="box" style="left:30px;top:50px;width:470px;height:540px;border-color:var(--gold);background:var(--gold-bg)">
+  <div class="hdr" style="background:var(--gold)">① 測る</div>
+  <div class="title" style="left:32px;top:108px">
+    <svg width="52" height="40" viewBox="0 0 54 40"><rect x="2" y="4" width="40" height="32" rx="7" fill="#fff" stroke="#1B232C" stroke-width="3.5"/><rect x="9" y="11" width="20" height="13" rx="2" fill="#1B232C"/><circle cx="35" cy="20" r="3.5" fill="#2978FF"/><path d="M46 12 q5 8 0 16" stroke="#C08A3E" stroke-width="3.5" fill="none" stroke-linecap="round"/></svg>
+    M5StickS3
+  </div>
+  <div class="t" style="left:34px;top:168px">揺れを<b>ロボットの外</b>から測る<br>背面の磁石で<b>後付け</b>できる</div>
+  <div class="row" style="left:28px;top:262px">
+    <span class="pill" style="font-size:24px;padding:8px 16px">BMI270</span><span class="ar"></span><span class="pill" style="font-size:24px;padding:8px 16px">揺れ</span><span class="ar"></span><span class="pill" style="font-size:24px;padding:8px 16px">JSON</span>
+  </div>
+  <div class="t" style="left:34px;top:332px;font-size:24px">1 秒に約 170 回測り、<b>1 秒ごと</b>に送る</div>
+  <div class="code" style="left:30px;top:384px;font-size:21px">{"type":"sample","vib_rms_g":0.64}</div>
+  <div class="row" style="left:30px;top:452px">
+    <span class="pill" style="font-size:23px;padding:6px 16px">KEY1 基準値</span>
+    <span class="pill" style="font-size:23px;padding:6px 16px;background:var(--green);color:#fff">KEY2 人が戻す</span>
+  </div>
+</div>
+<div class="lbl" style="left:510px;top:176px;font-size:26px">USB</div>
+
+<!-- ② judge: relay -->
+<div class="box" style="left:600px;top:80px;width:530px;height:340px;border-color:var(--navy);background:var(--navy-bg)">
+  <div class="hdr" style="background:var(--navy)">② 判断する</div>
+  <div class="title" style="left:30px;top:100px;font-size:34px">センサー中継 <span style="font-family:'Noto Sans JP';font-weight:700;font-size:24px;color:var(--sub)">Python</span></div>
+  <div class="row" style="left:28px;top:158px;gap:6px">
+    <span class="st" style="background:var(--ok)">Normal</span><span class="n">×2 ▶</span>
+    <span class="st" style="background:var(--warn)">Warning</span><span class="n">×6 ▶</span>
+    <span class="st" style="background:var(--lim)">Limited</span>
+  </div>
+  <div class="t" style="left:30px;top:212px;font-size:24px">300 mg 以上が<b>続いた回数</b>で上げる</div>
+  <div class="row" style="left:30px;top:258px;font-size:23px">約 3 秒途切れ ▶ <span class="st" style="background:var(--hold);font-size:20px;padding:4px 9px">Hold</span>　戻すのは <span class="st" style="background:var(--green);font-size:20px;padding:4px 9px">KEY2</span></div>
+</div>
+<div class="lbl" style="left:1150px;top:176px;font-size:26px">TCP</div>
+<div class="lbl" style="left:1140px;top:244px;font-size:19px;font-family:'Noto Sans JP';font-weight:700;color:var(--sub)">0.5 秒ごと</div>
+
+<!-- ② judge: core -->
+<div class="box" style="left:600px;top:452px;width:530px;height:238px;border-color:var(--navy);background:#fff">
+  <div class="title" style="left:28px;top:16px;font-size:31px;color:var(--navy)">Robomori core <span style="font-family:'Noto Sans JP';font-weight:700;font-size:21px;color:var(--sub)">Docker・この PC だけ</span></div>
+  <div class="t" style="left:30px;top:66px;font-size:21px;line-height:1.6"><b>ルール AI</b>：rules.json の数字で判断（API なし）<br>　止まった回数・M5・KEY2 → <b>安全／注意／危険</b><br><b>画面</b>：ワンタイムパスワード・この PC だけ<br>中継の記録は<b>読むだけ</b>・監査ログ</div>
+</div>
+<div class="lbl" style="left:1160px;top:524px;font-size:17px;font-family:'Noto Sans JP';font-weight:700;color:var(--sub)">様子</div>
+<div class="lbl" style="left:1160px;top:610px;font-size:17px;font-family:'Noto Sans JP';font-weight:700;color:var(--sub)">減速の助言</div>
+
+<!-- ③ reassign -->
+<div class="box" style="left:1250px;top:80px;width:620px;height:610px;border-color:var(--dark);background:var(--dark-bg)">
+  <div class="hdr" style="background:var(--dark)">③ 任せ直す</div>
+  <div class="title" style="left:30px;top:100px;font-size:36px">Unity シミュレーター</div>
+  <div class="row" style="left:26px;top:160px">
+    <span class="pill" style="font-size:24px">受け口</span><span class="ar"></span><span class="pill" style="font-size:24px">能力表</span><span class="ar"></span><span class="pill" style="font-size:24px">割り当て直し</span>
+  </div>
+  <table class="abs" style="left:28px;top:232px;border-collapse:separate;border-spacing:0;font-size:23px;background:#fff;border-radius:14px;box-shadow:0 3px 0 rgba(0,0,0,.06)">
+    <tr style="font-weight:700;color:var(--sub)"><td style="padding:5px 14px"></td><td style="padding:5px 12px">スープ</td><td style="padding:5px 12px">料理</td><td style="padding:5px 14px 5px 12px">皿</td></tr>
+    <tr><td style="padding:2px 14px;font-family:'M PLUS Rounded 1c';color:var(--ok)">Normal</td><td align="center">○</td><td align="center">○</td><td align="center">○</td></tr>
+    <tr><td style="padding:2px 14px;font-family:'M PLUS Rounded 1c';color:var(--warn)">Warning</td><td align="center" style="color:var(--hold)">×</td><td align="center">○</td><td align="center">○</td></tr>
+    <tr><td style="padding:2px 14px 8px;font-family:'M PLUS Rounded 1c';color:var(--lim)">Limited</td><td align="center" style="color:var(--hold)">×</td><td align="center" style="color:var(--hold)">×</td><td align="center">○</td></tr>
+  </table>
+  <div class="t" style="left:384px;top:236px;font-size:23px;line-height:1.5">許されない<br>仕事だけ<b>取り消し</b><br><b>別の機体</b>へ<br>任せ直す</div>
+  <svg class="abs" style="left:40px;top:388px" width="540" height="150" viewBox="0 0 580 188">
+    <defs>
+      <g id="bot"><rect x="-36" y="-44" width="72" height="66" rx="21" fill="#fff" stroke="#1B232C" stroke-width="4"/><rect x="-25" y="-33" width="50" height="28" rx="10" fill="#1B232C"/><rect x="-38" y="16" width="76" height="12" rx="6" fill="currentColor"/><circle cx="-23" cy="37" r="9.5" fill="#1B232C"/><circle cx="23" cy="37" r="9.5" fill="#1B232C"/><circle cx="-22" cy="-47" r="9.5" fill="currentColor"/><circle cx="22" cy="-47" r="9.5" fill="currentColor"/></g>
+      <path id="smile" d="M-14 -21 q5 -6 10 0 M4 -21 q5 -6 10 0" stroke="#5FE0E8" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <marker id="soup" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4.5" markerHeight="4.5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#C9862A"/></marker>
+    </defs>
+    <path d="M250 50 Q 175 8 108 50" stroke="#C9862A" stroke-width="4" stroke-dasharray="9 7" fill="none" marker-end="url(#soup)"/>
+    <text x="178" y="22" font-family="M PLUS Rounded 1c" font-weight="800" font-size="22" fill="#B0741E" text-anchor="middle">スープは A へ</text>
+    <g transform="translate(80,110)" color="#2978FF"><use href="#bot"/><use href="#smile"/></g>
+    <g transform="translate(290,110)" color="#FF5CA8"><use href="#bot"/><path d="M-12 -17 v-8 M12 -17 v-8" stroke="#E8A33A" stroke-width="4" stroke-linecap="round"/><path d="M-50 -16 q-9 12 0 24 M-60 -22 q-12 18 0 36 M50 -16 q9 12 0 24 M60 -22 q12 18 0 36" stroke="#8A97A5" stroke-width="3.5" fill="none" stroke-linecap="round"/></g>
+    <g transform="translate(500,110)" color="#9957F2"><use href="#bot"/><use href="#smile"/></g>
+    <text x="80" y="182" font-family="M PLUS Rounded 1c" font-weight="800" font-size="24" text-anchor="middle">A 正常</text>
+    <text x="290" y="182" font-family="M PLUS Rounded 1c" font-weight="800" font-size="24" text-anchor="middle" fill="#B0741E">B 注意（揺れ）</text>
+    <text x="500" y="182" font-family="M PLUS Rounded 1c" font-weight="800" font-size="24" text-anchor="middle">C 正常</text>
+  </svg>
+  <div class="t" style="left:30px;top:540px;font-size:21px;line-height:1.5">注意・制限でも<b>止めず</b>、できる仕事を続ける（赤は皿だけ）<br>中継が途切れたら、止めるのは<b>測っている B だけ</b></div>
+</div>
+
+<!-- ④ human -->
+<div class="box" style="left:30px;top:740px;width:500px;height:320px;border-color:var(--green);background:var(--green-bg)">
+  <div class="hdr" style="background:var(--green)">④ 人</div>
+  <div class="title" style="left:228px;top:18px;font-size:34px">
+    <svg width="38" height="42" viewBox="0 0 40 44"><circle cx="20" cy="12" r="10" fill="#22A86B"/><path d="M2 44 q0 -20 18 -20 q18 0 18 20z" fill="#22A86B"/></svg>店員
+  </div>
+  <div class="t" style="left:32px;top:100px;font-size:24px;line-height:1.62"><b>見る</b>　段階・理由・ルール AI の判断<br><b>聞く</b>　「いま危ない？」「B は？」<br><b>戻す</b>　StickS3 の KEY2<br><b>止める・再開</b>　STOP／画面のボタン<br><b>外へ出す</b>　PSoC 6 の <b>SW2</b> → Drive・共有</div>
+</div>
+<div class="lbl" style="left:280px;top:640px;font-size:25px;color:#22A86B">KEY2 で戻す</div>
+<div class="lbl" style="left:536px;top:790px;font-size:17px;line-height:1.1;color:#22A86B;text-align:center">PSoC 6<br><span style="font-size:22px">SW2</span></div>
+
+<!-- ⑤ share -->
+<div class="box" style="left:600px;top:776px;width:1290px;height:200px;border-color:#7B4FC9;background:#F4EFFC">
+  <div class="hdr" style="background:#7B4FC9">⑤ 共有する</div>
+  <div class="t" style="left:300px;top:24px;font-size:22px">人が <b>PSoC 6 の SW2</b> を押したときだけ。<b>会社ごと</b>に、自社と保守会社の<b>鍵でしか開けない</b></div>
+  <div class="row" style="left:26px;top:100px;gap:6px">
+    <span class="pill" style="font-size:22px;padding:8px 16px;flex-direction:column;line-height:1.25">要約を<b style="font-family:'Noto Sans JP'">暗号化</b><span style="font-size:15px;color:var(--sub);font-family:'Noto Sans JP'">ECDH P-256・AES-GCM</span></span><span class="ar"></span>
+    <span class="pill" style="font-size:22px;padding:8px 16px;flex-direction:column;line-height:1.25">会社の PDS<span style="font-size:15px;color:var(--sub);font-family:'Noto Sans JP'">AT プロトコル・社内 VPN／bsky.social</span></span><span class="ar"></span>
+    <span class="pill" style="font-size:22px;padding:8px 16px;flex-direction:column;line-height:1.25">保守会社のビューア<span style="font-size:15px;color:var(--sub);font-family:'Noto Sans JP'">障害の多い会社に修理・買い替えを提案</span></span>
+    <span style="width:18px"></span>
+    <span class="pill" style="font-size:22px;padding:8px 16px;flex-direction:column;line-height:1.25">Google Drive<span style="font-size:15px;color:var(--sub);font-family:'Noto Sans JP'">SW2 で記録を送信</span></span>
+  </div>
+</div>
+
+<!-- slogan -->
+<div class="abs" style="left:600px;top:992px;width:880px;height:68px;background:var(--navy);border-radius:16px;color:#fff;font-family:'M PLUS Rounded 1c';font-size:34px;display:flex;align-items:center;justify-content:center;z-index:1">上げるのは自動、戻すのも外へ出すのも人。</div>
+
+<!-- legend -->
+<div class="abs" style="left:1500px;top:986px;width:400px;height:90px;font-size:19px;line-height:1.45;z-index:1;white-space:nowrap">
+  <div style="display:flex;align-items:center;gap:10px"><svg width="46" height="14"><path d="M2 7 H 36" stroke="#1B232C" stroke-width="6"/><path d="M34 0 L46 7 L34 14z" fill="#1B232C"/></svg>データ（JSON Lines）</div>
+  <div style="display:flex;align-items:center;gap:10px"><svg width="46" height="14"><path d="M2 7 H 36" stroke="#22A86B" stroke-width="6" stroke-dasharray="10 6"/><path d="M34 0 L46 7 L34 14z" fill="#22A86B"/></svg>人の操作</div>
+  <div style="display:flex;align-items:center;gap:10px"><svg width="46" height="14"><path d="M2 7 H 36" stroke="#7B4FC9" stroke-width="6" stroke-dasharray="10 6"/><path d="M34 0 L46 7 L34 14z" fill="#7B4FC9"/></svg>暗号化して共有（会社の鍵だけ）</div>
+</div>
+
+</body></html>
